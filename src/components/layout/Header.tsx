@@ -1,13 +1,14 @@
 import React from 'react';
 import { useChannelStore } from '../../stores/useChannelStore';
 import { useSettingsStore } from '../../stores/useSettingsStore';
-import { Search, Sliders, Tv, Radio, X } from 'lucide-react';
+import { Search, Sliders, Tv, Radio, X, Menu } from 'lucide-react';
 
 interface HeaderProps {
   onOpenSettings: () => void;
+  onToggleMobileMenu?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
+export const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleMobileMenu }) => {
   const searchQuery = useChannelStore((s) => s.searchQuery);
   const setSearchQuery = useChannelStore((s) => s.setSearchQuery);
   const channels = useChannelStore((s) => s.channels);
@@ -19,6 +20,16 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
 
   return (
     <header className="tokerian-header glass-panel">
+      {/* Mobile Hamburger Toggle Button */}
+      <button
+        type="button"
+        onClick={onToggleMobileMenu}
+        className="tokerian-btn-icon mobile-menu-btn"
+        title="Open menu"
+      >
+        <Menu size={20} />
+      </button>
+
       {/* Brand Logo */}
       <div className="header-brand">
         <div className="brand-icon-wrapper">
@@ -66,10 +77,10 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
         <button
           type="button"
           onClick={() => updateSettings({ tvMode: !tvMode })}
-          className={`tokerian-btn-icon ${tvMode ? 'tv-mode-active' : ''}`}
+          className={`tokerian-btn-icon header-tv-btn ${tvMode ? 'tv-mode-active' : ''}`}
           title={tvMode ? 'Disable TV D-pad Mode' : 'Enable TV D-pad Mode'}
         >
-          <Tv size={20} />
+          <Tv size={18} />
         </button>
 
         {/* Settings Button */}

@@ -30,7 +30,7 @@ interface PlayerState {
 
   // Actions
   attachVideoElement: (video: HTMLVideoElement) => void;
-  playChannel: (channel: Channel) => Promise<void>;
+  playChannel: (channel: Channel, forceMode?: 'direct' | 'proxy') => Promise<void>;
   togglePlay: () => Promise<void>;
   setVolume: (volume: number) => void;
   toggleMute: () => void;
@@ -40,12 +40,23 @@ interface PlayerState {
   selectQualityLevel: (id: number) => void;
   togglePiP: () => Promise<void>;
   toggleFullscreen: () => void;
+  setIsFullscreen: (isFs: boolean) => void;
   zapNext: () => void;
   zapPrev: () => void;
   clearError: () => void;
+  closePlayer: () => void;
 }
 
 export const usePlayerStore = create<PlayerState>((set, get) => {
+  // Sync native browser fullscreen change events
+  if (typeof document !== 'undefined') {
+    const syncFs = () => {
+      set({ isFullscreen: !!document.fullscreenElement });
+    };
+    document.addEventListener('fullscreenchange', syncFs);
+    document.addEventListener('webkitfullscreenchange', syncFs);
+  }
+
   // Subscribe to low-level player adapter state changes
   playerAdapter.onStateChange((state) => {
     set({
@@ -68,6 +79,24 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
       qualityLevels: tracks.qualityLevels,
       selectedQualityLevel: tracks.selectedQualityLevel,
     });
+  });
+
+  let hasAttemptedFallback = false;
+  let currentRoutingMode: 'direct' | 'proxy' = 'direct';
+
+  // Self-healing automatic stream router
+  playerAdapter.setFallbackHandler((_failedUrl, _is403) => {
+    const { currentChannel } = get();
+    if (!currentChannel || hasAttemptedFallback) {
+      return false;
+    }
+
+    hasAttemptedFallback = true;
+    const nextMode = currentRoutingMode === 'direct' ? 'proxy' : 'direct';
+    console.info(`Self-healing stream: Retrying "${currentChannel.name}" via ${nextMode} mode...`);
+
+    get().playChannel(currentChannel, nextMode);
+    return true;
   });
 
   return {
@@ -97,14 +126,21 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
       playerAdapter.attachMedia(video);
     },
 
-    playChannel: async (channel: Channel) => {
+    playChannel: async (channel: Channel, forceMode?: 'direct' | 'proxy') => {
+      if (!forceMode) {
+        hasAttemptedFallback = false;
+        currentRoutingMode = useSettingsStore.getState().corsProxyEnabled ? 'proxy' : 'direct';
+      } else {
+        currentRoutingMode = forceMode;
+      }
+
       set({ currentChannel: channel, error: null, isBuffering: true });
 
       // Record in watch history
       useUserStore.getState().addToHistory(channel);
 
-      // Resolve stream URL (with proxy if needed on Web)
-      const resolvedUrl = useSettingsStore.getState().resolveStreamUrl(channel.url);
+      // Resolve stream URL (supports direct or proxy routing)
+      const resolvedUrl = useSettingsStore.getState().resolveStreamUrl(channel.url, currentRoutingMode);
 
       try {
         await playerAdapter.loadStream(resolvedUrl);
@@ -157,12 +193,23 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
     toggleFullscreen: () => {
       const isCurrentlyFs = !!document.fullscreenElement;
       if (!isCurrentlyFs) {
-        document.documentElement.requestFullscreen?.().catch(console.warn);
+        const playerEl = document.querySelector('.video-player-container');
+        if (playerEl && playerEl.requestFullscreen) {
+          playerEl.requestFullscreen().catch(() => {
+            document.documentElement.requestFullscreen?.().catch(console.warn);
+          });
+        } else {
+          document.documentElement.requestFullscreen?.().catch(console.warn);
+        }
         set({ isFullscreen: true });
       } else {
         document.exitFullscreen?.().catch(console.warn);
         set({ isFullscreen: false });
       }
+    },
+
+    setIsFullscreen: (isFs: boolean) => {
+      set({ isFullscreen: isFs });
     },
 
     zapNext: () => {
@@ -197,6 +244,11 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
 
     clearError: () => {
       set({ error: null });
+    },
+
+    closePlayer: () => {
+      playerAdapter.detachMedia();
+      set({ currentChannel: null, isPlaying: false, isBuffering: false, error: null });
     },
   };
 });

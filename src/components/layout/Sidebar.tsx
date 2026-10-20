@@ -14,6 +14,7 @@ import {
   Radio,
   Play,
   Pause,
+  X,
 } from 'lucide-react';
 
 export type SidebarTab = 'channels' | 'favorites' | 'history';
@@ -21,9 +22,16 @@ export type SidebarTab = 'channels' | 'favorites' | 'history';
 interface SidebarProps {
   activeTab: SidebarTab;
   onTabChange: (tab: SidebarTab) => void;
+  isMobileOpen?: boolean;
+  onCloseMobile?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
+export const Sidebar: React.FC<SidebarProps> = ({
+  activeTab,
+  onTabChange,
+  isMobileOpen = false,
+  onCloseMobile,
+}) => {
   const favoritesCount = useUserStore((s) => s.favorites.size);
   const historyCount = useUserStore((s) => s.history.length);
   const setActiveCategory = useChannelStore((s) => s.setActiveCategory);
@@ -32,49 +40,83 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
   const isPlaying = usePlayerStore((s) => s.isPlaying);
   const togglePlay = usePlayerStore((s) => s.togglePlay);
 
+  const handleTabSelect = (tab: SidebarTab) => {
+    onTabChange(tab);
+    onCloseMobile?.();
+  };
+
   const handleQuickCategory = (category: string) => {
     onTabChange('channels');
     setActiveCategory(category);
+    onCloseMobile?.();
   };
 
   return (
-    <aside className="tokerian-sidebar">
-      {/* Primary Navigation */}
-      <div className="sidebar-nav-group">
-        <span className="sidebar-group-title">Menu</span>
+    <>
+      {/* Mobile Drawer Backdrop */}
+      {isMobileOpen && (
+        <div
+          className="sidebar-backdrop"
+          onClick={onCloseMobile}
+        />
+      )}
 
-        <button
-          type="button"
-          tabIndex={0}
-          onClick={() => onTabChange('channels')}
-          className={`sidebar-nav-item ${activeTab === 'channels' ? 'sidebar-item-active' : ''}`}
-        >
-          <Tv size={18} />
-          <span>Live Channels</span>
-        </button>
+      <aside className={`tokerian-sidebar ${isMobileOpen ? 'sidebar-drawer-open' : ''}`}>
+        {/* Mobile Header with Close Button */}
+        <div className="sidebar-mobile-header">
+          <div className="header-brand" style={{ gap: '8px' }}>
+            <div className="brand-icon-wrapper" style={{ width: '32px', height: '32px' }}>
+              <Radio size={16} />
+            </div>
+            <span className="brand-title" style={{ fontSize: '1.05rem' }}>Tokerian</span>
+          </div>
+          <button
+            type="button"
+            onClick={onCloseMobile}
+            className="tokerian-btn-icon"
+            style={{ padding: '6px' }}
+            title="Close menu"
+          >
+            <X size={18} />
+          </button>
+        </div>
 
-        <button
-          type="button"
-          tabIndex={0}
-          onClick={() => onTabChange('favorites')}
-          className={`sidebar-nav-item ${activeTab === 'favorites' ? 'sidebar-item-active' : ''}`}
-        >
-          <Star size={18} />
-          <span>Favorites</span>
-          {favoritesCount > 0 && <span className="nav-badge">{favoritesCount}</span>}
-        </button>
+        {/* Primary Navigation */}
+        <div className="sidebar-nav-group">
+          <span className="sidebar-group-title">Menu</span>
 
-        <button
-          type="button"
-          tabIndex={0}
-          onClick={() => onTabChange('history')}
-          className={`sidebar-nav-item ${activeTab === 'history' ? 'sidebar-item-active' : ''}`}
-        >
-          <Clock size={18} />
-          <span>Recently Watched</span>
-          {historyCount > 0 && <span className="nav-badge">{historyCount}</span>}
-        </button>
-      </div>
+          <button
+            type="button"
+            tabIndex={0}
+            onClick={() => handleTabSelect('channels')}
+            className={`sidebar-nav-item ${activeTab === 'channels' ? 'sidebar-item-active' : ''}`}
+          >
+            <Tv size={18} />
+            <span>Live Channels</span>
+          </button>
+
+          <button
+            type="button"
+            tabIndex={0}
+            onClick={() => handleTabSelect('favorites')}
+            className={`sidebar-nav-item ${activeTab === 'favorites' ? 'sidebar-item-active' : ''}`}
+          >
+            <Star size={18} />
+            <span>Favorites</span>
+            {favoritesCount > 0 && <span className="nav-badge">{favoritesCount}</span>}
+          </button>
+
+          <button
+            type="button"
+            tabIndex={0}
+            onClick={() => handleTabSelect('history')}
+            className={`sidebar-nav-item ${activeTab === 'history' ? 'sidebar-item-active' : ''}`}
+          >
+            <Clock size={18} />
+            <span>Recently Watched</span>
+            {historyCount > 0 && <span className="nav-badge">{historyCount}</span>}
+          </button>
+        </div>
 
       {/* Quick Category Filter Presets */}
       <div className="sidebar-nav-group">
@@ -161,5 +203,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
         </div>
       )}
     </aside>
+    </>
   );
 };

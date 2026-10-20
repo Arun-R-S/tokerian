@@ -16,6 +16,12 @@ export class HlsPlayerAdapter implements IPlayerPort {
   private isBuffering = false;
   private error: string | null = null;
   private currentUrl: string | null = null;
+  private pendingStreamUrl: string | null = null;
+  private fallbackHandler: ((url: string, is403: boolean) => boolean) | null = null;
+
+  setFallbackHandler(handler: ((url: string, is403: boolean) => boolean) | null): void {
+    this.fallbackHandler = handler;
+  }
 
   getCurrentUrl(): string | null {
     return this.currentUrl;
@@ -26,6 +32,13 @@ export class HlsPlayerAdapter implements IPlayerPort {
     this.detachMedia();
     this.videoElement = element;
     this.setupVideoEvents();
+
+    // Automatically load stream if it was requested before video element mounted
+    if (this.pendingStreamUrl) {
+      const url = this.pendingStreamUrl;
+      this.pendingStreamUrl = null;
+      this.loadStream(url);
+    }
   }
 
   detachMedia(): void {
@@ -47,7 +60,8 @@ export class HlsPlayerAdapter implements IPlayerPort {
     this.notifyState();
 
     if (!this.videoElement) {
-      console.warn('Cannot load stream without video element attached');
+      // Store pending stream; will be loaded immediately when attachMedia is called
+      this.pendingStreamUrl = url;
       return;
     }
 
@@ -95,13 +109,43 @@ export class HlsPlayerAdapter implements IPlayerPort {
         this.notifyTracks();
       });
 
+      let networkRetryCount = 0;
+
       hls.on(Hls.Events.ERROR, (_, data) => {
         if (data.fatal) {
           switch (data.type) {
-            case Hls.ErrorTypes.NETWORK_ERROR:
-              console.warn('HLS Fatal Network Error, trying recovery...');
-              hls.startLoad();
+            case Hls.ErrorTypes.NETWORK_ERROR: {
+              networkRetryCount++;
+              const statusCode = data.response?.code;
+              const is403 = statusCode === 403;
+              const is404 = statusCode === 404;
+
+              if (is404) {
+                this.error = 'Channel Offline: This broadcast feed is currently unavailable (HTTP 404 Not Found from broadcaster).';
+                this.isBuffering = false;
+                this.notifyState();
+                this.destroy();
+                break;
+              }
+
+              // Check if auto-fallback routing is possible (e.g. direct -> proxy or proxy -> direct)
+              if (this.fallbackHandler && this.fallbackHandler(url, is403)) {
+                return;
+              }
+
+              if (networkRetryCount <= 2 && !is403) {
+                console.warn(`HLS Network Error, attempting recovery (${networkRetryCount}/2)...`);
+                hls.startLoad();
+              } else {
+                this.error = is403
+                  ? 'HTTP 403 Forbidden: Stream blocked by proxy or CDN. Try switching connection mode.'
+                  : `CORS / Network Error: Stream blocked by browser CORS policy. Try switching connection mode.`;
+                this.isBuffering = false;
+                this.notifyState();
+                this.destroy();
+              }
               break;
+            }
             case Hls.ErrorTypes.MEDIA_ERROR:
               console.warn('HLS Fatal Media Error, trying recovery...');
               hls.recoverMediaError();
@@ -192,19 +236,49 @@ export class HlsPlayerAdapter implements IPlayerPort {
   }
 
   getSubtitleTracks(): SubtitleTrack[] {
-    if (!this.hls) return [];
-    return this.hls.subtitleTracks.map((t, index) => ({
-      id: index,
-      name: t.name || `Subtitle ${index + 1}`,
-      language: t.lang || 'und',
-      default: t.default,
-    }));
+    if (this.hls && this.hls.subtitleTracks.length > 0) {
+      return this.hls.subtitleTracks.map((t, index) => ({
+        id: index,
+        name: t.name || `Subtitle ${index + 1}`,
+        language: t.lang || 'und',
+        default: t.default,
+      }));
+    }
+
+    if (this.videoElement && this.videoElement.textTracks && this.videoElement.textTracks.length > 0) {
+      const tracks: SubtitleTrack[] = [];
+      for (let i = 0; i < this.videoElement.textTracks.length; i++) {
+        const t = this.videoElement.textTracks[i];
+        if (t.kind === 'subtitles' || t.kind === 'captions') {
+          tracks.push({
+            id: i,
+            name: t.label || `Caption ${i + 1}`,
+            language: t.language || 'und',
+            default: t.mode === 'showing',
+          });
+        }
+      }
+      return tracks;
+    }
+
+    return [];
   }
 
   setSubtitleTrack(trackId: number): void {
-    if (this.hls) {
+    if (this.hls && this.hls.subtitleTracks.length > 0) {
       // -1 disables subtitles in HLS.js
       this.hls.subtitleTrack = trackId;
+      this.notifyTracks();
+      return;
+    }
+
+    if (this.videoElement && this.videoElement.textTracks && this.videoElement.textTracks.length > 0) {
+      for (let i = 0; i < this.videoElement.textTracks.length; i++) {
+        const track = this.videoElement.textTracks[i];
+        if (track.kind === 'subtitles' || track.kind === 'captions') {
+          track.mode = i === trackId ? 'showing' : 'disabled';
+        }
+      }
       this.notifyTracks();
     }
   }
@@ -232,6 +306,10 @@ export class HlsPlayerAdapter implements IPlayerPort {
 
   async togglePictureInPicture(): Promise<boolean> {
     if (!this.videoElement || !document.pictureInPictureEnabled) return false;
+    if (this.videoElement.readyState < 1) {
+      console.info('Waiting for stream metadata before entering Picture-in-Picture');
+      return false;
+    }
     try {
       if (document.pictureInPictureElement) {
         await document.exitPictureInPicture();

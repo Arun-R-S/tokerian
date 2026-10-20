@@ -18,6 +18,8 @@ import {
   Cast,
   RotateCcw,
   AlertTriangle,
+  Radio,
+  X,
 } from 'lucide-react';
 
 export const VideoPlayer: React.FC = () => {
@@ -55,19 +57,140 @@ export const VideoPlayer: React.FC = () => {
   const zapNext = usePlayerStore((s) => s.zapNext);
   const zapPrev = usePlayerStore((s) => s.zapPrev);
   const playChannel = usePlayerStore((s) => s.playChannel);
+  const closePlayer = usePlayerStore((s) => s.closePlayer);
 
   const isFav = useUserStore((s) => (currentChannel ? s.favorites.has(currentChannel.id) : false));
   const toggleFavorite = useUserStore((s) => s.toggleFavorite);
 
   const corsProxyEnabled = useSettingsStore((s) => s.corsProxyEnabled);
+  const autoPlayNextOnError = useSettingsStore((s) => s.autoPlayNextOnError);
   const updateSettings = useSettingsStore((s) => s.updateSettings);
 
-  // Attach video element once mounted
+  const [autoSkipCountdown, setAutoSkipCountdown] = useState<number | null>(null);
+
+  // In-App Auto Subtitles (Speech-to-Text)
+  const [autoCaptionsEnabled, setAutoCaptionsEnabled] = useState(false);
+  const [liveCaptionText, setLiveCaptionText] = useState('');
+  const [autoCaptionLang, setAutoCaptionLang] = useState('ta-IN');
+  const recognitionRef = useRef<any>(null);
+
+  // Sync default auto-caption language with channel
   useEffect(() => {
-    if (videoRef.current) {
-      attachVideoElement(videoRef.current);
+    if (currentChannel?.language) {
+      const lower = currentChannel.language.toLowerCase();
+      if (lower.includes('tam') || lower.includes('ta')) setAutoCaptionLang('ta-IN');
+      else if (lower.includes('hin') || lower.includes('hi')) setAutoCaptionLang('hi-IN');
+      else if (lower.includes('tel') || lower.includes('te')) setAutoCaptionLang('te-IN');
+      else if (lower.includes('mal') || lower.includes('ml')) setAutoCaptionLang('ml-IN');
+      else if (lower.includes('eng') || lower.includes('en')) setAutoCaptionLang('en-US');
     }
-  }, [attachVideoElement]);
+  }, [currentChannel]);
+
+  // Speech Recognition listener for In-App Live Captions
+  useEffect(() => {
+    if (!autoCaptionsEnabled) {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch {}
+        recognitionRef.current = null;
+      }
+      setLiveCaptionText('');
+      return;
+    }
+
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert('Speech Recognition is not supported by your browser engine. Chrome or Edge is recommended.');
+      setAutoCaptionsEnabled(false);
+      return;
+    }
+
+    let isStopped = false;
+
+    try {
+      const rec = new SpeechRecognition();
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.lang = autoCaptionLang;
+
+      rec.onresult = (event: any) => {
+        let text = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          if (event.results[i][0]) {
+            text += event.results[i][0].transcript;
+          }
+        }
+        if (text) {
+          setLiveCaptionText(text);
+        }
+      };
+
+      rec.onerror = (e: any) => {
+        console.info('Live caption recognizer notice:', e);
+      };
+
+      rec.onend = () => {
+        if (!isStopped && autoCaptionsEnabled) {
+          try {
+            rec.start();
+          } catch {}
+        }
+      };
+
+      rec.start();
+      recognitionRef.current = rec;
+    } catch (e) {
+      console.warn('Speech recognition start failed:', e);
+    }
+
+    return () => {
+      isStopped = true;
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch {}
+        recognitionRef.current = null;
+      }
+    };
+  }, [autoCaptionsEnabled, autoCaptionLang]);
+
+  // Auto-skip countdown when channel is offline or encounters fatal error
+  useEffect(() => {
+    if (!error || !autoPlayNextOnError) {
+      setAutoSkipCountdown(null);
+      return;
+    }
+
+    // Start 4-second countdown before auto-zapping
+    setAutoSkipCountdown(4);
+
+    const interval = window.setInterval(() => {
+      setAutoSkipCountdown((prev) => {
+        if (prev === null) return null;
+        if (prev <= 1) {
+          window.clearInterval(interval);
+          zapNext();
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [error, currentChannel?.id, autoPlayNextOnError, zapNext]);
+
+  // Attach video element immediately using callback ref
+  const setVideoRef = (node: HTMLVideoElement | null) => {
+    videoRef.current = node;
+    if (node) {
+      attachVideoElement(node);
+    }
+  };
 
   // Handle auto-hiding OSD controls after inactivity
   const resetOsdTimer = () => {
@@ -92,6 +215,20 @@ export const VideoPlayer: React.FC = () => {
     };
   }, [isPlaying]);
 
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        toggleFullscreen();
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [toggleFullscreen]);
+
   if (!currentChannel) return null;
 
   const handleCastClick = () => {
@@ -111,11 +248,19 @@ export const VideoPlayer: React.FC = () => {
       className={`video-player-container ${isFullscreen ? 'player-fullscreen' : ''}`}
     >
       <video
-        ref={videoRef}
+        ref={setVideoRef}
         playsInline
         className="video-canvas"
         onClick={togglePlay}
+        onDoubleClick={toggleFullscreen}
       />
+
+      {/* Real-Time Live Speech Caption Overlay */}
+      {autoCaptionsEnabled && liveCaptionText && (
+        <div className="player-live-captions-overlay">
+          <span className="live-caption-text">{liveCaptionText}</span>
+        </div>
+      )}
 
       {/* Buffering Indicator */}
       {isBuffering && (
@@ -125,38 +270,88 @@ export const VideoPlayer: React.FC = () => {
         </div>
       )}
 
-      {/* Error Overlay with CORS Proxy Prompt */}
+      {/* Error / Offline Overlay */}
       {error && (
         <div className="player-error-overlay">
-          <AlertTriangle size={36} color="#ef4444" />
-          <h4 className="error-title">Stream Playback Error</h4>
-          <p className="error-description">{error}</p>
-          <div className="error-actions">
-            <button
-              type="button"
-              onClick={() => playChannel(currentChannel)}
-              className="tokerian-btn tokerian-btn-primary"
-            >
-              <RotateCcw size={16} /> Retry Channel
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                updateSettings({ corsProxyEnabled: !corsProxyEnabled });
-                playChannel(currentChannel);
-              }}
-              className="tokerian-btn"
-            >
-              {corsProxyEnabled ? 'Try Without Proxy' : 'Enable CORS Proxy'}
-            </button>
-            <button
-              type="button"
-              onClick={zapNext}
-              className="tokerian-btn"
-            >
-              <SkipForward size={16} /> Next Channel
-            </button>
-          </div>
+          {error.includes('Offline') || error.includes('404') ? (
+            <>
+              <Radio size={40} className="text-muted" style={{ opacity: 0.6 }} />
+              <h4 className="error-title">Channel Currently Offline</h4>
+              <p className="error-description">
+                The broadcaster server for <strong>{currentChannel.name}</strong> returned HTTP 404 Not Found.
+                This stream is temporarily down or has been decommissioned by the broadcaster.
+              </p>
+              {autoSkipCountdown !== null && (
+                <p style={{ color: 'var(--color-primary)', fontSize: '0.9rem', marginBottom: '12px' }}>
+                  Auto-skipping to next channel in <strong>{autoSkipCountdown}s</strong>...
+                </p>
+              )}
+              <div className="error-actions">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAutoSkipCountdown(null);
+                    zapNext();
+                  }}
+                  className="tokerian-btn tokerian-btn-primary"
+                >
+                  <SkipForward size={16} /> Skip to Next Channel
+                </button>
+                {autoSkipCountdown !== null && (
+                  <button
+                    type="button"
+                    onClick={() => setAutoSkipCountdown(null)}
+                    className="tokerian-btn"
+                  >
+                    Cancel Auto-Skip
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAutoSkipCountdown(null);
+                    playChannel(currentChannel);
+                  }}
+                  className="tokerian-btn"
+                >
+                  <RotateCcw size={16} /> Retry Feed
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <AlertTriangle size={36} color="#ef4444" />
+              <h4 className="error-title">Stream Playback Issue</h4>
+              <p className="error-description">{error}</p>
+              <div className="error-actions">
+                <button
+                  type="button"
+                  onClick={() => playChannel(currentChannel)}
+                  className="tokerian-btn tokerian-btn-primary"
+                >
+                  <RotateCcw size={16} /> Retry Channel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextMode = !corsProxyEnabled;
+                    updateSettings({ corsProxyEnabled: nextMode });
+                    playChannel(currentChannel, nextMode ? 'proxy' : 'direct');
+                  }}
+                  className="tokerian-btn"
+                >
+                  {corsProxyEnabled ? 'Switch to Direct Connection' : 'Try via CORS Proxy'}
+                </button>
+                <button
+                  type="button"
+                  onClick={zapNext}
+                  className="tokerian-btn"
+                >
+                  <SkipForward size={16} /> Next Channel
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -192,7 +387,15 @@ export const VideoPlayer: React.FC = () => {
               className={`tokerian-btn-icon ${isFav ? 'fav-active' : ''}`}
               title={isFav ? 'Remove favorite' : 'Add favorite'}
             >
-              <Star size={20} fill={isFav ? '#eab308' : 'none'} color={isFav ? '#eab308' : '#fff'} />
+              <Star size={18} fill={isFav ? '#eab308' : 'none'} color={isFav ? '#eab308' : '#fff'} />
+            </button>
+            <button
+              type="button"
+              onClick={closePlayer}
+              className="tokerian-btn-icon"
+              title="Close player"
+            >
+              <X size={18} />
             </button>
           </div>
         </div>
@@ -206,7 +409,7 @@ export const VideoPlayer: React.FC = () => {
               className="tokerian-btn-icon"
               title="Previous channel (Arrow Left / PageDown)"
             >
-              <SkipBack size={20} />
+              <SkipBack size={18} />
             </button>
 
             <button
@@ -215,7 +418,7 @@ export const VideoPlayer: React.FC = () => {
               className="tokerian-btn tokerian-btn-primary play-pause-btn"
               title="Play / Pause (Space)"
             >
-              {isPlaying ? <Pause size={20} /> : <Play size={20} fill="currentColor" />}
+              {isPlaying ? <Pause size={18} /> : <Play size={18} fill="currentColor" />}
             </button>
 
             <button
@@ -224,7 +427,7 @@ export const VideoPlayer: React.FC = () => {
               className="tokerian-btn-icon"
               title="Next channel (Arrow Right / PageUp)"
             >
-              <SkipForward size={20} />
+              <SkipForward size={18} />
             </button>
 
             {/* Volume Control */}
@@ -235,7 +438,7 @@ export const VideoPlayer: React.FC = () => {
                 className="tokerian-btn-icon"
                 title="Mute / Unmute (M)"
               >
-                {isMuted || volume === 0 ? <VolumeX size={20} /> : <Volume2 size={20} />}
+                {isMuted || volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
               </button>
               <input
                 type="range"
@@ -263,7 +466,7 @@ export const VideoPlayer: React.FC = () => {
                   className={`tokerian-btn-icon ${showAudioMenu ? 'btn-active' : ''}`}
                   title="Multiple Audio Tracks"
                 >
-                  <Languages size={20} />
+                  <Languages size={18} />
                 </button>
 
                 {showAudioMenu && (
@@ -288,50 +491,101 @@ export const VideoPlayer: React.FC = () => {
             )}
 
             {/* Subtitles / Closed Captions */}
-            {subtitleTracks.length > 0 && (
-              <div className="osd-dropdown-wrapper">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowSubtitleMenu(!showSubtitleMenu);
-                    setShowAudioMenu(false);
-                  }}
-                  className={`tokerian-btn-icon ${showSubtitleMenu ? 'btn-active' : ''}`}
-                  title="Subtitles"
-                >
-                  <Subtitles size={20} />
-                </button>
+            <div className="osd-dropdown-wrapper">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSubtitleMenu(!showSubtitleMenu);
+                  setShowAudioMenu(false);
+                }}
+                className={`tokerian-btn-icon ${showSubtitleMenu || selectedSubtitleTrack !== -1 ? 'btn-active' : ''}`}
+                title={selectedSubtitleTrack !== -1 ? 'Subtitles Active' : 'Subtitles / Captions (CC)'}
+              >
+                <Subtitles size={18} />
+              </button>
 
-                {showSubtitleMenu && (
-                  <div className="osd-menu-popup glass-panel">
-                    <div className="osd-menu-header">Subtitles</div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        selectSubtitleTrack(-1);
-                        setShowSubtitleMenu(false);
-                      }}
-                      className={`osd-menu-item ${selectedSubtitleTrack === -1 ? 'menu-item-active' : ''}`}
-                    >
-                      Off
-                    </button>
-                    {subtitleTracks.map((sub) => (
+              {showSubtitleMenu && (
+                <div className="osd-menu-popup glass-panel" style={{ minWidth: '240px' }}>
+                  <div className="osd-menu-header">Broadcast Subtitles</div>
+                  {subtitleTracks.length > 0 ? (
+                    <>
                       <button
-                        key={sub.id}
                         type="button"
                         onClick={() => {
-                          selectSubtitleTrack(sub.id);
+                          selectSubtitleTrack(-1);
                           setShowSubtitleMenu(false);
                         }}
-                        className={`osd-menu-item ${selectedSubtitleTrack === sub.id ? 'menu-item-active' : ''}`}
+                        className={`osd-menu-item ${selectedSubtitleTrack === -1 ? 'menu-item-active' : ''}`}
                       >
-                        {sub.name} ({sub.language.toUpperCase()})
+                        Off
                       </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+                      {subtitleTracks.map((sub) => (
+                        <button
+                          key={sub.id}
+                          type="button"
+                          onClick={() => {
+                            selectSubtitleTrack(sub.id);
+                            setShowSubtitleMenu(false);
+                          }}
+                          className={`osd-menu-item ${selectedSubtitleTrack === sub.id ? 'menu-item-active' : ''}`}
+                        >
+                          {sub.name} ({sub.language.toUpperCase()})
+                        </button>
+                      ))}
+                    </>
+                  ) : (
+                    <div style={{ padding: '6px 10px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                      No embedded tracks in this broadcast feed.
+                    </div>
+                  )}
+
+                  <div className="subtitle-menu-divider" />
+
+                  <div className="osd-menu-header">AI Auto-Captions (Speech-to-Text)</div>
+                  <button
+                    type="button"
+                    onClick={() => setAutoCaptionsEnabled(!autoCaptionsEnabled)}
+                    className={`subtitle-auto-toggle-btn ${autoCaptionsEnabled ? 'auto-active' : ''}`}
+                  >
+                    <span>Live Auto Subtitles</span>
+                    <span>{autoCaptionsEnabled ? 'ON' : 'OFF'}</span>
+                  </button>
+
+                  {autoCaptionsEnabled && (
+                    <select
+                      value={autoCaptionLang}
+                      onChange={(e) => setAutoCaptionLang(e.target.value)}
+                      className="subtitle-lang-select"
+                    >
+                      <option value="ta-IN">Tamil (தமிழ்)</option>
+                      <option value="en-US">English (US)</option>
+                      <option value="hi-IN">Hindi (हिन्दी)</option>
+                      <option value="te-IN">Telugu (తెలుగు)</option>
+                      <option value="ml-IN">Malayalam (മലയാളം)</option>
+                      <option value="kn-IN">Kannada (ಕನ್ನಡ)</option>
+                      <option value="es-ES">Spanish (Español)</option>
+                      <option value="fr-FR">French (Français)</option>
+                      <option value="de-DE">German (Deutsch)</option>
+                    </select>
+                  )}
+
+                  <div className="subtitle-menu-divider" />
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      togglePiP();
+                      setShowSubtitleMenu(false);
+                    }}
+                    className="osd-menu-item"
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    <PictureInPicture size={14} />
+                    <span>Open in PiP (Chrome AI Translate)</span>
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* Casting (Chromecast) */}
             <button
@@ -340,7 +594,7 @@ export const VideoPlayer: React.FC = () => {
               className={`tokerian-btn-icon ${isCastConnecting ? 'cast-connecting' : ''}`}
               title="Cast to TV / Chromecast"
             >
-              <Cast size={20} />
+              <Cast size={18} />
             </button>
 
             {/* Picture-in-Picture */}
@@ -350,7 +604,7 @@ export const VideoPlayer: React.FC = () => {
               className="tokerian-btn-icon"
               title="Picture-in-Picture"
             >
-              <PictureInPicture size={20} />
+              <PictureInPicture size={18} />
             </button>
 
             {/* Fullscreen */}
@@ -360,7 +614,7 @@ export const VideoPlayer: React.FC = () => {
               className="tokerian-btn-icon"
               title="Toggle Fullscreen (F)"
             >
-              {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
+              {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
             </button>
           </div>
         </div>
