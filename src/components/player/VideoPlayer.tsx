@@ -68,6 +68,95 @@ export const VideoPlayer: React.FC = () => {
 
   const [autoSkipCountdown, setAutoSkipCountdown] = useState<number | null>(null);
 
+  // In-App Auto Subtitles (Speech-to-Text)
+  const [autoCaptionsEnabled, setAutoCaptionsEnabled] = useState(false);
+  const [liveCaptionText, setLiveCaptionText] = useState('');
+  const [autoCaptionLang, setAutoCaptionLang] = useState('ta-IN');
+  const recognitionRef = useRef<any>(null);
+
+  // Sync default auto-caption language with channel
+  useEffect(() => {
+    if (currentChannel?.language) {
+      const lower = currentChannel.language.toLowerCase();
+      if (lower.includes('tam') || lower.includes('ta')) setAutoCaptionLang('ta-IN');
+      else if (lower.includes('hin') || lower.includes('hi')) setAutoCaptionLang('hi-IN');
+      else if (lower.includes('tel') || lower.includes('te')) setAutoCaptionLang('te-IN');
+      else if (lower.includes('mal') || lower.includes('ml')) setAutoCaptionLang('ml-IN');
+      else if (lower.includes('eng') || lower.includes('en')) setAutoCaptionLang('en-US');
+    }
+  }, [currentChannel]);
+
+  // Speech Recognition listener for In-App Live Captions
+  useEffect(() => {
+    if (!autoCaptionsEnabled) {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch {}
+        recognitionRef.current = null;
+      }
+      setLiveCaptionText('');
+      return;
+    }
+
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert('Speech Recognition is not supported by your browser engine. Chrome or Edge is recommended.');
+      setAutoCaptionsEnabled(false);
+      return;
+    }
+
+    let isStopped = false;
+
+    try {
+      const rec = new SpeechRecognition();
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.lang = autoCaptionLang;
+
+      rec.onresult = (event: any) => {
+        let text = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          if (event.results[i][0]) {
+            text += event.results[i][0].transcript;
+          }
+        }
+        if (text) {
+          setLiveCaptionText(text);
+        }
+      };
+
+      rec.onerror = (e: any) => {
+        console.info('Live caption recognizer notice:', e);
+      };
+
+      rec.onend = () => {
+        if (!isStopped && autoCaptionsEnabled) {
+          try {
+            rec.start();
+          } catch {}
+        }
+      };
+
+      rec.start();
+      recognitionRef.current = rec;
+    } catch (e) {
+      console.warn('Speech recognition start failed:', e);
+    }
+
+    return () => {
+      isStopped = true;
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch {}
+        recognitionRef.current = null;
+      }
+    };
+  }, [autoCaptionsEnabled, autoCaptionLang]);
+
   // Auto-skip countdown when channel is offline or encounters fatal error
   useEffect(() => {
     if (!error || !autoPlayNextOnError) {
@@ -165,6 +254,13 @@ export const VideoPlayer: React.FC = () => {
         onClick={togglePlay}
         onDoubleClick={toggleFullscreen}
       />
+
+      {/* Real-Time Live Speech Caption Overlay */}
+      {autoCaptionsEnabled && liveCaptionText && (
+        <div className="player-live-captions-overlay">
+          <span className="live-caption-text">{liveCaptionText}</span>
+        </div>
+      )}
 
       {/* Buffering Indicator */}
       {isBuffering && (
@@ -395,50 +491,101 @@ export const VideoPlayer: React.FC = () => {
             )}
 
             {/* Subtitles / Closed Captions */}
-            {subtitleTracks.length > 0 && (
-              <div className="osd-dropdown-wrapper">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowSubtitleMenu(!showSubtitleMenu);
-                    setShowAudioMenu(false);
-                  }}
-                  className={`tokerian-btn-icon ${showSubtitleMenu ? 'btn-active' : ''}`}
-                  title="Subtitles"
-                >
-                  <Subtitles size={20} />
-                </button>
+            <div className="osd-dropdown-wrapper">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSubtitleMenu(!showSubtitleMenu);
+                  setShowAudioMenu(false);
+                }}
+                className={`tokerian-btn-icon ${showSubtitleMenu || selectedSubtitleTrack !== -1 ? 'btn-active' : ''}`}
+                title={selectedSubtitleTrack !== -1 ? 'Subtitles Active' : 'Subtitles / Captions (CC)'}
+              >
+                <Subtitles size={20} />
+              </button>
 
-                {showSubtitleMenu && (
-                  <div className="osd-menu-popup glass-panel">
-                    <div className="osd-menu-header">Subtitles</div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        selectSubtitleTrack(-1);
-                        setShowSubtitleMenu(false);
-                      }}
-                      className={`osd-menu-item ${selectedSubtitleTrack === -1 ? 'menu-item-active' : ''}`}
-                    >
-                      Off
-                    </button>
-                    {subtitleTracks.map((sub) => (
+              {showSubtitleMenu && (
+                <div className="osd-menu-popup glass-panel" style={{ minWidth: '240px' }}>
+                  <div className="osd-menu-header">Broadcast Subtitles</div>
+                  {subtitleTracks.length > 0 ? (
+                    <>
                       <button
-                        key={sub.id}
                         type="button"
                         onClick={() => {
-                          selectSubtitleTrack(sub.id);
+                          selectSubtitleTrack(-1);
                           setShowSubtitleMenu(false);
                         }}
-                        className={`osd-menu-item ${selectedSubtitleTrack === sub.id ? 'menu-item-active' : ''}`}
+                        className={`osd-menu-item ${selectedSubtitleTrack === -1 ? 'menu-item-active' : ''}`}
                       >
-                        {sub.name} ({sub.language.toUpperCase()})
+                        Off
                       </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+                      {subtitleTracks.map((sub) => (
+                        <button
+                          key={sub.id}
+                          type="button"
+                          onClick={() => {
+                            selectSubtitleTrack(sub.id);
+                            setShowSubtitleMenu(false);
+                          }}
+                          className={`osd-menu-item ${selectedSubtitleTrack === sub.id ? 'menu-item-active' : ''}`}
+                        >
+                          {sub.name} ({sub.language.toUpperCase()})
+                        </button>
+                      ))}
+                    </>
+                  ) : (
+                    <div style={{ padding: '6px 10px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                      No embedded tracks in this broadcast feed.
+                    </div>
+                  )}
+
+                  <div className="subtitle-menu-divider" />
+
+                  <div className="osd-menu-header">AI Auto-Captions (Speech-to-Text)</div>
+                  <button
+                    type="button"
+                    onClick={() => setAutoCaptionsEnabled(!autoCaptionsEnabled)}
+                    className={`subtitle-auto-toggle-btn ${autoCaptionsEnabled ? 'auto-active' : ''}`}
+                  >
+                    <span>Live Auto Subtitles</span>
+                    <span>{autoCaptionsEnabled ? 'ON' : 'OFF'}</span>
+                  </button>
+
+                  {autoCaptionsEnabled && (
+                    <select
+                      value={autoCaptionLang}
+                      onChange={(e) => setAutoCaptionLang(e.target.value)}
+                      className="subtitle-lang-select"
+                    >
+                      <option value="ta-IN">Tamil (தமிழ்)</option>
+                      <option value="en-US">English (US)</option>
+                      <option value="hi-IN">Hindi (हिन्दी)</option>
+                      <option value="te-IN">Telugu (తెలుగు)</option>
+                      <option value="ml-IN">Malayalam (മലയാളം)</option>
+                      <option value="kn-IN">Kannada (ಕನ್ನಡ)</option>
+                      <option value="es-ES">Spanish (Español)</option>
+                      <option value="fr-FR">French (Français)</option>
+                      <option value="de-DE">German (Deutsch)</option>
+                    </select>
+                  )}
+
+                  <div className="subtitle-menu-divider" />
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      togglePiP();
+                      setShowSubtitleMenu(false);
+                    }}
+                    className="osd-menu-item"
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    <PictureInPicture size={14} />
+                    <span>Open in PiP (Chrome AI Translate)</span>
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* Casting (Chromecast) */}
             <button

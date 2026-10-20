@@ -236,19 +236,49 @@ export class HlsPlayerAdapter implements IPlayerPort {
   }
 
   getSubtitleTracks(): SubtitleTrack[] {
-    if (!this.hls) return [];
-    return this.hls.subtitleTracks.map((t, index) => ({
-      id: index,
-      name: t.name || `Subtitle ${index + 1}`,
-      language: t.lang || 'und',
-      default: t.default,
-    }));
+    if (this.hls && this.hls.subtitleTracks.length > 0) {
+      return this.hls.subtitleTracks.map((t, index) => ({
+        id: index,
+        name: t.name || `Subtitle ${index + 1}`,
+        language: t.lang || 'und',
+        default: t.default,
+      }));
+    }
+
+    if (this.videoElement && this.videoElement.textTracks && this.videoElement.textTracks.length > 0) {
+      const tracks: SubtitleTrack[] = [];
+      for (let i = 0; i < this.videoElement.textTracks.length; i++) {
+        const t = this.videoElement.textTracks[i];
+        if (t.kind === 'subtitles' || t.kind === 'captions') {
+          tracks.push({
+            id: i,
+            name: t.label || `Caption ${i + 1}`,
+            language: t.language || 'und',
+            default: t.mode === 'showing',
+          });
+        }
+      }
+      return tracks;
+    }
+
+    return [];
   }
 
   setSubtitleTrack(trackId: number): void {
-    if (this.hls) {
+    if (this.hls && this.hls.subtitleTracks.length > 0) {
       // -1 disables subtitles in HLS.js
       this.hls.subtitleTrack = trackId;
+      this.notifyTracks();
+      return;
+    }
+
+    if (this.videoElement && this.videoElement.textTracks && this.videoElement.textTracks.length > 0) {
+      for (let i = 0; i < this.videoElement.textTracks.length; i++) {
+        const track = this.videoElement.textTracks[i];
+        if (track.kind === 'subtitles' || track.kind === 'captions') {
+          track.mode = i === trackId ? 'showing' : 'disabled';
+        }
+      }
       this.notifyTracks();
     }
   }
