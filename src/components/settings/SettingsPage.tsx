@@ -23,6 +23,13 @@ import {
   Monitor,
 } from 'lucide-react';
 import { MatIcon } from '../common/MatIcon';
+import { AppVersionBadge } from '../common/AppVersionBadge';
+import {
+  APP_CONFIG,
+  getStageMeta,
+  getAppVersion,
+  getBuildEnvironment,
+} from '../../config/appInfo';
 
 export type SettingsSection =
   | 'general'
@@ -1272,21 +1279,48 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
                 <p className="section-main-subtitle">Application information, platform architecture, and licenses</p>
               </div>
 
-              <div className="about-info-card" style={{ padding: '20px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: 'var(--radius-md)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px' }}>
-                  <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--accent-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Tv size={26} color="#fff" />
+              <div className="about-info-card" style={{ padding: '24px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255, 255, 255, 0.07)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: 'var(--accent-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 24px rgba(99, 102, 241, 0.25)' }}>
+                      <Tv size={28} color="#fff" />
+                    </div>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#fff' }}>{APP_CONFIG.appName} IPTV Client</h3>
+                        <AppVersionBadge variant="chip" />
+                      </div>
+                      <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                        Codename &ldquo;{APP_CONFIG.codename}&rdquo; &bull; Released {APP_CONFIG.releaseDate}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#fff' }}>Tokerian IPTV Client</h3>
-                    <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>v1.0.0 (Production)</p>
-                  </div>
+
+                  <AppVersionBadge variant="pill" showBuild={true} />
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px', marginTop: '16px' }}>
                   <div className="about-stat-box">
+                    <span className="stat-label">Version</span>
+                    <strong className="stat-value" style={{ color: '#fff' }}>{getAppVersion()}</strong>
+                  </div>
+                  <div className="about-stat-box">
+                    <span className="stat-label">Release Stage</span>
+                    <strong className="stat-value" style={{ color: getStageMeta().color }}>
+                      {getStageMeta().label.toUpperCase()}
+                    </strong>
+                  </div>
+                  <div className="about-stat-box">
+                    <span className="stat-label">Build Number</span>
+                    <strong className="stat-value">#{APP_CONFIG.buildNumber}</strong>
+                  </div>
+                  <div className="about-stat-box">
+                    <span className="stat-label">Environment</span>
+                    <strong className="stat-value">{getBuildEnvironment()}</strong>
+                  </div>
+                  <div className="about-stat-box">
                     <span className="stat-label">Platforms Supported</span>
-                    <strong className="stat-value">Web, Tablet, Mobile, Desktop, Android TV</strong>
+                    <strong className="stat-value">Web, Tablet, Mobile, Windows Desktop, Android TV</strong>
                   </div>
                   <div className="about-stat-box">
                     <span className="stat-label">Streaming Engine</span>
@@ -1300,6 +1334,15 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
                     <span className="stat-label">License</span>
                     <strong className="stat-value">MIT Open Source</strong>
                   </div>
+                </div>
+
+                <div style={{ marginTop: '20px', padding: '12px 16px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                    Central tracking config: <code style={{ color: '#93c5fd', background: 'rgba(147, 197, 253, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>src/config/appInfo.ts</code>
+                  </span>
+                  <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                    Active across development runtime &amp; production distribution
+                  </span>
                 </div>
               </div>
             </div>

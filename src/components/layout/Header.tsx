@@ -9,6 +9,7 @@ import {
   FolderPlus,
 } from 'lucide-react';
 import { MatIcon } from '../common/MatIcon';
+import { AppVersionBadge } from '../common/AppVersionBadge';
 import { useChannelStore } from '../../stores/useChannelStore';
 import { useSettingsStore } from '../../stores/useSettingsStore';
 import { useMultiPlaylistStore } from '../../stores/useMultiPlaylistStore';
@@ -239,6 +240,13 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           )}
         </div>
+
+        {/* App Version & Stage Badge (Centralized Tracker) */}
+        {/* <AppVersionBadge
+          variant="pill"
+          className="header-version-badge"
+          showStage={true}
+        /> */}
       </div>
 
       {/* CENTER SECTION: Centered Pill Search Bar */}

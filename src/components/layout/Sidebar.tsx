@@ -3,6 +3,7 @@ import {
   Radio,
 } from 'lucide-react';
 import { MatIcon } from '../common/MatIcon';
+import { AppVersionBadge } from '../common/AppVersionBadge';
 import { useUserStore } from '../../stores/useUserStore';
 import { usePlayerStore } from '../../stores/usePlayerStore';
 
@@ -68,6 +69,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <Radio size={16} />
             </div>
             <span className="brand-title" style={{ fontSize: '1rem' }}>Tokerian</span>
+            <AppVersionBadge variant="chip" />
           </div>
           <button
             type="button"
@@ -207,6 +209,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <MatIcon name="settings" size={20} />
             <span className="rail-mobile-label">Settings</span>
           </button>
+          <AppVersionBadge
+            variant="compact"
+            onClick={() => {
+              onTabChange('settings');
+              onCloseMobile?.();
+            }}
+          />
         </div>
       </aside>
     </>

@@ -1,5 +1,6 @@
 const { app, BrowserWindow, session, ipcMain, Menu } = require('electron');
 const path = require('node:path');
+const pkg = require('../package.json');
 
 // Hardware acceleration and video decode flags
 app.commandLine.appendSwitch('enable-gpu-rasterization');
@@ -16,7 +17,7 @@ function createWindow() {
     minWidth: 900,
     minHeight: 560,
     backgroundColor: '#07090e',
-    title: 'Tokerian',
+    title: `Tokerian v${pkg.version || '1.0.0'}`,
     frame: false,
     titleBarStyle: 'hidden',
     show: false,

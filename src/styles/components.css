@@ -2752,6 +2752,137 @@ input:checked + .toggle-slider:before {
   color: #ffffff !important;
 }
 
+/* --- APP VERSION & STAGE BADGES --- */
+.app-version-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+  padding: 3px 8px 3px 10px;
+  font-size: 0.73rem;
+  font-family: inherit;
+  user-select: none;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  -webkit-app-region: no-drag;
+}
+
+.app-version-pill.is-clickable {
+  cursor: pointer;
+}
+
+.app-version-pill.is-clickable:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.16);
+  transform: translateY(-1px);
+}
+
+.app-version-pill .version-number {
+  color: #94a3b8;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.app-version-pill .stage-badge-pill {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  border: 1px solid currentColor;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+}
+
+.app-version-pill .build-number {
+  color: #64748b;
+  font-size: 0.65rem;
+  font-weight: 600;
+}
+
+/* Header version badge */
+.header-version-badge {
+  display: inline-flex;
+  align-items: center;
+}
+
+@media (max-width: 860px) {
+  .header-version-badge {
+    display: none !important;
+  }
+}
+
+/* Compact version for Sidebar Rail */
+.app-version-compact {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 10px;
+  padding: 4px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.app-version-compact:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.app-version-compact .version-text {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.3px;
+}
+
+.app-version-compact:hover .version-text {
+  color: #94a3b8;
+}
+
+.app-version-compact .stage-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+
+/* Chip variant (Mobile Header Drawer) */
+.app-stage-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  border: 1px solid currentColor;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  user-select: none;
+}
+
+.app-stage-chip .chip-pulse-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  animation: pulse-dot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.85);
+  }
+}
+
 /* Playlist Dropdown Pill */
 .playlist-pill-container {
   position: relative;
