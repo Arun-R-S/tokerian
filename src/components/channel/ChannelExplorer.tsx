@@ -303,7 +303,14 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({ activeTab = 'c
             {/* All Channels Group */}
             <div
               className={`category-list-item ${activeCategory === 'All' ? 'category-item-active' : ''}`}
+              tabIndex={0}
               onClick={() => setActiveCategory('All')}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === 'Select') {
+                  e.preventDefault();
+                  setActiveCategory('All');
+                }
+              }}
             >
               <div className="category-item-title-wrap">
                 <Folder size={14} className="category-item-icon" />
@@ -324,7 +331,14 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({ activeTab = 'c
                 <div
                   key={group}
                   className={`category-list-item ${isActive ? 'category-item-active' : ''}`}
+                  tabIndex={0}
                   onClick={() => setActiveCategory(group)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === 'Select') {
+                      e.preventDefault();
+                      setActiveCategory(group);
+                    }
+                  }}
                   title={group}
                 >
                   <div className="category-item-title-wrap">
@@ -457,7 +471,14 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({ activeTab = 'c
                     <tr
                       key={chId}
                       className={`table-channel-row ${isPlaying ? 'table-row-playing' : ''}`}
+                      tabIndex={0}
                       onClick={() => playChannel(channel)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === 'Select') {
+                          e.preventDefault();
+                          playChannel(channel);
+                        }
+                      }}
                     >
                       <td style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.78rem' }}>
                         {idx + 1}

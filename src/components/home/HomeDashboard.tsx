@@ -211,7 +211,14 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                 <div
                   key={ch.id || ch.url}
                   className="iptvnator-compact-card"
+                  tabIndex={0}
                   onClick={() => playChannel(ch)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === 'Select') {
+                      e.preventDefault();
+                      playChannel(ch);
+                    }
+                  }}
                   title={`Play ${ch.name}`}
                 >
                   <div className="compact-card-logo-box">
@@ -291,7 +298,14 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                 <div
                   key={`rec-${ch.id || ch.url}`}
                   className="iptvnator-compact-card"
+                  tabIndex={0}
                   onClick={() => playChannel(ch)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === 'Select') {
+                      e.preventDefault();
+                      playChannel(ch);
+                    }
+                  }}
                   title={`Resume ${ch.name}`}
                 >
                   <div className="compact-card-logo-box">
@@ -364,7 +378,14 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
               <div
                 key={p.id}
                 className={`iptvnator-source-card ${isActive ? 'source-card-active' : ''}`}
+                tabIndex={0}
                 onClick={() => selectPlaylist(p.id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === 'Select') {
+                    e.preventDefault();
+                    selectPlaylist(p.id);
+                  }
+                }}
                 title={`Switch to ${p.title}`}
               >
                 <div className="source-card-top-row">
@@ -401,7 +422,14 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           {/* Add Source Card */}
           <div
             className="iptvnator-source-card add-source-card"
+            tabIndex={0}
             onClick={onOpenAddPlaylist}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === 'Select') {
+                e.preventDefault();
+                onOpenAddPlaylist();
+              }
+            }}
             title="Import new playlist, URL or Xtream account"
           >
             <div className="add-source-icon-wrap">

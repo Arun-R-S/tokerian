@@ -3570,6 +3570,94 @@ input:checked + .toggle-slider:before {
   }
 }
 
+/* Tablet Optimizations (768px - 1024px) */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .explorer-categories-pane {
+    width: 220px;
+    min-width: 220px;
+  }
+
+  .explorer-channels-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
+    gap: 12px;
+  }
+
+  .hero-poster-box {
+    width: 140px !important;
+    height: 180px !important;
+  }
+
+  .hero-channel-title {
+    font-size: 1.8rem !important;
+  }
+}
+
+/* Mobile Viewport Safety & Bottom Padding for Bottom Nav */
+@media (max-width: 768px) {
+  .tokerian-main {
+    padding-bottom: 74px !important;
+  }
+
+  .explorer-channels-table-wrap {
+    overflow-x: auto;
+  }
+
+  .iptvnator-channel-table th:nth-child(4),
+  .iptvnator-channel-table td:nth-child(4),
+  .iptvnator-channel-table th:nth-child(5),
+  .iptvnator-channel-table td:nth-child(5) {
+    display: none;
+  }
+}
+
+/* =========================================================================
+   ANDROID TV (10-FOOT INTERFACE) & D-PAD REMOTE FOCUS RINGS
+   ========================================================================= */
+body.tv-mode,
+[data-tv-remote="true"] {
+  user-select: none;
+}
+
+/* TV Focus Halos: High-contrast cyan/blue glow with subtle scaling */
+.iptvnator-compact-card:focus-visible,
+.iptvnator-compact-card:focus,
+.iptvnator-source-card:focus-visible,
+.iptvnator-source-card:focus,
+.table-channel-row:focus-visible,
+.table-channel-row:focus,
+.category-list-item:focus-visible,
+.category-list-item:focus,
+.hero-continue-btn:focus-visible,
+.hero-continue-btn:focus,
+.nav-item:focus-visible,
+.nav-item:focus,
+.bottom-nav-item:focus-visible,
+.bottom-nav-item:focus,
+.zap-channel-item:focus-visible,
+.zap-channel-item:focus,
+.tokerian-btn:focus-visible,
+.tokerian-btn:focus,
+.tokerian-btn-icon:focus-visible,
+.tokerian-btn-icon:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 3px #38bdf8, 0 0 20px rgba(56, 189, 248, 0.55) !important;
+  border-color: #38bdf8 !important;
+  transform: scale(1.04) !important;
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease !important;
+  z-index: 20 !important;
+}
+
+.table-channel-row:focus-visible,
+.table-channel-row:focus {
+  background: rgba(56, 189, 248, 0.16) !important;
+  border-left: 4px solid #38bdf8 !important;
+  transform: none !important;
+}
+
+.iptvnator-hero-card:focus-within {
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.4), 0 20px 48px rgba(0, 0, 0, 0.8) !important;
+}
+
 
 
 
