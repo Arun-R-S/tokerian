@@ -20,7 +20,6 @@ import {
   Sun,
   Moon,
   Monitor,
-  ExternalLink,
 } from 'lucide-react';
 import { MatIcon } from '../common/MatIcon';
 import { AppVersionBadge } from '../common/AppVersionBadge';
@@ -28,7 +27,6 @@ import {
   APP_CONFIG,
   getStageMeta,
   getAppVersion,
-  getCommitHash,
   getBuildEnvironment,
 } from '../../config/appInfo';
 
@@ -1303,7 +1301,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
                     <span className="stat-label">Build Number</span>
                     <strong className="stat-value">#{APP_CONFIG.buildNumber}</strong>
                   </div>
-                  <div className="about-stat-box">
+                  {/* <div className="about-stat-box">
                     <span className="stat-label">Git Commit</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
                       <code style={{ fontSize: '0.85rem', color: '#60a5fa', background: 'rgba(96, 165, 250, 0.1)', padding: '2px 6px', borderRadius: '4px', fontFamily: 'monospace' }}>
@@ -1319,7 +1317,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
                         <ExternalLink size={13} />
                       </a>
                     </div>
-                  </div>
+                  </div> Dont Uncomment this!! I commented this out */}
                   <div className="about-stat-box">
                     <span className="stat-label">Environment</span>
                     <strong className="stat-value">{getBuildEnvironment()}</strong>

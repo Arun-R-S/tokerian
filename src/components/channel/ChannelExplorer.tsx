@@ -79,8 +79,10 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({ activeTab = 'c
   const reorderFavorites = useUserStore((s) => s.reorderFavorites);
   const orderedFavoriteIds = useUserStore((s) => s.orderedFavoriteIds);
 
-  const sentinelRef = useRef<HTMLDivElement>(null);
+  const gridSentinelRef = useRef<HTMLDivElement>(null);
+  const tableSentinelRef = useRef<HTMLDivElement>(null);
   const channelsPaneRef = useRef<HTMLDivElement>(null);
+  const tableWrapRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const handleDragStart = (e: React.DragEvent, id: string) => {
@@ -228,10 +230,46 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({ activeTab = 'c
 
   const hasMore = visibleCount < displayedChannels.length;
 
-  // Infinite Scroll Trigger
+  // Direct onScroll handler for Table scroll container
+  const handleTableScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    if (scrollHeight - scrollTop - clientHeight < 350 && hasMore) {
+      setVisibleCount((prev) => Math.min(prev + pageSize, displayedChannels.length));
+    }
+  };
+
+  // Direct onScroll handler for Grid channels pane
+  const handlePaneScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (viewMode !== 'grid') return;
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    if (scrollHeight - scrollTop - clientHeight < 350 && hasMore) {
+      setVisibleCount((prev) => Math.min(prev + pageSize, displayedChannels.length));
+    }
+  };
+
+  // Auto-fill scroll viewport if initial count doesn't fill the container
   useEffect(() => {
-    const sentinel = sentinelRef.current;
+    if (!hasMore) return;
+    const isTable = viewMode === 'table';
+    const container = isTable ? tableWrapRef.current : channelsPaneRef.current;
+    if (!container) return;
+
+    const timer = setTimeout(() => {
+      if (container.scrollHeight <= container.clientHeight + 80) {
+        setVisibleCount((prev) => Math.min(prev + pageSize, displayedChannels.length));
+      }
+    }, 120);
+
+    return () => clearTimeout(timer);
+  }, [viewMode, visibleCount, hasMore, displayedChannels.length, pageSize]);
+
+  // Infinite Scroll Observer Trigger
+  useEffect(() => {
+    const isTable = viewMode === 'table';
+    const sentinel = isTable ? tableSentinelRef.current : gridSentinelRef.current;
     if (!sentinel || !hasMore) return;
+
+    const rootEl = isTable ? tableWrapRef.current : channelsPaneRef.current;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -239,12 +277,12 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({ activeTab = 'c
           setVisibleCount((prev) => Math.min(prev + pageSize, displayedChannels.length));
         }
       },
-      { root: channelsPaneRef.current || null, rootMargin: '300px' }
+      { root: rootEl || null, rootMargin: '350px' }
     );
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [hasMore, pageSize, displayedChannels.length]);
+  }, [hasMore, pageSize, displayedChannels.length, viewMode, visibleCount]);
 
   const handleCopyUrl = (ch: Channel) => {
     if (ch.url) {
@@ -392,7 +430,11 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({ activeTab = 'c
       {/* =========================================================================
           RIGHT PANE: Channels Control Toolbar & Main Display Matrix
           ========================================================================= */}
-      <div className="explorer-channels-pane" ref={channelsPaneRef}>
+      <div
+        className={`explorer-channels-pane ${viewMode === 'table' ? 'explorer-pane-table-mode' : ''}`}
+        ref={channelsPaneRef}
+        onScroll={handlePaneScroll}
+      >
         {/* Explorer Control Toolbar */}
         <div className="explorer-toolbar">
           <div className="toolbar-left-col">
@@ -518,7 +560,11 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({ activeTab = 'c
           /* =========================================================================
              MODE B: Table / List View
              ========================================================================= */
-          <div className="explorer-channels-table-wrap">
+          <div
+            className="explorer-channels-table-wrap"
+            ref={tableWrapRef}
+            onScroll={handleTableScroll}
+          >
             <table className="iptvnator-channel-table">
               <thead>
                 <tr>
@@ -699,12 +745,26 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({ activeTab = 'c
                 })}
               </tbody>
             </table>
+
+            {/* Table Infinite Scroll Sentinel inside scroll viewport */}
+            {hasMore && (
+              <div ref={tableSentinelRef} className="load-more-section">
+                <button
+                  type="button"
+                  onClick={() => setVisibleCount((prev) => Math.min(prev + pageSize, displayedChannels.length))}
+                  className="tokerian-btn tokerian-btn-primary load-more-btn"
+                >
+                  <span>Load Next {Math.min(pageSize, displayedChannels.length - visibleCount)} Channels</span>
+                </button>
+                <span className="load-more-hint">Scroll down to load automatically</span>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Infinite Scroll Sentinel */}
-        {hasMore && (
-          <div ref={sentinelRef} className="load-more-section">
+        {/* Grid Infinite Scroll Sentinel */}
+        {viewMode === 'grid' && hasMore && (
+          <div ref={gridSentinelRef} className="load-more-section">
             <button
               type="button"
               onClick={() => setVisibleCount((prev) => Math.min(prev + pageSize, displayedChannels.length))}

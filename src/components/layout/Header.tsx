@@ -9,7 +9,6 @@ import {
   FolderPlus,
 } from 'lucide-react';
 import { MatIcon } from '../common/MatIcon';
-import { AppVersionBadge } from '../common/AppVersionBadge';
 import { useChannelStore } from '../../stores/useChannelStore';
 import { useSettingsStore } from '../../stores/useSettingsStore';
 import { useMultiPlaylistStore } from '../../stores/useMultiPlaylistStore';
@@ -246,7 +245,7 @@ export const Header: React.FC<HeaderProps> = ({
           variant="pill"
           className="header-version-badge"
           showStage={true}
-        /> */}
+        /> I Commented this!! Dont Uncomment*/}
       </div>
 
       {/* CENTER SECTION: Centered Pill Search Bar */}

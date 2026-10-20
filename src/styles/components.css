@@ -3822,6 +3822,21 @@ input:checked + .toggle-slider:before {
   flex-direction: column;
   gap: 2px;
   scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+}
+
+.categories-pane-list::-webkit-scrollbar {
+  width: 6px;
+}
+.categories-pane-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.categories-pane-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+}
+.categories-pane-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.32);
 }
 
 .category-list-item {
@@ -3892,6 +3907,12 @@ input:checked + .toggle-slider:before {
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 6px;
+}
+
+/* In Table view mode, the table wrapper itself is the scroll viewport */
+.explorer-channels-pane.explorer-pane-table-mode {
+  overflow: hidden !important;
+  padding-right: 0 !important;
 }
 
 .explorer-channels-pane::-webkit-scrollbar {
@@ -4031,14 +4052,38 @@ input:checked + .toggle-slider:before {
   width: 100%;
 }
 
-/* Table Mode Layout */
+/* Table Mode Layout - Dedicated High-Performance Scroll Container */
 .explorer-channels-table-wrap {
-  background: rgba(13, 17, 28, 0.9);
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: rgba(13, 17, 28, 0.94);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-md);
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: auto;
   width: 100%;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+}
+
+.explorer-channels-table-wrap::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.explorer-channels-table-wrap::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 6px;
+}
+.explorer-channels-table-wrap::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 6px;
+}
+.explorer-channels-table-wrap::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.38);
 }
 
 .iptvnator-channel-table {
@@ -4048,15 +4093,25 @@ input:checked + .toggle-slider:before {
   font-size: 0.85rem;
 }
 
+.iptvnator-channel-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
 .iptvnator-channel-table th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   padding: 12px 14px;
-  background: rgba(255, 255, 255, 0.03);
+  background: #0d111c; /* Solid background so scrolling table rows do not show through */
   color: var(--text-muted);
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .iptvnator-channel-table td {
