@@ -78,6 +78,22 @@
   display: block;
 }
 
+.mobile-menu-btn {
+  display: none;
+}
+
+.sidebar-mobile-header {
+  display: none;
+}
+
+.sidebar-backdrop {
+  display: none;
+}
+
+.mobile-bottom-nav {
+  display: none;
+}
+
 .header-search-wrapper {
   display: flex;
   align-items: center;
@@ -86,6 +102,8 @@
   border-radius: var(--radius-full);
   padding: 8px 16px;
   width: 380px;
+  max-width: 100%;
+  min-width: 0;
   transition: all var(--transition-fast);
 }
 
@@ -1051,4 +1069,300 @@ input:checked + .toggle-slider:before {
 .loading-sub {
   color: var(--text-muted);
   font-size: 0.88rem;
+}
+
+/* ==========================================================================
+   MULTI-DEVICE RESPONSIVE LAYOUT (Web, Desktop, Mobile, Tablet, Android TV)
+   ========================================================================== */
+
+/* --- TABLETS & MEDIUM SCREENS (<= 1024px) --- */
+@media (max-width: 1024px) {
+  .tokerian-sidebar {
+    width: 220px;
+    padding: 16px 10px;
+    gap: 18px;
+  }
+
+  .header-search-wrapper {
+    width: 240px;
+  }
+
+  .channel-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+  }
+
+  .video-player-container {
+    height: 380px;
+    max-height: 52vh;
+    min-height: 280px;
+  }
+}
+
+/* --- MOBILE PHONES & PORTRAIT TABLETS (<= 768px) --- */
+@media (max-width: 768px) {
+  /* Give room for bottom navigation bar */
+  .tokerian-shell {
+    padding-bottom: 62px;
+    height: 100vh;
+  }
+
+  /* Compact Native Mobile Header */
+  .tokerian-header {
+    height: 56px;
+    padding: 0 12px;
+    gap: 6px;
+  }
+
+  .mobile-menu-btn {
+    display: flex !important;
+    padding: 8px;
+  }
+
+  .header-brand {
+    gap: 8px;
+  }
+
+  .brand-icon-wrapper {
+    width: 32px;
+    height: 32px;
+  }
+
+  .brand-title {
+    font-size: 1.1rem;
+  }
+
+  .brand-subtitle {
+    display: none;
+  }
+
+  .channels-count-pill {
+    display: none;
+  }
+
+  .header-search-wrapper {
+    flex: 1;
+    min-width: 0;
+    max-width: none;
+    padding: 6px 12px;
+    margin: 0 4px;
+  }
+
+  .header-search-input {
+    font-size: 0.8rem;
+  }
+
+  /* Slide-Out Mobile Drawer Sidebar */
+  .tokerian-sidebar {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 280px;
+    max-width: 82vw;
+    z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.7);
+    border-right: 1px solid var(--border-subtle);
+    background: var(--bg-sidebar);
+  }
+
+  .sidebar-drawer-open {
+    transform: translateX(0) !important;
+  }
+
+  .sidebar-mobile-header {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .sidebar-backdrop {
+    display: block !important;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(4px);
+    z-index: 999;
+  }
+
+  /* Main Area Takes 100% of Screen */
+  .tokerian-main {
+    padding: 12px 12px 24px 12px;
+  }
+
+  /* Mobile Responsive Video Player: Fits 16:9 perfectly */
+  .video-player-container {
+    height: auto !important;
+    aspect-ratio: 16 / 9;
+    max-height: 45vh;
+    min-height: unset !important;
+    margin-bottom: 14px;
+    border-radius: var(--radius-md);
+  }
+
+  /* 2-Column Mobile Channel Grid */
+  .channel-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px;
+  }
+
+  .channel-card {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .channel-card-top {
+    gap: 8px;
+  }
+
+  .channel-logo {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-sm);
+  }
+
+  .channel-name {
+    font-size: 0.82rem;
+    line-height: 1.25;
+  }
+
+  .channel-group {
+    font-size: 0.7rem;
+  }
+
+  .channel-badge {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+  }
+
+  /* Category Filter Pills on Mobile */
+  .category-pill {
+    padding: 6px 14px;
+    font-size: 0.78rem;
+  }
+
+  /* Native Mobile Bottom Navigation Bar */
+  .mobile-bottom-nav {
+    display: flex !important;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: rgba(13, 16, 26, 0.95);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-top: 1px solid var(--border-subtle);
+    align-items: center;
+    justify-content: space-around;
+    z-index: 50;
+    padding: 0 4px;
+  }
+
+  .bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.68rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+  }
+
+  .bottom-nav-item:active {
+    transform: scale(0.92);
+  }
+
+  .bottom-item-active {
+    color: #a5b4fc !important;
+  }
+
+  .bottom-nav-icon-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .bottom-nav-badge {
+    position: absolute;
+    top: -4px;
+    right: -8px;
+    background: var(--accent-primary);
+    color: #fff;
+    font-size: 0.58rem;
+    padding: 1px 5px;
+    border-radius: var(--radius-full);
+    font-weight: 700;
+  }
+}
+
+/* --- SMALL MOBILE DEVICES (<= 400px like Moto G4, iPhone SE) --- */
+@media (max-width: 400px) {
+  .channel-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px;
+  }
+
+  .channel-card {
+    padding: 8px;
+  }
+
+  .channel-name {
+    font-size: 0.78rem;
+  }
+
+  .header-actions {
+    gap: 6px;
+  }
+
+  .tokerian-btn-icon {
+    padding: 7px;
+  }
+}
+
+/* --- ANDROID TV & 10-FOOT LEANBACK UI MODE --- */
+.tv-mode-active {
+  font-size: 1.15rem;
+}
+
+.tv-mode-active .channel-grid {
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 22px;
+}
+
+.tv-mode-active .channel-card {
+  padding: 18px;
+  border-width: 2px;
+}
+
+.tv-mode-active .channel-name {
+  font-size: 1.1rem;
+}
+
+.tv-mode-active .channel-badge {
+  font-size: 0.8rem;
+  padding: 3px 10px;
+}
+
+.tv-mode-active [data-tv-focused='true'],
+.tv-mode-active :focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px #6366f1, 0 0 25px rgba(99, 102, 241, 0.7) !important;
+  transform: scale(1.05);
+  border-color: #a5b4fc !important;
 }

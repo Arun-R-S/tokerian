@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Header } from './components/layout/Header';
 import { Sidebar, type SidebarTab } from './components/layout/Sidebar';
+import { MobileBottomNav } from './components/layout/MobileBottomNav';
 import { CategoryPills } from './components/channel/CategoryPills';
 import { ChannelGrid } from './components/channel/ChannelGrid';
 import { VideoPlayer } from './components/player/VideoPlayer';
@@ -18,6 +19,7 @@ import './styles/components.css';
 export function App() {
   const [activeTab, setActiveTab] = useState<SidebarTab>('channels');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const m3uUrl = useSettingsStore((s) => s.m3uUrl);
   const loadInitialSettings = useSettingsStore((s) => s.loadInitialSettings);
@@ -56,6 +58,8 @@ export function App() {
       onBack: () => {
         if (isSettingsOpen) {
           setIsSettingsOpen(false);
+        } else if (isMobileSidebarOpen) {
+          setIsMobileSidebarOpen(false);
         }
       },
     });
@@ -78,16 +82,24 @@ export function App() {
       unsubscribe();
       window.removeEventListener('keydown', handleGlobalShortcuts);
     };
-  }, [currentChannel, isSettingsOpen, togglePlay, toggleMute, toggleFullscreen, zapNext, zapPrev]);
+  }, [currentChannel, isSettingsOpen, isMobileSidebarOpen, togglePlay, toggleMute, toggleFullscreen, zapNext, zapPrev]);
 
   return (
     <div className={`tokerian-shell ${tvMode ? 'tv-mode-active' : ''}`}>
       {/* Top Application Header */}
-      <Header onOpenSettings={() => setIsSettingsOpen(true)} />
+      <Header
+        onOpenSettings={() => setIsSettingsOpen(true)}
+        onToggleMobileMenu={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+      />
 
       <div className="tokerian-body">
-        {/* Left Navigation Sidebar */}
-        <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+        {/* Left Navigation Sidebar / Mobile Slide-in Drawer */}
+        <Sidebar
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          isMobileOpen={isMobileSidebarOpen}
+          onCloseMobile={() => setIsMobileSidebarOpen(false)}
+        />
 
         {/* Center Main Browsing Area */}
         <main className="tokerian-main">
@@ -101,6 +113,14 @@ export function App() {
           <ChannelGrid activeTab={activeTab} />
         </main>
       </div>
+
+      {/* Mobile Bottom Navigation Bar */}
+      <MobileBottomNav
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        onOpenGenres={() => setIsMobileSidebarOpen(true)}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+      />
 
       {/* Settings Modal (changeable M3U URL, presets, CORS proxy) */}
       <SettingsModal

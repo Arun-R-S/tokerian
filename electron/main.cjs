@@ -39,7 +39,13 @@ function createWindow() {
   const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 
   if (isDev && process.env.VITE_DEV_SERVER_URL) {
-    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
+    const devUrl = process.env.VITE_DEV_SERVER_URL;
+    const tryLoad = () => {
+      mainWindow?.loadURL(devUrl).catch(() => {
+        setTimeout(tryLoad, 600);
+      });
+    };
+    tryLoad();
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
