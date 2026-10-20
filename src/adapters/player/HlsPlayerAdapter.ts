@@ -16,6 +16,7 @@ export class HlsPlayerAdapter implements IPlayerPort {
   private isBuffering = false;
   private error: string | null = null;
   private currentUrl: string | null = null;
+  private pendingStreamUrl: string | null = null;
 
   getCurrentUrl(): string | null {
     return this.currentUrl;
@@ -26,6 +27,13 @@ export class HlsPlayerAdapter implements IPlayerPort {
     this.detachMedia();
     this.videoElement = element;
     this.setupVideoEvents();
+
+    // Automatically load stream if it was requested before video element mounted
+    if (this.pendingStreamUrl) {
+      const url = this.pendingStreamUrl;
+      this.pendingStreamUrl = null;
+      this.loadStream(url);
+    }
   }
 
   detachMedia(): void {
@@ -47,7 +55,8 @@ export class HlsPlayerAdapter implements IPlayerPort {
     this.notifyState();
 
     if (!this.videoElement) {
-      console.warn('Cannot load stream without video element attached');
+      // Store pending stream; will be loaded immediately when attachMedia is called
+      this.pendingStreamUrl = url;
       return;
     }
 
@@ -232,6 +241,10 @@ export class HlsPlayerAdapter implements IPlayerPort {
 
   async togglePictureInPicture(): Promise<boolean> {
     if (!this.videoElement || !document.pictureInPictureEnabled) return false;
+    if (this.videoElement.readyState < 1) {
+      console.info('Waiting for stream metadata before entering Picture-in-Picture');
+      return false;
+    }
     try {
       if (document.pictureInPictureElement) {
         await document.exitPictureInPicture();

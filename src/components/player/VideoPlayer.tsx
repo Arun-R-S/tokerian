@@ -64,12 +64,13 @@ export const VideoPlayer: React.FC = () => {
   const corsProxyEnabled = useSettingsStore((s) => s.corsProxyEnabled);
   const updateSettings = useSettingsStore((s) => s.updateSettings);
 
-  // Attach video element once mounted
-  useEffect(() => {
-    if (videoRef.current) {
-      attachVideoElement(videoRef.current);
+  // Attach video element immediately using callback ref
+  const setVideoRef = (node: HTMLVideoElement | null) => {
+    videoRef.current = node;
+    if (node) {
+      attachVideoElement(node);
     }
-  }, [attachVideoElement]);
+  };
 
   // Handle auto-hiding OSD controls after inactivity
   const resetOsdTimer = () => {
@@ -113,7 +114,7 @@ export const VideoPlayer: React.FC = () => {
       className={`video-player-container ${isFullscreen ? 'player-fullscreen' : ''}`}
     >
       <video
-        ref={videoRef}
+        ref={setVideoRef}
         playsInline
         className="video-canvas"
         onClick={togglePlay}
