@@ -1,4 +1,4 @@
-// Multi-Playlist Store ported and adapted from IPTVnator's m3u-state & portal
+// Multi-Playlist Store ported and adapted from m3u-state & portal
 // Manages multiple playlists, local M3U files, Xtream accounts, and active source switching with IndexedDB.
 
 import { create } from 'zustand';

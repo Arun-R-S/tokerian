@@ -484,7 +484,7 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({ activeTab = 'c
           </div>
         ) : (
           /* =========================================================================
-             MODE B: IPTVnator Table / List View
+             MODE B: Table / List View
              ========================================================================= */
           <div className="explorer-channels-table-wrap">
             <table className="iptvnator-channel-table">

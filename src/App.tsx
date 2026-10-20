@@ -185,8 +185,6 @@ export function App() {
     <div className={`tokerian-shell ${tvMode ? 'tv-mode-active' : ''}`}>
       {/* Top Application Header */}
       <Header
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
         onOpenPlaylists={() => setIsPlaylistManagerOpen(true)}
         onOpenAddPlaylist={() => setIsAddPlaylistOpen(true)}
         onOpenEpgGuide={() => setIsEpgGridOpen(true)}
@@ -212,7 +210,7 @@ export function App() {
           {/* Top Video Player (if a channel is currently loaded) */}
           {currentChannel && <VideoPlayer onOpenEpgGuide={() => setIsEpgGridOpen(true)} />}
 
-          {/* Home / Dashboard View (IPTVnator 1:1 Clone) */}
+          {/* Home / Dashboard View (1:1 Clone) */}
           {activeTab === 'home' && (
             <HomeDashboard
               onTabChange={setActiveTab}
@@ -221,7 +219,7 @@ export function App() {
             />
           )}
 
-          {/* Live Channels View (IPTVnator 2-Pane Explorer) */}
+          {/* Live Channels View (2-Pane Explorer) */}
           {activeTab === 'channels' && <ChannelExplorer activeTab="channels" />}
 
           {/* Movies (VOD) View */}
@@ -230,7 +228,7 @@ export function App() {
           {/* TV Series View */}
           {activeTab === 'series' && <VodCatalog type="series" />}
 
-          {/* Favorites & History Views (IPTVnator Explorer) */}
+          {/* Favorites & History Views (Explorer) */}
           {(activeTab === 'favorites' || activeTab === 'history') && (
             <ChannelExplorer activeTab={activeTab} />
           )}
@@ -268,10 +266,10 @@ export function App() {
           )}
 
           {/* Downloads & DVR Recordings View */}
-          {activeTab === 'downloads' && <DownloadsPage />}
+          {activeTab === 'downloads' && <DownloadsPage onTabChange={setActiveTab} />}
 
           {/* Dedicated Full-Page Settings View */}
-          {activeTab === 'settings' && <SettingsPage />}
+          {activeTab === 'settings' && <SettingsPage onBack={() => setActiveTab('home')} />}
         </main>
       </div>
 

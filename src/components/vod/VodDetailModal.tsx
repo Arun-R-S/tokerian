@@ -1,4 +1,4 @@
-// VOD & TV Series Detail Modal ported and adapted from IPTVnator's vod-details component
+// VOD & TV Series Detail Modal ported and adapted vod-details component
 // Renders backdrop hero, synopsis, ratings, episodes selector, and external player launchers.
 
 import React, { useState } from 'react';

@@ -1,4 +1,4 @@
-// VOD and TV Series Service ported and adapted from IPTVnator
+// VOD and TV Series Service ported and adapted
 // Manages Movies & Series extraction, Xtream catalog requests, and "Continue Watching" resume state.
 
 import { get, set } from 'idb-keyval';
@@ -61,7 +61,7 @@ export interface PlaybackPosition {
 
 const STORAGE_KEY_POSITIONS = 'tokerian_vod_playback_positions';
 
-// Heuristic regex from IPTVnator m3u-vod-detection
+// Heuristic regex from m3u-vod-detection
 const VOD_CONTAINER_EXTENSIONS = new Set([
   'avi', 'asf', 'divx', 'flv', 'm2ts', 'm4v', 'mkv', 'mov', 'mp4', 'mpeg', 'mpg', 'rm', 'rmvb', 'vob', 'webm', 'wmv',
 ]);

@@ -61,7 +61,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
                 Keyboard Shortcuts
               </h2>
               <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                IPTVnator hotkeys and navigation controls
+                Hotkeys and navigation controls
               </span>
             </div>
           </div>

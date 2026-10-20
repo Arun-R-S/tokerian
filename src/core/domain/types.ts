@@ -74,4 +74,35 @@ export interface Settings {
   lockedKeywords?: string[];
   recordingFolder?: string;
   recordingFormat?: 'ts' | 'mp4' | 'mkv';
+
+  // Complete Settings Spec
+  language?: string;
+  visualTheme?: 'light' | 'dark' | 'system';
+  coverSize?: 'small' | 'medium' | 'large';
+  showCoverTitles?: boolean;
+  startupView?: 'first' | 'dashboard' | 'channels' | 'sources';
+  startupWindowMode?: 'normal' | 'maximized' | 'fullscreen';
+  updateChannel?: 'stable' | 'nightly';
+  fullscreenChannelPanel?: boolean;
+  vodAutoFailover?: boolean;
+  stripCountryPrefix?: boolean;
+  epgViewMode?: 'timeline' | 'list';
+  epgOffsetMinutes?: number;
+  preferUploadedEpgOverXtream?: boolean;
+  dashboardRails?: {
+    continueWatching: boolean;
+    favorites: boolean;
+    recent: boolean;
+    sources: boolean;
+  };
+  remoteControl?: boolean;
+  remoteControlPort?: number;
+  tmdbEnabled?: boolean;
+  tmdbApiKey?: string;
+  m3uVodDetails?: boolean;
+  mpvPlayerArguments?: string;
+  mpvReuseInstance?: boolean;
+  vlcPlayerArguments?: string;
+  vlcReuseInstance?: boolean;
+  parentalLockRelockMinutes?: number;
 }

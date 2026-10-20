@@ -1,4 +1,4 @@
-// Multi-Channel EPG Timeline Grid Modal ported and adapted from IPTVnator
+// Multi-Channel EPG Timeline Grid Modal ported and adapted
 // Displays multi-channel broadcast matrix with timeline slots, live progress, and show details.
 
 import React, { useState, useMemo } from 'react';

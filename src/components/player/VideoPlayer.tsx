@@ -701,7 +701,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ onOpenEpgGuide }) => {
           />
         </div>
 
-        {/* Cinema Timeline / Scrub Bar (IPTVnator Clone) */}
+        {/* Cinema Timeline / Scrub Bar */}
         <div className="player-timeline-wrapper" onClick={(e) => e.stopPropagation()}>
           <span className="player-timeline-time current">
             {formatPlaybackTime(currentTime)}

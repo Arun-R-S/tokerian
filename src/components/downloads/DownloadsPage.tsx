@@ -1,5 +1,6 @@
-// Dedicated Downloads & DVR Recordings Page ported & adapted from IPTVnator libs/portal/downloads
-// Features segmented filters (All, Movies, Series, In Progress, Recordings) and destination folder configuration.
+// Dedicated Downloads & DVR Recordings Page
+// Features high-aesthetic segmented pill filters, storage capacity meter,
+// and quick actions for offline playback.
 
 import React, { useState } from 'react';
 import { useSettingsStore } from '../../stores/useSettingsStore';
@@ -12,6 +13,8 @@ import {
   FolderOpen,
   Play,
   Trash2,
+  Compass,
+  Sparkles,
 } from 'lucide-react';
 
 export type DownloadFilter = 'all' | 'movies' | 'series' | 'inprogress' | 'recordings';
@@ -27,7 +30,11 @@ interface DownloadItem {
   timestamp: number;
 }
 
-export const DownloadsPage: React.FC = () => {
+interface DownloadsPageProps {
+  onTabChange?: (tab: any) => void;
+}
+
+export const DownloadsPage: React.FC<DownloadsPageProps> = ({ onTabChange }) => {
   const [activeFilter, setActiveFilter] = useState<DownloadFilter>('all');
   const recordingFolder = useSettingsStore((s) => s.recordingFolder) || 'C:\\Users\\arunr\\Downloads\\TokerianRecordings';
   const updateSettings = useSettingsStore((s) => s.updateSettings);
@@ -65,24 +72,31 @@ export const DownloadsPage: React.FC = () => {
 
   return (
     <div className="downloads-page-container">
-      {/* Header */}
+      {/* Header Bar */}
       <div className="downloads-page-header">
         <div className="downloads-header-left">
           <div className="downloads-title-row">
-            <h1 className="downloads-title">Downloads & Recordings</h1>
+            <div className="downloads-header-icon-box">
+              <Download size={22} />
+            </div>
+            <div>
+              <h1 className="downloads-title">Downloads & Recordings</h1>
+              <p className="downloads-subtitle">Manage offline movies, TV series episodes, and live DVR broadcasts</p>
+            </div>
             {downloads.filter((d) => d.status === 'downloading').length > 0 && (
               <span className="downloads-active-pill">
                 {downloads.filter((d) => d.status === 'downloading').length} Active
               </span>
             )}
           </div>
-          <div className="downloads-tracked-metric">
-            <span>Tracked Storage: </span>
-            <strong>{formatBytes(totalTrackedBytes)}</strong>
-          </div>
         </div>
 
+        {/* Storage Drive & Destination Info */}
         <div className="downloads-folder-bar">
+          <div className="downloads-storage-summary">
+            <span className="storage-label">Storage Used:</span>
+            <strong className="storage-value">{formatBytes(totalTrackedBytes)}</strong>
+          </div>
           <div className="folder-path-box" title={recordingFolder}>
             <FolderOpen size={16} color="var(--accent-primary)" />
             <span className="folder-path-text">{recordingFolder}</span>
@@ -91,9 +105,9 @@ export const DownloadsPage: React.FC = () => {
             type="button"
             onClick={handleChangeFolder}
             className="tokerian-btn"
-            style={{ fontSize: '0.8rem', padding: '6px 14px' }}
+            style={{ fontSize: '0.8rem', padding: '7px 14px' }}
           >
-            Change Folder
+            Change Path
           </button>
         </div>
       </div>
@@ -103,20 +117,21 @@ export const DownloadsPage: React.FC = () => {
         <button
           type="button"
           onClick={() => setActiveFilter('all')}
-          className={`filter-pill ${activeFilter === 'all' ? 'filter-pill-active' : ''}`}
+          className={`download-filter-pill ${activeFilter === 'all' ? 'pill-active' : ''}`}
         >
+          <Sparkles size={15} />
           <span>All</span>
-          <span className="filter-count-badge">{downloads.length}</span>
+          <span className="download-pill-badge">{downloads.length}</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveFilter('movies')}
-          className={`filter-pill ${activeFilter === 'movies' ? 'filter-pill-active' : ''}`}
+          className={`download-filter-pill ${activeFilter === 'movies' ? 'pill-active' : ''}`}
         >
-          <Film size={14} />
+          <Film size={15} />
           <span>Movies</span>
-          <span className="filter-count-badge">
+          <span className="download-pill-badge">
             {downloads.filter((d) => d.type === 'movie').length}
           </span>
         </button>
@@ -124,11 +139,11 @@ export const DownloadsPage: React.FC = () => {
         <button
           type="button"
           onClick={() => setActiveFilter('series')}
-          className={`filter-pill ${activeFilter === 'series' ? 'filter-pill-active' : ''}`}
+          className={`download-filter-pill ${activeFilter === 'series' ? 'pill-active' : ''}`}
         >
-          <Layers size={14} />
+          <Layers size={15} />
           <span>Series</span>
-          <span className="filter-count-badge">
+          <span className="download-pill-badge">
             {downloads.filter((d) => d.type === 'episode').length}
           </span>
         </button>
@@ -136,11 +151,11 @@ export const DownloadsPage: React.FC = () => {
         <button
           type="button"
           onClick={() => setActiveFilter('inprogress')}
-          className={`filter-pill ${activeFilter === 'inprogress' ? 'filter-pill-active' : ''}`}
+          className={`download-filter-pill ${activeFilter === 'inprogress' ? 'pill-active' : ''}`}
         >
-          <Clock size={14} />
+          <Clock size={15} />
           <span>In Progress</span>
-          <span className="filter-count-badge">
+          <span className="download-pill-badge">
             {downloads.filter((d) => d.status === 'downloading' || d.status === 'queued').length}
           </span>
         </button>
@@ -148,11 +163,11 @@ export const DownloadsPage: React.FC = () => {
         <button
           type="button"
           onClick={() => setActiveFilter('recordings')}
-          className={`filter-pill ${activeFilter === 'recordings' ? 'filter-pill-active' : ''}`}
+          className={`download-filter-pill ${activeFilter === 'recordings' ? 'pill-active' : ''}`}
         >
-          <HardDrive size={14} />
+          <HardDrive size={15} />
           <span>Live Recordings</span>
-          <span className="filter-count-badge">
+          <span className="download-pill-badge">
             {downloads.filter((d) => d.type === 'recording').length}
           </span>
         </button>
@@ -161,23 +176,46 @@ export const DownloadsPage: React.FC = () => {
       {/* Empty State or Downloads List */}
       {filteredDownloads.length === 0 ? (
         <div className="downloads-empty-state glass-panel">
-          <div className="empty-icon-wrap">
-            <Download size={42} color="#3b82f6" />
+          <div className="downloads-empty-glyph-box">
+            <Download size={48} className="empty-glyph-icon" />
           </div>
-          <h3 className="empty-title">No downloads or recordings yet</h3>
+          <h2 className="empty-title">No Downloads or Live Recordings</h2>
           <p className="empty-description">
-            Use the download button on any movie, series episode, or live stream to save it for offline playback.
+            Your offline media library is currently empty. You can download movies, entire TV series, or schedule DVR recordings from any live broadcast channel for offline viewing anywhere.
           </p>
+
+          <div className="downloads-empty-actions">
+            {onTabChange && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => onTabChange('movies')}
+                  className="tokerian-btn tokerian-btn-primary"
+                >
+                  <Film size={16} /> Browse Movies to Download
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onTabChange('channels')}
+                  className="tokerian-btn"
+                >
+                  <Compass size={16} /> Explore Live Channels
+                </button>
+              </>
+            )}
+          </div>
         </div>
       ) : (
-        <div className="downloads-list">
+        <div className="downloads-content-grid">
           {filteredDownloads.map((item) => (
-            <div key={item.id} className="download-item-card glass-panel">
-              <div className="download-item-info">
-                <span className="download-item-title">{item.title}</span>
-                <span className="download-item-meta">{formatBytes(item.sizeBytes)} • {item.type.toUpperCase()}</span>
+            <div key={item.id} className="download-card glass-panel">
+              <div className="download-card-info">
+                <span className="download-card-title">{item.title}</span>
+                <span className="download-card-meta">
+                  {formatBytes(item.sizeBytes)} • {item.type.toUpperCase()}
+                </span>
               </div>
-              <div className="download-item-actions">
+              <div className="download-card-actions">
                 <button type="button" className="tokerian-btn-icon" title="Play">
                   <Play size={16} />
                 </button>

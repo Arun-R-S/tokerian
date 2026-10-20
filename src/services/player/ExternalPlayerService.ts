@@ -1,4 +1,4 @@
-// External Player Service ported and adapted from IPTVnator
+// External Player Service ported and adapted
 // Orchestrates spawning and IPC communication for desktop media players (VLC, MPV).
 
 export interface ExternalPlayerLaunchResult {

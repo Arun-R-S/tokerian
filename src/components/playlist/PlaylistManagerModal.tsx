@@ -1,4 +1,4 @@
-// Playlist Manager Modal ported and adapted from IPTVnator
+// Playlist Manager Modal ported and adapted
 // Manages, switches, renames, and deletes saved playlists.
 
 import React, { useState } from 'react';

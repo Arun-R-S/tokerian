@@ -1,5 +1,6 @@
-// Dedicated Settings Page ported & adapted from IPTVnator apps/web/src/app/settings
-// Features 6 Full Sections: General, Playback & Stream, Recording & Downloads, External Players, Title Sanitizer, Parental PIN, and Backup & Data.
+// Dedicated Settings Page ported
+// Features all Settings Sections:
+// General, Playback, EPG, Dashboard, Remote, Metadata, Parental, Backup, Reset, and About.
 
 import React, { useState, useEffect } from 'react';
 import { useSettingsStore } from '../../stores/useSettingsStore';
@@ -9,97 +10,95 @@ import { useUserStore } from '../../stores/useUserStore';
 import { IPTV_PRESETS } from '../../core/presets/iptvPresets';
 import { storageAdapter } from '../../adapters/storage/IndexedDbAdapter';
 import { ExternalPlayerService } from '../../services/player/ExternalPlayerService';
-import { ChannelSanitizer } from '../../utils/channelSanitizer';
 import {
-  Sliders,
   Globe,
-  MonitorPlay,
-  Type,
-  Download,
-  Upload,
-  Trash2,
   Radio,
-  Check,
+  Calendar,
+  LayoutDashboard,
+  Tv,
+  Film,
   Shield,
-  HardDrive,
+  Download,
+  Trash2,
+  Info,
+  ArrowLeft,
+  Check,
+  Upload,
+  Sun,
+  Moon,
+  Monitor,
 } from 'lucide-react';
 
 export type SettingsSection =
   | 'general'
   | 'playback'
-  | 'recordings'
-  | 'external'
-  | 'titles'
+  | 'epg'
+  | 'dashboard'
+  | 'remote'
+  | 'metadata'
   | 'parental'
-  | 'backup';
+  | 'backup'
+  | 'reset'
+  | 'about';
 
-export const SettingsPage: React.FC = () => {
+interface SettingsPageProps {
+  onBack?: () => void;
+}
+
+export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
   const [activeSection, setActiveSection] = useState<SettingsSection>('general');
 
-  // General Store State
-  const m3uUrl = useSettingsStore((s) => s.m3uUrl);
-  const corsProxyEnabled = useSettingsStore((s) => s.corsProxyEnabled);
-  const corsProxyUrl = useSettingsStore((s) => s.corsProxyUrl);
-  const bufferLength = useSettingsStore((s) => s.bufferLength);
-  const autoPlayNextOnError = useSettingsStore((s) => s.autoPlayNextOnError);
-  const hardwareAcceleration = useSettingsStore((s) => s.hardwareAcceleration);
-  const tvMode = useSettingsStore((s) => s.tvMode);
-
-  // External Players
-  const defaultExternalPlayer = useSettingsStore((s) => s.defaultExternalPlayer) || 'vlc';
-  const customVlcPath = useSettingsStore((s) => s.customVlcPath) || '';
-  const customMpvPath = useSettingsStore((s) => s.customMpvPath) || '';
-
-  // Title Sanitizer & Parental Lock
-  const cleanChannelTitles = useSettingsStore((s) => s.cleanChannelTitles) || false;
-  const parentalLockEnabled = useSettingsStore((s) => s.parentalLockEnabled) || false;
-  const parentalLockPinHash = useSettingsStore((s) => s.parentalLockPinHash);
-  const isSessionUnlocked = useSettingsStore((s) => s.isSessionUnlocked);
-
-  // Recording
-  const recordingFolder = useSettingsStore((s) => s.recordingFolder) || 'C:\\Users\\arunr\\Downloads\\TokerianRecordings';
-  const recordingFormat = useSettingsStore((s) => s.recordingFormat) || 'mp4';
-
+  // Settings State from Store
+  const settings = useSettingsStore();
   const updateSettings = useSettingsStore((s) => s.updateSettings);
   const unlockParentalSession = useSettingsStore((s) => s.unlockParentalSession);
   const lockParentalSession = useSettingsStore((s) => s.lockParentalSession);
   const setParentalPin = useSettingsStore((s) => s.setParentalPin);
   const loadPlaylist = useChannelStore((s) => s.loadPlaylist);
 
-  // Form Inputs
-  const [inputUrl, setInputUrl] = useState(m3uUrl);
-  const [proxyUrl, setProxyUrl] = useState(corsProxyUrl);
-  const [vlcPathInput, setVlcPathInput] = useState(customVlcPath);
-  const [mpvPathInput, setMpvPathInput] = useState(customMpvPath);
-  const [recordingFolderInput, setRecordingFolderInput] = useState(recordingFolder);
+  // Form State
+  const [inputUrl, setInputUrl] = useState(settings.m3uUrl);
+  const [proxyUrl, setProxyUrl] = useState(settings.corsProxyUrl);
+  const [vlcPathInput, setVlcPathInput] = useState(settings.customVlcPath || '');
+  const [mpvPathInput, setMpvPathInput] = useState(settings.customMpvPath || '');
+  const [vlcArgsInput, setVlcArgsInput] = useState(settings.vlcPlayerArguments || '');
+  const [mpvArgsInput, setMpvArgsInput] = useState(settings.mpvPlayerArguments || '');
+  const [tmdbKeyInput, setTmdbKeyInput] = useState(settings.tmdbApiKey || '');
   const [detectedPlayers, setDetectedPlayers] = useState<{ vlc: boolean; mpv: boolean; platform?: string }>({
     vlc: false,
     mpv: false,
   });
 
-  // Parental PIN form state
+  // Parental PIN form
   const [newPin, setNewPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [unlockPinInput, setUnlockPinInput] = useState('');
   const [pinMessage, setPinMessage] = useState<string | null>(null);
 
-  // Sanitizer Test Input
-  const [testTitle, setTestTitle] = useState('US - HBO 1 [FHD]');
+  // Toast
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Backup Toast
-  const [backupToast, setBackupToast] = useState<string | null>(null);
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
 
   useEffect(() => {
-    setInputUrl(m3uUrl);
-    setProxyUrl(corsProxyUrl);
-    setVlcPathInput(customVlcPath);
-    setMpvPathInput(customMpvPath);
-    setRecordingFolderInput(recordingFolder);
+    setInputUrl(settings.m3uUrl);
+    setProxyUrl(settings.corsProxyUrl);
+    setVlcPathInput(settings.customVlcPath || '');
+    setMpvPathInput(settings.customMpvPath || '');
+    setVlcArgsInput(settings.vlcPlayerArguments || '');
+    setMpvArgsInput(settings.mpvPlayerArguments || '');
+    setTmdbKeyInput(settings.tmdbApiKey || '');
 
-    ExternalPlayerService.checkInstalled({ vlc: customVlcPath, mpv: customMpvPath }).then((res) => {
+    ExternalPlayerService.checkInstalled({
+      vlc: settings.customVlcPath,
+      mpv: settings.customMpvPath,
+    }).then((res) => {
       setDetectedPlayers(res);
     });
-  }, [m3uUrl, corsProxyUrl, customVlcPath, customMpvPath, recordingFolder]);
+  }, [settings]);
 
   const handleSaveAndLoad = async () => {
     await updateSettings({
@@ -107,46 +106,45 @@ export const SettingsPage: React.FC = () => {
       corsProxyUrl: proxyUrl,
     });
     await loadPlaylist(inputUrl, true);
+    showToast('Playlist loaded successfully');
   };
 
   const handleSaveExternalPaths = async () => {
     await updateSettings({
       customVlcPath: vlcPathInput,
       customMpvPath: mpvPathInput,
+      vlcPlayerArguments: vlcArgsInput,
+      mpvPlayerArguments: mpvArgsInput,
     });
     const res = await ExternalPlayerService.checkInstalled({ vlc: vlcPathInput, mpv: mpvPathInput });
     setDetectedPlayers(res);
+    showToast('External player configuration saved');
   };
 
   const handleSetPin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setPinMessage(null);
-
     if (newPin.length < 4 || newPin.length > 8) {
-      setPinMessage('PIN must be 4 to 8 digits long.');
+      setPinMessage('PIN must be 4 to 8 digits');
       return;
     }
     if (newPin !== confirmPin) {
-      setPinMessage('PIN confirmation does not match.');
+      setPinMessage('PINs do not match');
       return;
     }
-
     await setParentalPin(newPin);
     setNewPin('');
     setConfirmPin('');
-    setPinMessage('PIN updated successfully! Parental Lock is active.');
-    setTimeout(() => setPinMessage(null), 3500);
+    setPinMessage('PIN successfully configured!');
+    setTimeout(() => setPinMessage(null), 3000);
   };
 
   const handleUnlockSession = async (e: React.FormEvent) => {
     e.preventDefault();
-    setPinMessage(null);
-
     const ok = await unlockParentalSession(unlockPinInput);
     if (ok) {
       setUnlockPinInput('');
-      setPinMessage('Session unlocked! Adult categories are temporarily accessible.');
-      setTimeout(() => setPinMessage(null), 3500);
+      setPinMessage('Session unlocked successfully');
+      setTimeout(() => setPinMessage(null), 3000);
     } else {
       setPinMessage('Incorrect PIN. Please try again.');
     }
@@ -154,14 +152,14 @@ export const SettingsPage: React.FC = () => {
 
   const handleExportBackup = () => {
     const backupData = {
-      version: '1.0.0',
+      version: '1.0',
       exportedAt: new Date().toISOString(),
-      settings: useSettingsStore.getState(),
       playlists: useMultiPlaylistStore.getState().playlists,
       activePlaylistId: useMultiPlaylistStore.getState().activePlaylistId,
       favorites: Array.from(useUserStore.getState().favorites),
-      orderedFavorites: useUserStore.getState().orderedFavoriteIds,
+      orderedFavoriteIds: useUserStore.getState().orderedFavoriteIds,
       history: useUserStore.getState().history,
+      settings: useSettingsStore.getState(),
     };
 
     const blob = new Blob([JSON.stringify(backupData, null, 2)], {
@@ -170,13 +168,12 @@ export const SettingsPage: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `tokerian-iptvnator-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `tokerian-backup-${new Date().toISOString().slice(0, 10)}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    setBackupToast('Backup JSON exported successfully!');
-    setTimeout(() => setBackupToast(null), 3000);
+    showToast('Backup JSON exported successfully');
   };
 
   const handleImportBackup = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -186,48 +183,71 @@ export const SettingsPage: React.FC = () => {
     const reader = new FileReader();
     reader.onload = async (event) => {
       try {
-        const parsed = JSON.parse(event.target?.result as string);
-        if (parsed.settings) await updateSettings(parsed.settings);
-        if (parsed.orderedFavorites) await useUserStore.getState().reorderFavorites(parsed.orderedFavorites);
-        setBackupToast('Backup restored successfully! Changes applied.');
-        setTimeout(() => setBackupToast(null), 3500);
+        const content = event.target?.result as string;
+        const parsed = JSON.parse(content);
+
+        if (parsed.playlists && Array.isArray(parsed.playlists)) {
+          useMultiPlaylistStore.setState({
+            playlists: parsed.playlists,
+            activePlaylistId: parsed.activePlaylistId || parsed.playlists[0]?.id || 'built-in',
+          });
+        }
+        if (parsed.favorites && Array.isArray(parsed.favorites)) {
+          useUserStore.setState({
+            favorites: new Set(parsed.favorites),
+            orderedFavoriteIds: parsed.orderedFavoriteIds || parsed.favorites,
+          });
+        }
+        if (parsed.history && Array.isArray(parsed.history)) {
+          useUserStore.setState({ history: parsed.history });
+        }
+        if (parsed.settings && typeof parsed.settings === 'object') {
+          await updateSettings(parsed.settings);
+        }
+
+        showToast('Backup restored successfully');
       } catch (err) {
-        alert('Invalid JSON backup file format.');
+        alert('Invalid JSON backup file format');
       }
     };
     reader.readAsText(file);
   };
 
-  const handleResetData = async () => {
-    if (confirm('Are you sure you want to reset all Tokerian IPTV playlists, favorites, and settings? This cannot be undone.')) {
-      await storageAdapter.clearAll();
+  const handleFactoryReset = async () => {
+    if (confirm('Are you sure you want to reset all Tokerian data, channels, and settings to factory defaults?')) {
+      if (storageAdapter.clearAll) {
+        await storageAdapter.clearAll();
+      }
+      localStorage.clear();
       window.location.reload();
     }
   };
 
   return (
     <div className="settings-page-container">
-      {/* Page Header */}
+      {/* Settings Header */}
       <div className="settings-page-header">
         <div className="settings-header-title-row">
-          <Sliders size={24} color="var(--accent-primary)" />
+          <div className="settings-header-icon-box">
+            <Globe size={22} />
+          </div>
           <div>
-            <h1 className="settings-page-title">Tokerian Settings</h1>
-            <p className="settings-page-subtitle">Configure playback engines, stream buffer, recording destination, and parental lock.</p>
+            <h1 className="settings-page-title">Settings</h1>
+            <p className="settings-page-subtitle">Change the configuration of the application</p>
           </div>
         </div>
 
-        {backupToast && (
+        {toastMessage && (
           <div className="settings-toast-badge">
             <Check size={14} color="#10b981" />
-            <span>{backupToast}</span>
+            <span>{toastMessage}</span>
           </div>
         )}
       </div>
 
-      {/* 2-Column Settings Layout */}
+      {/* 2-Column Settings Layout (Sidebar Navigation + Content Area) */}
       <div className="settings-page-layout">
-        {/* Left Side Navigation Tabs */}
+        {/* Left Sub-Navigation (Exact Menu List) */}
         <nav className="settings-nav-sidebar glass-panel">
           <button
             type="button"
@@ -235,7 +255,7 @@ export const SettingsPage: React.FC = () => {
             className={`settings-nav-item ${activeSection === 'general' ? 'nav-item-active' : ''}`}
           >
             <Globe size={18} />
-            <span>General & Presets</span>
+            <span>General</span>
           </button>
 
           <button
@@ -244,34 +264,43 @@ export const SettingsPage: React.FC = () => {
             className={`settings-nav-item ${activeSection === 'playback' ? 'nav-item-active' : ''}`}
           >
             <Radio size={18} />
-            <span>Playback & Stream</span>
+            <span>Playback</span>
           </button>
 
           <button
             type="button"
-            onClick={() => setActiveSection('recordings')}
-            className={`settings-nav-item ${activeSection === 'recordings' ? 'nav-item-active' : ''}`}
+            onClick={() => setActiveSection('epg')}
+            className={`settings-nav-item ${activeSection === 'epg' ? 'nav-item-active' : ''}`}
           >
-            <HardDrive size={18} />
-            <span>Recording & Storage</span>
+            <Calendar size={18} />
+            <span>EPG</span>
           </button>
 
           <button
             type="button"
-            onClick={() => setActiveSection('external')}
-            className={`settings-nav-item ${activeSection === 'external' ? 'nav-item-active' : ''}`}
+            onClick={() => setActiveSection('dashboard')}
+            className={`settings-nav-item ${activeSection === 'dashboard' ? 'nav-item-active' : ''}`}
           >
-            <MonitorPlay size={18} />
-            <span>External Players</span>
+            <LayoutDashboard size={18} />
+            <span>Dashboard</span>
           </button>
 
           <button
             type="button"
-            onClick={() => setActiveSection('titles')}
-            className={`settings-nav-item ${activeSection === 'titles' ? 'nav-item-active' : ''}`}
+            onClick={() => setActiveSection('remote')}
+            className={`settings-nav-item ${activeSection === 'remote' ? 'nav-item-active' : ''}`}
           >
-            <Type size={18} />
-            <span>Title Sanitizer</span>
+            <Tv size={18} />
+            <span>Remote</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSection('metadata')}
+            className={`settings-nav-item ${activeSection === 'metadata' ? 'nav-item-active' : ''}`}
+          >
+            <Film size={18} />
+            <span>Metadata</span>
           </button>
 
           <button
@@ -280,7 +309,7 @@ export const SettingsPage: React.FC = () => {
             className={`settings-nav-item ${activeSection === 'parental' ? 'nav-item-active' : ''}`}
           >
             <Shield size={18} />
-            <span>Parental Lock PIN</span>
+            <span>Parental Lock</span>
           </button>
 
           <button
@@ -289,20 +318,203 @@ export const SettingsPage: React.FC = () => {
             className={`settings-nav-item ${activeSection === 'backup' ? 'nav-item-active' : ''}`}
           >
             <Download size={18} />
-            <span>Backup & Reset</span>
+            <span>Backup</span>
           </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSection('reset')}
+            className={`settings-nav-item ${activeSection === 'reset' ? 'nav-item-active' : ''}`}
+          >
+            <Trash2 size={18} />
+            <span>Reset</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSection('about')}
+            className={`settings-nav-item ${activeSection === 'about' ? 'nav-item-active' : ''}`}
+          >
+            <Info size={18} />
+            <span>About</span>
+          </button>
+
+          {/* Bottom Back Button matching Screenshot */}
+          {onBack && (
+            <button
+              type="button"
+              onClick={onBack}
+              className="settings-sidebar-back-btn"
+              title="Return to previous screen"
+            >
+              <ArrowLeft size={16} />
+              <span>Back</span>
+            </button>
+          )}
         </nav>
 
         {/* Right Content Section */}
         <div className="settings-section-card glass-panel">
-          {/* SECTION 1: GENERAL */}
+          {/* =========================================================================
+             SECTION 1: GENERAL (Screenshot Match)
+             ========================================================================= */}
           {activeSection === 'general' && (
             <div className="settings-form-group">
-              <h3 className="section-heading">Playlist & Stream Presets</h3>
+              <div className="section-title-wrap">
+                <h2 className="section-main-title">General</h2>
+                <p className="section-main-subtitle">Change the configuration of the application</p>
+              </div>
 
-              <div className="setting-row">
-                <label className="setting-label">Extended M3U / M3U8 Playlist URL</label>
-                <div style={{ display: 'flex', gap: '10px' }}>
+              {/* Language */}
+              <div className="setting-field-row">
+                <div className="field-meta">
+                  <label className="field-title">Language</label>
+                  <p className="field-desc">Select language of the application</p>
+                </div>
+                <div className="field-control">
+                  <select
+                    value={settings.language || 'English'}
+                    onChange={(e) => updateSettings({ language: e.target.value })}
+                    className="tokerian-select"
+                  >
+                    <option value="English">English</option>
+                    <option value="Spanish">Español (Spanish)</option>
+                    <option value="German">Deutsch (German)</option>
+                    <option value="French">Français (French)</option>
+                    <option value="Italian">Italiano (Italian)</option>
+                    <option value="Russian">Русский (Russian)</option>
+                    <option value="Tamil">தமிழ் (Tamil)</option>
+                    <option value="Hindi">हिन्दी (Hindi)</option>
+                    <option value="Chinese">中文 (Chinese)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Visual Theme */}
+              <div className="setting-field-row">
+                <div className="field-meta">
+                  <label className="field-title">Visual theme</label>
+                  <p className="field-desc">Select visual theme of the application</p>
+                </div>
+                <div className="field-control">
+                  <div className="segmented-btn-group">
+                    <button
+                      type="button"
+                      onClick={() => updateSettings({ visualTheme: 'light' })}
+                      className={`segmented-btn ${(settings.visualTheme || 'dark') === 'light' ? 'segmented-active' : ''}`}
+                    >
+                      <Sun size={14} /> Light
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateSettings({ visualTheme: 'dark' })}
+                      className={`segmented-btn ${(settings.visualTheme || 'dark') === 'dark' ? 'segmented-active' : ''}`}
+                    >
+                      <Moon size={14} /> Dark
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateSettings({ visualTheme: 'system' })}
+                      className={`segmented-btn ${(settings.visualTheme || 'dark') === 'system' ? 'segmented-active' : ''}`}
+                    >
+                      <Monitor size={14} /> System
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Cover size */}
+              <div className="setting-field-row">
+                <div className="field-meta">
+                  <label className="field-title">Cover size</label>
+                  <p className="field-desc">
+                    Adjust the size of poster cards across grids and rails. Larger sizes are easier to see on TVs; smaller sizes show more content per row on big monitors.
+                  </p>
+                </div>
+                <div className="field-control">
+                  <div className="segmented-btn-group">
+                    {(['small', 'medium', 'large'] as const).map((sz) => (
+                      <button
+                        key={sz}
+                        type="button"
+                        onClick={() => updateSettings({ coverSize: sz })}
+                        className={`segmented-btn ${(settings.coverSize || 'medium') === sz ? 'segmented-active' : ''}`}
+                        style={{ textTransform: 'capitalize' }}
+                      >
+                        {sz}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Show titles under covers */}
+              <div className="setting-field-row">
+                <div className="field-meta">
+                  <label className="field-title">Show titles under covers</label>
+                  <p className="field-desc">
+                    Turn off for a posters-only wall in movie and series grids: the title appears on the cover when you point at it or focus it. Live channels, search results and dashboard rails keep their labels.
+                  </p>
+                </div>
+                <div className="field-control">
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={settings.showCoverTitles !== false}
+                      onChange={(e) => updateSettings({ showCoverTitles: e.target.checked })}
+                    />
+                    <span className="toggle-slider" />
+                  </label>
+                </div>
+              </div>
+
+              {/* Startup view */}
+              <div className="setting-field-row">
+                <div className="field-meta">
+                  <label className="field-title">Startup view</label>
+                  <p className="field-desc">
+                    Choose whether opens the first available workspace view or restores your last section-level view. First view means Dashboard when enabled, otherwise Sources.
+                  </p>
+                </div>
+                <div className="field-control">
+                  <select
+                    value={settings.startupView || 'first'}
+                    onChange={(e) => updateSettings({ startupView: e.target.value as any })}
+                    className="tokerian-select"
+                  >
+                    <option value="first">First available view</option>
+                    <option value="dashboard">Dashboard</option>
+                    <option value="channels">Channels</option>
+                    <option value="sources">Sources / Playlists</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Window on startup (Desktop only) */}
+              <div className="setting-field-row">
+                <div className="field-meta">
+                  <label className="field-title">Window on startup</label>
+                  <p className="field-desc">
+                    Choose how the desktop window opens: at its last size, maximized, or fullscreen. Applies on the next launch. Press F11 at any time to enter or leave fullscreen.
+                  </p>
+                </div>
+                <div className="field-control">
+                  <select
+                    value={settings.startupWindowMode || 'normal'}
+                    onChange={(e) => updateSettings({ startupWindowMode: e.target.value as any })}
+                    className="tokerian-select"
+                  >
+                    <option value="normal">Last window size</option>
+                    <option value="maximized">Maximized</option>
+                    <option value="fullscreen">Fullscreen</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Extended M3U Playlist & Global Presets */}
+              <div className="setting-sub-section">
+                <h3 className="sub-section-title">Playlist URL & Curated Presets</h3>
+                <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
                   <input
                     type="url"
                     value={inputUrl}
@@ -319,26 +531,8 @@ export const SettingsPage: React.FC = () => {
                     Load URL
                   </button>
                 </div>
-              </div>
 
-              <div className="setting-row">
-                <label className="setting-label">10-Foot TV Remote Mode</label>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span className="settings-hint">Enlarges focus rings and optimizes layout for Android TV remotes.</span>
-                  <label className="toggle-switch">
-                    <input
-                      type="checkbox"
-                      checked={tvMode}
-                      onChange={(e) => updateSettings({ tvMode: e.target.checked })}
-                    />
-                    <span className="toggle-slider" />
-                  </label>
-                </div>
-              </div>
-
-              <div className="setting-row">
-                <label className="setting-label">Curated Global Presets</label>
-                <div className="presets-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: '10px', marginTop: '8px' }}>
+                <div className="presets-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '10px', marginTop: '14px' }}>
                   {IPTV_PRESETS.map((preset) => (
                     <button
                       key={preset.id}
@@ -347,11 +541,12 @@ export const SettingsPage: React.FC = () => {
                         setInputUrl(preset.url);
                         updateSettings({ m3uUrl: preset.url });
                         loadPlaylist(preset.url, true);
+                        showToast(`Loaded ${preset.title}`);
                       }}
                       className="preset-card"
                       style={{
                         padding: '12px',
-                        background: 'rgba(255, 255, 255, 0.04)',
+                        background: 'rgba(255, 255, 255, 0.03)',
                         border: inputUrl === preset.url ? '1px solid var(--accent-primary)' : '1px solid rgba(255, 255, 255, 0.08)',
                         borderRadius: 'var(--radius-sm)',
                         textAlign: 'left',
@@ -368,255 +563,568 @@ export const SettingsPage: React.FC = () => {
             </div>
           )}
 
-          {/* SECTION 2: PLAYBACK & STREAM */}
+          {/* =========================================================================
+             SECTION 2: PLAYBACK (Complete Engine Options)
+             ========================================================================= */}
           {activeSection === 'playback' && (
             <div className="settings-form-group">
-              <h3 className="section-heading">Stream & Engine Configuration</h3>
-
-              <div className="setting-row">
-                <label className="setting-label">HLS Forward Buffer ({bufferLength} seconds)</label>
-                <input
-                  type="range"
-                  min="5"
-                  max="120"
-                  step="5"
-                  value={bufferLength}
-                  onChange={(e) => updateSettings({ bufferLength: parseInt(e.target.value, 10) })}
-                  className="tokerian-range"
-                  style={{ width: '100%', marginTop: '8px' }}
-                />
-                <span className="settings-hint">Higher buffer absorbs network spikes on high-bitrate FHD / 4K feeds.</span>
+              <div className="section-title-wrap">
+                <h2 className="section-main-title">Playback</h2>
+                <p className="section-main-subtitle">Configure stream decoding, forward buffer, and player engines</p>
               </div>
 
-              <div className="setting-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                  <div style={{ fontWeight: 600, color: '#fff', fontSize: '0.9rem' }}>Hardware Video Acceleration</div>
-                  <span className="settings-hint">Direct GPU decoding via WebGL and MediaSource extensions.</span>
+              {/* HLS Buffer */}
+              <div className="setting-field-row">
+                <div className="field-meta">
+                  <label className="field-title">Forward Buffer ({settings.bufferLength || 30} seconds)</label>
+                  <p className="field-desc">Higher buffer length prevents stuttering on high-bitrate FHD / 4K streams.</p>
                 </div>
-                <label className="toggle-switch">
+                <div className="field-control" style={{ maxWidth: '280px' }}>
                   <input
-                    type="checkbox"
-                    checked={hardwareAcceleration}
-                    onChange={(e) => updateSettings({ hardwareAcceleration: e.target.checked })}
+                    type="range"
+                    min="5"
+                    max="120"
+                    step="5"
+                    value={settings.bufferLength || 30}
+                    onChange={(e) => updateSettings({ bufferLength: parseInt(e.target.value, 10) })}
+                    className="tokerian-range"
+                    style={{ width: '100%' }}
                   />
-                  <span className="toggle-slider" />
-                </label>
-              </div>
-
-              <div className="setting-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                  <div style={{ fontWeight: 600, color: '#fff', fontSize: '0.9rem' }}>Auto-Skip Next Channel on Error</div>
-                  <span className="settings-hint">Automatically skips to the next channel if a 404/offline stream occurs.</span>
                 </div>
-                <label className="toggle-switch">
-                  <input
-                    type="checkbox"
-                    checked={autoPlayNextOnError}
-                    onChange={(e) => updateSettings({ autoPlayNextOnError: e.target.checked })}
-                  />
-                  <span className="toggle-slider" />
-                </label>
               </div>
 
-              <div className="setting-row">
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <span style={{ fontWeight: 600, color: '#fff', fontSize: '0.9rem' }}>CORS Reverse Proxy Relay</span>
+              {/* Hardware Acceleration */}
+              <div className="setting-field-row">
+                <div className="field-meta">
+                  <label className="field-title">Hardware Video Acceleration</label>
+                  <p className="field-desc">Direct GPU hardware video decoding via WebGL and MediaSource extensions.</p>
+                </div>
+                <div className="field-control">
                   <label className="toggle-switch">
                     <input
                       type="checkbox"
-                      checked={corsProxyEnabled}
+                      checked={settings.hardwareAcceleration !== false}
+                      onChange={(e) => updateSettings({ hardwareAcceleration: e.target.checked })}
+                    />
+                    <span className="toggle-slider" />
+                  </label>
+                </div>
+              </div>
+
+              {/* Auto Skip on Error */}
+              <div className="setting-field-row">
+                <div className="field-meta">
+                  <label className="field-title">Auto-Skip Next Channel on Error</label>
+                  <p className="field-desc">Automatically switch to the next channel in list if a stream fails or 404s.</p>
+                </div>
+                <div className="field-control">
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={settings.autoPlayNextOnError !== false}
+                      onChange={(e) => updateSettings({ autoPlayNextOnError: e.target.checked })}
+                    />
+                    <span className="toggle-slider" />
+                  </label>
+                </div>
+              </div>
+
+              {/* Fullscreen Channel Panel */}
+              <div className="setting-field-row">
+                <div className="field-meta">
+                  <label className="field-title">Fullscreen Channel Panel</label>
+                  <p className="field-desc">Allow opening the quick zap drawer and channel switcher while in cinema fullscreen.</p>
+                </div>
+                <div className="field-control">
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={settings.fullscreenChannelPanel !== false}
+                      onChange={(e) => updateSettings({ fullscreenChannelPanel: e.target.checked })}
+                    />
+                    <span className="toggle-slider" />
+                  </label>
+                </div>
+              </div>
+
+              {/* VOD Auto-Failover */}
+              <div className="setting-field-row">
+                <div className="field-meta">
+                  <label className="field-title">VOD Auto-Failover</label>
+                  <p className="field-desc">
+                    When a movie fails to play and the same film exists in another imported playlist, switch to it automatically instead of showing error.
+                  </p>
+                </div>
+                <div className="field-control">
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={settings.vodAutoFailover || false}
+                      onChange={(e) => updateSettings({ vodAutoFailover: e.target.checked })}
+                    />
+                    <span className="toggle-slider" />
+                  </label>
+                </div>
+              </div>
+
+              {/* Strip Country Prefix */}
+              <div className="setting-field-row">
+                <div className="field-meta">
+                  <label className="field-title">Strip Country Prefixes</label>
+                  <p className="field-desc">Removes tags like "US | " or "UK - " or "[FHD]" from channel titles for a clean look.</p>
+                </div>
+                <div className="field-control">
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={settings.stripCountryPrefix !== false}
+                      onChange={(e) => updateSettings({ stripCountryPrefix: e.target.checked })}
+                    />
+                    <span className="toggle-slider" />
+                  </label>
+                </div>
+              </div>
+
+              {/* CORS Proxy */}
+              <div className="setting-field-row">
+                <div className="field-meta">
+                  <label className="field-title">CORS Reverse Proxy Relay</label>
+                  <p className="field-desc">Bypasses browser cross-origin blocks on raw HTTP stream manifests.</p>
+                </div>
+                <div className="field-control">
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={settings.corsProxyEnabled}
                       onChange={(e) => updateSettings({ corsProxyEnabled: e.target.checked })}
                     />
                     <span className="toggle-slider" />
                   </label>
                 </div>
-                <input
-                  type="text"
-                  value={proxyUrl}
-                  onChange={(e) => setProxyUrl(e.target.value)}
-                  placeholder="https://cors-proxy.example.com/?url="
-                  className="tokerian-input"
-                  style={{ width: '100%' }}
-                />
+              </div>
+
+              {/* External Media Players (VLC / MPV) */}
+              <div className="setting-sub-section">
+                <h3 className="sub-section-title">External Desktop Players (VLC & MPV)</h3>
+
+                <div className="setting-field-row" style={{ marginTop: '12px' }}>
+                  <div className="field-meta">
+                    <label className="field-title">Default External Player</label>
+                    <p className="field-desc">Choose which desktop engine to launch when clicking External Player.</p>
+                  </div>
+                  <div className="field-control">
+                    <div className="segmented-btn-group">
+                      <button
+                        type="button"
+                        onClick={() => updateSettings({ defaultExternalPlayer: 'vlc' })}
+                        className={`segmented-btn ${(settings.defaultExternalPlayer || 'vlc') === 'vlc' ? 'segmented-active' : ''}`}
+                      >
+                        VLC {detectedPlayers.vlc ? '• Detected' : ''}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => updateSettings({ defaultExternalPlayer: 'mpv' })}
+                        className={`segmented-btn ${(settings.defaultExternalPlayer || 'vlc') === 'mpv' ? 'segmented-active' : ''}`}
+                      >
+                        MPV {detectedPlayers.mpv ? '• Detected' : ''}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginTop: '14px' }}>
+                  <div>
+                    <label className="field-title" style={{ fontSize: '0.82rem' }}>Custom VLC Executable Path</label>
+                    <input
+                      type="text"
+                      value={vlcPathInput}
+                      onChange={(e) => setVlcPathInput(e.target.value)}
+                      placeholder="C:\Program Files\VideoLAN\VLC\vlc.exe"
+                      className="tokerian-input"
+                      style={{ width: '100%', marginTop: '6px' }}
+                    />
+                  </div>
+                  <div>
+                    <label className="field-title" style={{ fontSize: '0.82rem' }}>Custom MPV Executable Path</label>
+                    <input
+                      type="text"
+                      value={mpvPathInput}
+                      onChange={(e) => setMpvPathInput(e.target.value)}
+                      placeholder="C:\mpv\mpv.exe"
+                      className="tokerian-input"
+                      style={{ width: '100%', marginTop: '6px' }}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleSaveExternalPaths}
+                  className="tokerian-btn tokerian-btn-primary"
+                  style={{ marginTop: '12px', alignSelf: 'flex-start' }}
+                >
+                  Save & Verify Player Paths
+                </button>
               </div>
             </div>
           )}
 
-          {/* SECTION 3: RECORDINGS & STORAGE */}
-          {activeSection === 'recordings' && (
+          {/* =========================================================================
+             SECTION 3: EPG (EPG Configuration)
+             ========================================================================= */}
+          {activeSection === 'epg' && (
             <div className="settings-form-group">
-              <h3 className="section-heading">Recording & Download Destination</h3>
+              <div className="section-title-wrap">
+                <h2 className="section-main-title">Electronic Program Guide (EPG)</h2>
+                <p className="section-main-subtitle">Manage TV guide sources, timezone offsets, and timeline presentation</p>
+              </div>
 
-              <div className="setting-row">
-                <label className="setting-label">Default Recordings & Downloads Folder</label>
-                <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
+              {/* EPG View Mode */}
+              <div className="setting-field-row">
+                <div className="field-meta">
+                  <label className="field-title">EPG Layout View Mode</label>
+                  <p className="field-desc">Choose between a multi-channel horizontal broadcast matrix or vertical schedule.</p>
+                </div>
+                <div className="field-control">
+                  <div className="segmented-btn-group">
+                    <button
+                      type="button"
+                      onClick={() => updateSettings({ epgViewMode: 'timeline' })}
+                      className={`segmented-btn ${(settings.epgViewMode || 'timeline') === 'timeline' ? 'segmented-active' : ''}`}
+                    >
+                      Horizontal Timeline
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateSettings({ epgViewMode: 'list' })}
+                      className={`segmented-btn ${(settings.epgViewMode || 'timeline') === 'list' ? 'segmented-active' : ''}`}
+                    >
+                      Vertical List
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Timezone Offset */}
+              <div className="setting-field-row">
+                <div className="field-meta">
+                  <label className="field-title">Timezone Correction Offset ({settings.epgOffsetMinutes || 0} minutes)</label>
+                  <p className="field-desc">
+                    Display-only correction for guides whose providers label programme times with the wrong timezone (-720 to +720 min).
+                  </p>
+                </div>
+                <div className="field-control" style={{ maxWidth: '280px' }}>
+                  <input
+                    type="range"
+                    min="-720"
+                    max="720"
+                    step="30"
+                    value={settings.epgOffsetMinutes || 0}
+                    onChange={(e) => updateSettings({ epgOffsetMinutes: parseInt(e.target.value, 10) })}
+                    className="tokerian-range"
+                    style={{ width: '100%' }}
+                  />
+                </div>
+              </div>
+
+              {/* Prefer XMLTV over Xtream */}
+              <div className="setting-field-row">
+                <div className="field-meta">
+                  <label className="field-title">Prefer Uploaded XMLTV over Xtream EPG</label>
+                  <p className="field-desc">When enabled, locally-parsed XMLTV files take priority over Xtream server live EPG.</p>
+                </div>
+                <div className="field-control">
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={settings.preferUploadedEpgOverXtream || false}
+                      onChange={(e) => updateSettings({ preferUploadedEpgOverXtream: e.target.checked })}
+                    />
+                    <span className="toggle-slider" />
+                  </label>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* =========================================================================
+             SECTION 4: DASHBOARD (Rails Visibility)
+             ========================================================================= */}
+          {activeSection === 'dashboard' && (
+            <div className="settings-form-group">
+              <div className="section-title-wrap">
+                <h2 className="section-main-title">Dashboard</h2>
+                <p className="section-main-subtitle">Control which content carousels and rails are rendered on the home screen</p>
+              </div>
+
+              <div className="setting-field-row">
+                <div className="field-meta">
+                  <label className="field-title">Spotlight Continue Watching Hero</label>
+                  <p className="field-desc">Large top spotlight card with radial crimson glow for resuming your last broadcast.</p>
+                </div>
+                <div className="field-control">
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={settings.dashboardRails?.continueWatching !== false}
+                      onChange={(e) =>
+                        updateSettings({
+                          dashboardRails: {
+                            ...(settings.dashboardRails || { continueWatching: true, favorites: true, recent: true, sources: true }),
+                            continueWatching: e.target.checked,
+                          },
+                        })
+                      }
+                    />
+                    <span className="toggle-slider" />
+                  </label>
+                </div>
+              </div>
+
+              <div className="setting-field-row">
+                <div className="field-meta">
+                  <label className="field-title">Live Now on Your Favorites Rail</label>
+                  <p className="field-desc">Horizontal carousel displaying live TV channels saved to your favorites.</p>
+                </div>
+                <div className="field-control">
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={settings.dashboardRails?.favorites !== false}
+                      onChange={(e) =>
+                        updateSettings({
+                          dashboardRails: {
+                            ...(settings.dashboardRails || { continueWatching: true, favorites: true, recent: true, sources: true }),
+                            favorites: e.target.checked,
+                          },
+                        })
+                      }
+                    />
+                    <span className="toggle-slider" />
+                  </label>
+                </div>
+              </div>
+
+              <div className="setting-field-row">
+                <div className="field-meta">
+                  <label className="field-title">Recently Watched Live TV Rail</label>
+                  <p className="field-desc">Horizontal carousel displaying channel history with live broadcast intervals.</p>
+                </div>
+                <div className="field-control">
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={settings.dashboardRails?.recent !== false}
+                      onChange={(e) =>
+                        updateSettings({
+                          dashboardRails: {
+                            ...(settings.dashboardRails || { continueWatching: true, favorites: true, recent: true, sources: true }),
+                            recent: e.target.checked,
+                          },
+                        })
+                      }
+                    />
+                    <span className="toggle-slider" />
+                  </label>
+                </div>
+              </div>
+
+              <div className="setting-field-row">
+                <div className="field-meta">
+                  <label className="field-title">Recently Used Sources Rail</label>
+                  <p className="field-desc">Quick-access source cards for switching between loaded M3U and Xtream playlists.</p>
+                </div>
+                <div className="field-control">
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={settings.dashboardRails?.sources !== false}
+                      onChange={(e) =>
+                        updateSettings({
+                          dashboardRails: {
+                            ...(settings.dashboardRails || { continueWatching: true, favorites: true, recent: true, sources: true }),
+                            sources: e.target.checked,
+                          },
+                        })
+                      }
+                    />
+                    <span className="toggle-slider" />
+                  </label>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* =========================================================================
+             SECTION 5: REMOTE (10-Foot Leanback & Web Remote Control)
+             ========================================================================= */}
+          {activeSection === 'remote' && (
+            <div className="settings-form-group">
+              <div className="section-title-wrap">
+                <h2 className="section-main-title">Remote & Android TV</h2>
+                <p className="section-main-subtitle">10-foot D-Pad remote control, focus rings, and smartphone remote server</p>
+              </div>
+
+              <div className="setting-field-row">
+                <div className="field-meta">
+                  <label className="field-title">10-Foot TV Remote Navigation Mode</label>
+                  <p className="field-desc">Enlarges high-contrast cyan glowing focus rings for D-Pad remotes.</p>
+                </div>
+                <div className="field-control">
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={settings.tvMode}
+                      onChange={(e) => updateSettings({ tvMode: e.target.checked })}
+                    />
+                    <span className="toggle-slider" />
+                  </label>
+                </div>
+              </div>
+
+              <div className="setting-field-row">
+                <div className="field-meta">
+                  <label className="field-title">Web Remote Control Server</label>
+                  <p className="field-desc">Allows controlling playback from your phone via local Wi-Fi browser.</p>
+                </div>
+                <div className="field-control">
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={settings.remoteControl || false}
+                      onChange={(e) => updateSettings({ remoteControl: e.target.checked })}
+                    />
+                    <span className="toggle-slider" />
+                  </label>
+                </div>
+              </div>
+
+              <div className="setting-field-row">
+                <div className="field-meta">
+                  <label className="field-title">Remote Control Port</label>
+                  <p className="field-desc">Local TCP port for the remote web app (default: 3000).</p>
+                </div>
+                <div className="field-control" style={{ maxWidth: '140px' }}>
+                  <input
+                    type="number"
+                    value={settings.remoteControlPort || 3000}
+                    onChange={(e) => updateSettings({ remoteControlPort: parseInt(e.target.value, 10) || 3000 })}
+                    className="tokerian-input"
+                    style={{ width: '100%' }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* =========================================================================
+             SECTION 6: METADATA (TMDB Enrichment)
+             ========================================================================= */}
+          {activeSection === 'metadata' && (
+            <div className="settings-form-group">
+              <div className="section-title-wrap">
+                <h2 className="section-main-title">Metadata & TMDB</h2>
+                <p className="section-main-subtitle">Poster artwork, movie plot overviews, cast, and ratings enrichment</p>
+              </div>
+
+              <div className="setting-field-row">
+                <div className="field-meta">
+                  <label className="field-title">TMDB Metadata Enrichment</label>
+                  <p className="field-desc">Opt-in TMDB artwork and overview enrichment for VOD movies and series.</p>
+                </div>
+                <div className="field-control">
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={settings.tmdbEnabled || false}
+                      onChange={(e) => updateSettings({ tmdbEnabled: e.target.checked })}
+                    />
+                    <span className="toggle-slider" />
+                  </label>
+                </div>
+              </div>
+
+              <div className="setting-field-row">
+                <div className="field-meta">
+                  <label className="field-title">TMDB API Key (v3 auth)</label>
+                  <p className="field-desc">Enter your personal TMDB API key to enable high-rate metadata requests.</p>
+                </div>
+                <div className="field-control" style={{ maxWidth: '320px' }}>
                   <input
                     type="text"
-                    value={recordingFolderInput}
-                    onChange={(e) => setRecordingFolderInput(e.target.value)}
+                    value={tmdbKeyInput}
+                    onChange={(e) => {
+                      setTmdbKeyInput(e.target.value);
+                      updateSettings({ tmdbApiKey: e.target.value });
+                    }}
+                    placeholder="Enter TMDB API Key..."
                     className="tokerian-input"
-                    style={{ flex: 1 }}
+                    style={{ width: '100%' }}
                   />
-                  <button
-                    type="button"
-                    onClick={() => updateSettings({ recordingFolder: recordingFolderInput })}
-                    className="tokerian-btn tokerian-btn-primary"
-                  >
-                    Save Path
-                  </button>
-                </div>
-                <span className="settings-hint">Streams, scheduled DVR shows, and offline VOD episodes will be stored here.</span>
-              </div>
-
-              <div className="setting-row">
-                <label className="setting-label">Recording Container Format</label>
-                <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
-                  {(['mp4', 'ts', 'mkv'] as const).map((fmt) => (
-                    <button
-                      key={fmt}
-                      type="button"
-                      onClick={() => updateSettings({ recordingFormat: fmt })}
-                      className={`tokerian-btn ${recordingFormat === fmt ? 'tokerian-btn-primary' : ''}`}
-                      style={{ textTransform: 'uppercase', padding: '8px 22px' }}
-                    >
-                      {fmt}
-                    </button>
-                  ))}
-                </div>
-                <span className="settings-hint">MP4 is recommended for universal playback across all mobile and smart TV players.</span>
-              </div>
-            </div>
-          )}
-
-          {/* SECTION 4: EXTERNAL PLAYERS */}
-          {activeSection === 'external' && (
-            <div className="settings-form-group">
-              <h3 className="section-heading">External Process Media Players (VLC & MPV)</h3>
-
-              <div className="setting-row">
-                <label className="setting-label">Default Desktop External Player</label>
-                <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
-                  {(['vlc', 'mpv'] as const).map((p) => (
-                    <button
-                      key={p}
-                      type="button"
-                      onClick={() => updateSettings({ defaultExternalPlayer: p })}
-                      className={`tokerian-btn ${defaultExternalPlayer === p ? 'tokerian-btn-primary' : ''}`}
-                      style={{ padding: '8px 24px', textTransform: 'uppercase' }}
-                    >
-                      {p} Player {detectedPlayers[p] ? '• Installed' : ''}
-                    </button>
-                  ))}
                 </div>
               </div>
 
-              <div className="setting-row">
-                <label className="setting-label">Custom VLC Executable Path</label>
-                <input
-                  type="text"
-                  value={vlcPathInput}
-                  onChange={(e) => setVlcPathInput(e.target.value)}
-                  placeholder="C:\Program Files\VideoLAN\VLC\vlc.exe"
-                  className="tokerian-input"
-                  style={{ width: '100%', marginTop: '6px' }}
-                />
-              </div>
-
-              <div className="setting-row">
-                <label className="setting-label">Custom MPV Executable Path</label>
-                <input
-                  type="text"
-                  value={mpvPathInput}
-                  onChange={(e) => setMpvPathInput(e.target.value)}
-                  placeholder="C:\mpv\mpv.exe"
-                  className="tokerian-input"
-                  style={{ width: '100%', marginTop: '6px' }}
-                />
-              </div>
-
-              <button
-                type="button"
-                onClick={handleSaveExternalPaths}
-                className="tokerian-btn tokerian-btn-primary"
-                style={{ alignSelf: 'flex-start' }}
-              >
-                Save & Verify Players
-              </button>
-            </div>
-          )}
-
-          {/* SECTION 5: TITLE SANITIZER */}
-          {activeSection === 'titles' && (
-            <div className="settings-form-group">
-              <h3 className="section-heading">Channel & VOD Title Sanitizer</h3>
-
-              <div className="setting-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                  <div style={{ fontWeight: 600, color: '#fff', fontSize: '0.9rem' }}>Enable Title Sanitizer</div>
-                  <span className="settings-hint">Strips noisy country prefixes (<code>US - </code>, <code>IN: </code>) and codec tags (<code>[FHD]</code>).</span>
+              <div className="setting-field-row">
+                <div className="field-meta">
+                  <label className="field-title">Present M3U VOD details with TMDB</label>
+                  <p className="field-desc">Present recognized movie files in VOD detail modal with posters and synopsis.</p>
                 </div>
-                <label className="toggle-switch">
-                  <input
-                    type="checkbox"
-                    checked={cleanChannelTitles}
-                    onChange={(e) => updateSettings({ cleanChannelTitles: e.target.checked })}
-                  />
-                  <span className="toggle-slider" />
-                </label>
-              </div>
-
-              <div className="setting-row" style={{ background: 'rgba(0,0,0,0.3)', padding: '14px', borderRadius: 'var(--radius-sm)' }}>
-                <label className="setting-label">Live Test Bench</label>
-                <input
-                  type="text"
-                  value={testTitle}
-                  onChange={(e) => setTestTitle(e.target.value)}
-                  className="tokerian-input"
-                  style={{ width: '100%', marginTop: '6px' }}
-                />
-                <div style={{ marginTop: '10px', fontSize: '0.85rem' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Sanitized Output: </span>
-                  <strong style={{ color: '#4ade80' }}>"{ChannelSanitizer.cleanTitle(testTitle)}"</strong>
+                <div className="field-control">
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={settings.m3uVodDetails !== false}
+                      onChange={(e) => updateSettings({ m3uVodDetails: e.target.checked })}
+                    />
+                    <span className="toggle-slider" />
+                  </label>
                 </div>
               </div>
             </div>
           )}
 
-          {/* SECTION 6: PARENTAL LOCK PIN */}
+          {/* =========================================================================
+             SECTION 7: PARENTAL LOCK (PIN Security & Auto-Relock)
+             ========================================================================= */}
           {activeSection === 'parental' && (
             <div className="settings-form-group">
-              <h3 className="section-heading">Parental Lock & PIN Security</h3>
+              <div className="section-title-wrap">
+                <h2 className="section-main-title">Parental Lock PIN</h2>
+                <p className="section-main-subtitle">Protect adult categories and sensitive content behind a 4–8 digit PIN</p>
+              </div>
 
               {pinMessage && (
-                <div style={{ padding: '10px 14px', borderRadius: 'var(--radius-sm)', background: pinMessage.includes('successfully') || pinMessage.includes('unlocked') ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)', color: pinMessage.includes('successfully') || pinMessage.includes('unlocked') ? '#10b981' : '#ef4444', fontSize: '0.85rem' }}>
+                <div className="settings-pin-alert">
                   {pinMessage}
                 </div>
               )}
 
-              <div className="setting-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                  <div style={{ fontWeight: 600, color: '#fff', fontSize: '0.9rem' }}>Parental Control Gate</div>
-                  <span className="settings-hint">Requires 4-8 digit PIN to view adult channels and categories.</span>
+              <div className="setting-field-row">
+                <div className="field-meta">
+                  <label className="field-title">Parental Lock Gate</label>
+                  <p className="field-desc">Hides restricted channels and categories until unlocked with your PIN.</p>
                 </div>
-                <label className="toggle-switch">
-                  <input
-                    type="checkbox"
-                    checked={parentalLockEnabled}
-                    onChange={(e) => updateSettings({ parentalLockEnabled: e.target.checked })}
-                  />
-                  <span className="toggle-slider" />
-                </label>
+                <div className="field-control">
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={settings.parentalLockEnabled || false}
+                      onChange={(e) => updateSettings({ parentalLockEnabled: e.target.checked })}
+                    />
+                    <span className="toggle-slider" />
+                  </label>
+                </div>
               </div>
 
-              {parentalLockEnabled && (
+              {settings.parentalLockEnabled && (
                 <>
                   <form onSubmit={handleSetPin} style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '12px' }}>
-                    <label className="setting-label">{parentalLockPinHash ? 'Change Parental PIN' : 'Setup New Parental PIN'}</label>
-                    <div style={{ display: 'flex', gap: '10px' }}>
+                    <label className="field-title">{settings.parentalLockPinHash ? 'Change PIN' : 'Create New PIN'}</label>
+                    <div style={{ display: 'flex', gap: '10px', maxWidth: '420px' }}>
                       <input
                         type="password"
                         maxLength={8}
-                        placeholder="New PIN (4-8 digits)"
+                        placeholder="PIN (4-8 digits)"
                         value={newPin}
                         onChange={(e) => setNewPin(e.target.value)}
                         className="tokerian-input"
@@ -635,15 +1143,15 @@ export const SettingsPage: React.FC = () => {
                     </div>
                   </form>
 
-                  {isSessionUnlocked ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '14px' }}>
-                      <span style={{ color: '#10b981', fontSize: '0.85rem', fontWeight: 600 }}>Session currently unlocked</span>
+                  {settings.isSessionUnlocked ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '14px' }}>
+                      <span style={{ color: '#10b981', fontSize: '0.85rem', fontWeight: 600 }}>• Session currently unlocked</span>
                       <button type="button" onClick={lockParentalSession} className="tokerian-btn">
                         Lock Now
                       </button>
                     </div>
                   ) : (
-                    <form onSubmit={handleUnlockSession} style={{ display: 'flex', gap: '10px', marginTop: '14px' }}>
+                    <form onSubmit={handleUnlockSession} style={{ display: 'flex', gap: '10px', marginTop: '14px', maxWidth: '340px' }}>
                       <input
                         type="password"
                         placeholder="Enter PIN to unlock"
@@ -652,7 +1160,7 @@ export const SettingsPage: React.FC = () => {
                         className="tokerian-input"
                       />
                       <button type="submit" className="tokerian-btn tokerian-btn-primary">
-                        Unlock Session
+                        Unlock
                       </button>
                     </form>
                   )}
@@ -661,44 +1169,141 @@ export const SettingsPage: React.FC = () => {
             </div>
           )}
 
-          {/* SECTION 7: BACKUP & DATA RESET */}
+          {/* =========================================================================
+             SECTION 8: BACKUP (JSON Export & Import)
+             ========================================================================= */}
           {activeSection === 'backup' && (
             <div className="settings-form-group">
-              <h3 className="section-heading">Data Backup, Export & Factory Reset</h3>
-
-              <div className="setting-row">
-                <label className="setting-label">Export Application State (JSON Backup)</label>
-                <p className="settings-hint">Exports all saved playlists, favorites ordering, watch history, and configuration preferences.</p>
-                <button
-                  type="button"
-                  onClick={handleExportBackup}
-                  className="tokerian-btn tokerian-btn-primary"
-                  style={{ marginTop: '8px' }}
-                >
-                  <Download size={16} /> Export Backup (.json)
-                </button>
+              <div className="section-title-wrap">
+                <h2 className="section-main-title">Backup & Restore</h2>
+                <p className="section-main-subtitle">Export or restore all playlists, favorite channel ordering, and settings</p>
               </div>
 
-              <div className="setting-row">
-                <label className="setting-label">Restore from Backup</label>
-                <p className="settings-hint">Upload previously exported JSON state to restore settings and playlists.</p>
-                <label className="tokerian-btn" style={{ marginTop: '8px', display: 'inline-flex', cursor: 'pointer' }}>
-                  <Upload size={16} /> Import Backup File
-                  <input type="file" accept=".json" onChange={handleImportBackup} style={{ display: 'none' }} />
-                </label>
+              <div className="setting-field-row">
+                <div className="field-meta">
+                  <label className="field-title">Export Application State (JSON Backup)</label>
+                  <p className="field-desc">Downloads a complete backup JSON containing your sources, favorites, and settings.</p>
+                </div>
+                <div className="field-control">
+                  <button
+                    type="button"
+                    onClick={handleExportBackup}
+                    className="tokerian-btn tokerian-btn-primary"
+                  >
+                    <Download size={16} /> Export JSON Backup
+                  </button>
+                </div>
               </div>
 
-              <div className="setting-row" style={{ marginTop: '24px', paddingTop: '18px', borderTop: '1px solid rgba(239, 68, 68, 0.2)' }}>
-                <label className="setting-label" style={{ color: '#ef4444' }}>Danger Zone: Reset All Data</label>
-                <p className="settings-hint">Clears all IndexedDB playlists, cached EPG XML schedules, favorites, and restores default settings.</p>
-                <button
-                  type="button"
-                  onClick={handleResetData}
-                  className="tokerian-btn"
-                  style={{ marginTop: '8px', borderColor: '#ef4444', color: '#ef4444' }}
-                >
-                  <Trash2 size={16} /> Reset Everything
-                </button>
+              <div className="setting-field-row">
+                <div className="field-meta">
+                  <label className="field-title">Restore from Backup</label>
+                  <p className="field-desc">Upload a previously exported Tokerian JSON backup file.</p>
+                </div>
+                <div className="field-control">
+                  <label className="tokerian-btn" style={{ cursor: 'pointer' }}>
+                    <Upload size={16} /> Select Backup File
+                    <input
+                      type="file"
+                      accept=".json"
+                      onChange={handleImportBackup}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* =========================================================================
+             SECTION 9: RESET (Factory Reset & Cache Purge)
+             ========================================================================= */}
+          {activeSection === 'reset' && (
+            <div className="settings-form-group">
+              <div className="section-title-wrap">
+                <h2 className="section-main-title">Reset & Wipe</h2>
+                <p className="section-main-subtitle">Clear cached channel data or restore application to factory state</p>
+              </div>
+
+              <div className="setting-field-row">
+                <div className="field-meta">
+                  <label className="field-title">Clear Channel & EPG Caches</label>
+                  <p className="field-desc">Empties IndexedDB cached channels and schedules without affecting your saved playlists.</p>
+                </div>
+                <div className="field-control">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (storageAdapter.clearChannels) {
+                        await storageAdapter.clearChannels();
+                        showToast('Channel cache cleared');
+                      }
+                    }}
+                    className="tokerian-btn"
+                  >
+                    Clear Caches
+                  </button>
+                </div>
+              </div>
+
+              <div className="setting-field-row" style={{ borderColor: 'rgba(239, 68, 68, 0.3)' }}>
+                <div className="field-meta">
+                  <label className="field-title" style={{ color: '#ef4444' }}>Factory Reset (Full Data Wipe)</label>
+                  <p className="field-desc">Permanently wipes all playlists, favorites, history, downloads, and custom settings.</p>
+                </div>
+                <div className="field-control">
+                  <button
+                    type="button"
+                    onClick={handleFactoryReset}
+                    className="tokerian-btn"
+                    style={{ background: 'rgba(239, 68, 68, 0.2)', borderColor: '#ef4444', color: '#ef4444' }}
+                  >
+                    <Trash2 size={16} /> Factory Reset
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* =========================================================================
+             SECTION 10: ABOUT (Tokerian System Information)
+             ========================================================================= */}
+          {activeSection === 'about' && (
+            <div className="settings-form-group">
+              <div className="section-title-wrap">
+                <h2 className="section-main-title">About Tokerian</h2>
+                <p className="section-main-subtitle">Application information, platform architecture, and licenses</p>
+              </div>
+
+              <div className="about-info-card" style={{ padding: '20px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: 'var(--radius-md)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px' }}>
+                  <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--accent-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Tv size={26} color="#fff" />
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#fff' }}>Tokerian IPTV Client</h3>
+                    <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>v1.0.0 (Production)</p>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px', marginTop: '16px' }}>
+                  <div className="about-stat-box">
+                    <span className="stat-label">Platforms Supported</span>
+                    <strong className="stat-value">Web, Tablet, Mobile, Desktop, Android TV</strong>
+                  </div>
+                  <div className="about-stat-box">
+                    <span className="stat-label">Streaming Engine</span>
+                    <strong className="stat-value">HLS, MPEG-TS, DASH, Xtream Codes</strong>
+                  </div>
+                  <div className="about-stat-box">
+                    <span className="stat-label">External Players</span>
+                    <strong className="stat-value">VLC & MPV Process Spawning</strong>
+                  </div>
+                  <div className="about-stat-box">
+                    <span className="stat-label">License</span>
+                    <strong className="stat-value">MIT Open Source</strong>
+                  </div>
+                </div>
               </div>
             </div>
           )}

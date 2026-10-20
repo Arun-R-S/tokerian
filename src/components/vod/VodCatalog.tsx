@@ -1,4 +1,4 @@
-// VOD Movies & TV Series Catalog Grid ported and adapted from IPTVnator
+// VOD Movies & TV Series Catalog Grid ported and adapted
 // Features cinema poster cards, category filters, sorting, and Continue Watching resume shelf.
 
 import React, { useMemo } from 'react';

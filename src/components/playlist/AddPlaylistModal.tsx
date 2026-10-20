@@ -1,4 +1,4 @@
-// Add Playlist Modal ported and adapted from IPTVnator
+// Add Playlist Modal ported and adapted
 // Supports M3U File drag & drop, Remote M3U URL, and Xtream Codes API integration.
 
 import React, { useState, useRef } from 'react';

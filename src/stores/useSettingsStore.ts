@@ -50,6 +50,37 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   recordingFormat: 'mp4',
   isSessionUnlocked: false,
 
+  // Complete Defaults
+  language: 'English',
+  visualTheme: 'dark',
+  coverSize: 'medium',
+  showCoverTitles: true,
+  startupView: 'first',
+  startupWindowMode: 'normal',
+  updateChannel: 'stable',
+  fullscreenChannelPanel: true,
+  vodAutoFailover: false,
+  stripCountryPrefix: true,
+  epgViewMode: 'timeline',
+  epgOffsetMinutes: 0,
+  preferUploadedEpgOverXtream: false,
+  dashboardRails: {
+    continueWatching: true,
+    favorites: true,
+    recent: true,
+    sources: true,
+  },
+  remoteControl: false,
+  remoteControlPort: 3000,
+  tmdbEnabled: false,
+  tmdbApiKey: '',
+  m3uVodDetails: true,
+  mpvPlayerArguments: '',
+  mpvReuseInstance: false,
+  vlcPlayerArguments: '',
+  vlcReuseInstance: false,
+  parentalLockRelockMinutes: 15,
+
   unlockParentalSession: async (pin: string) => {
     const { parentalLockPinHash } = get();
     if (!parentalLockPinHash) {

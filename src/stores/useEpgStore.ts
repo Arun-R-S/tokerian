@@ -1,4 +1,4 @@
-// EPG Store ported and adapted from IPTVnator
+// EPG Store ported and adapted
 // Manages EPG data ingestion, live schedule matching, and periodic ticker for progress bars.
 
 import { create } from 'zustand';

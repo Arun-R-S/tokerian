@@ -1,4 +1,4 @@
-// M3U Playlist Importer ported and adapted from IPTVnator
+// M3U Playlist Importer ported and adapted
 // Supports local file upload (.m3u, .m3u8), remote URL download, and raw text pasting.
 
 import parser from 'iptv-playlist-parser';

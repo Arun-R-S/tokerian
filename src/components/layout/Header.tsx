@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Search,
-  Sliders,
   Tv,
   X,
   Menu,
@@ -19,7 +18,6 @@ import {
 import { useChannelStore } from '../../stores/useChannelStore';
 import { useSettingsStore } from '../../stores/useSettingsStore';
 import { useMultiPlaylistStore } from '../../stores/useMultiPlaylistStore';
-import type { SidebarTab } from './Sidebar';
 
 interface HeaderProps {
   onOpenPlaylists?: () => void;
@@ -28,8 +26,6 @@ interface HeaderProps {
   onOpenCommandPalette?: () => void;
   onOpenKeyboardShortcuts?: () => void;
   onToggleMobileMenu?: () => void;
-  activeTab?: SidebarTab;
-  onTabChange?: (tab: SidebarTab) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -39,8 +35,6 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenCommandPalette,
   onOpenKeyboardShortcuts,
   onToggleMobileMenu,
-  activeTab,
-  onTabChange,
 }) => {
   const activePlaylistId = useMultiPlaylistStore((s) => s.activePlaylistId);
   const playlists = useMultiPlaylistStore((s) => s.playlists);
@@ -215,7 +209,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* CENTER SECTION: IPTVnator Centered Pill Search Bar */}
+      {/* CENTER SECTION: Centered Pill Search Bar */}
       <div className="header-center-col">
         <div
           className="iptvnator-search-pill"
@@ -263,60 +257,50 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* RIGHT SECTION: Quick Action Icons & Window Controls */}
       <div className="header-right-col">
-        {/* 1. Keyboard Shortcuts Cheatsheet */}
+        {/* 1. Keyboard Shortcuts Cheatsheet (Desktop Only) */}
         {onOpenKeyboardShortcuts && (
           <button
             type="button"
             onClick={onOpenKeyboardShortcuts}
-            className="header-action-icon-btn"
+            className="header-action-icon-btn desktop-only-action"
             title="Keyboard Shortcuts Cheatsheet"
           >
             <Keyboard size={18} />
           </button>
         )}
 
-        {/* 2. Add Playlist / Source */}
+        {/* 2. Add Playlist / Source (Desktop Only) */}
         {onOpenAddPlaylist && (
           <button
             type="button"
             onClick={onOpenAddPlaylist}
-            className="header-action-icon-btn"
+            className="header-action-icon-btn desktop-only-action"
             title="Add Playlist / Source (+)"
           >
             <Plus size={18} />
           </button>
         )}
 
-        {/* 3. TV Guide (EPG Timeline Matrix) */}
+        {/* 3. TV Guide (EPG Timeline Matrix - Desktop Only) */}
         {onOpenEpgGuide && (
           <button
             type="button"
             onClick={onOpenEpgGuide}
-            className="header-action-icon-btn"
+            className="header-action-icon-btn desktop-only-action"
             title="TV Guide & Schedule (Key G)"
           >
             <Calendar size={17} />
           </button>
         )}
 
-        {/* 4. TV D-Pad Mode Toggle */}
+        {/* 4. TV D-Pad Mode Toggle (Desktop/TV Only) */}
         <button
           type="button"
           onClick={() => updateSettings({ tvMode: !tvMode })}
-          className={`header-action-icon-btn ${tvMode ? 'action-icon-active' : ''}`}
+          className={`header-action-icon-btn desktop-only-action ${tvMode ? 'action-icon-active' : ''}`}
           title={tvMode ? 'Disable TV D-Pad Mode' : 'Enable 10-Foot TV D-Pad Mode'}
         >
           <Tv size={17} />
-        </button>
-
-        {/* 5. Settings */}
-        <button
-          type="button"
-          onClick={() => onTabChange?.('settings')}
-          className={`header-action-icon-btn ${activeTab === 'settings' ? 'action-icon-active' : ''}`}
-          title="App Settings & Preferences"
-        >
-          <Sliders size={18} />
         </button>
 
         {/* 6. Subtle Desktop Window Controls (Visible ONLY in Desktop Electron App) */}
