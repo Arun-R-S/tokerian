@@ -5173,39 +5173,37 @@ body.tv-mode,
   }
 
   /* 2. Responsive Dedicated Settings Page on Mobile */
+  .tokerian-main.tokerian-main-settings,
+  .tokerian-main:has(.settings-page-container) {
+    padding: 8px 10px 72px 10px !important;
+    overflow: hidden !important;
+    height: 100% !important;
+  }
+
   .settings-page-container {
-    padding: 0 0 100px 0 !important;
-    height: auto !important;
-    overflow: visible !important;
+    padding: 0 !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
     width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
     box-sizing: border-box !important;
   }
 
   .settings-page-header {
-    margin-bottom: 14px;
-    padding: 0 2px;
-  }
-
-  .settings-header-icon-box {
-    width: 36px;
-    height: 36px;
-  }
-
-  .settings-page-title {
-    font-size: 1.3rem;
-  }
-
-  .settings-page-subtitle {
-    font-size: 0.78rem;
+    display: none !important;
   }
 
   .settings-page-layout {
     display: flex !important;
     flex-direction: column !important;
-    gap: 12px !important;
+    gap: 8px !important;
     width: 100% !important;
     flex: 1 !important;
     min-height: 0 !important;
+    height: 100% !important;
+    max-height: 100% !important;
     overflow: hidden !important;
   }
 
@@ -5216,14 +5214,20 @@ body.tv-mode,
   .settings-nav-sidebar {
     display: flex !important;
     flex-direction: row !important;
+    align-items: center !important;
+    height: auto !important;
+    min-height: 42px !important;
+    max-height: 46px !important;
+    flex-shrink: 0 !important;
     overflow-x: auto !important;
+    overflow-y: hidden !important;
     -webkit-overflow-scrolling: touch;
     white-space: nowrap !important;
-    padding: 4px 2px 10px 2px !important;
+    padding: 2px 2px 6px 2px !important;
     gap: 8px !important;
     scrollbar-width: none !important;
     -ms-overflow-style: none !important;
-    border-radius: 12px !important;
+    border-radius: 0 !important;
     width: 100% !important;
     background: transparent !important;
     border: none !important;
@@ -5237,8 +5241,13 @@ body.tv-mode,
   .settings-nav-item {
     display: inline-flex !important;
     align-items: center !important;
+    justify-content: center !important;
     gap: 6px !important;
-    padding: 8px 14px !important;
+    height: 34px !important;
+    min-height: 34px !important;
+    max-height: 34px !important;
+    align-self: center !important;
+    padding: 0 14px !important;
     font-size: 0.8rem !important;
     font-weight: 600 !important;
     flex-shrink: 0 !important;
@@ -5248,13 +5257,20 @@ body.tv-mode,
     background: rgba(255, 255, 255, 0.05) !important;
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
     color: var(--text-muted) !important;
+    box-sizing: border-box !important;
+  }
+
+  .settings-nav-item .material-icons {
+    font-size: 16px !important;
+    width: 16px !important;
+    height: 16px !important;
   }
 
   .settings-nav-item.nav-item-active {
     background: rgba(56, 189, 248, 0.22) !important;
     border-color: #38bdf8 !important;
     color: #38bdf8 !important;
-    box-shadow: 0 0 14px rgba(56, 189, 248, 0.3) !important;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.3) !important;
   }
 
   .settings-sidebar-back-btn {
@@ -5262,12 +5278,17 @@ body.tv-mode,
   }
 
   .settings-section-card {
-    padding: 16px 14px !important;
-    min-height: unset !important;
+    flex: 1 !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    padding: 16px 14px 28px 14px !important;
     border-radius: 14px !important;
     width: 100% !important;
     box-sizing: border-box !important;
     overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
   }
 
   .settings-section-card .section-title-wrap {
