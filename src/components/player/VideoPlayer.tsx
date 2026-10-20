@@ -20,9 +20,19 @@ import {
   AlertTriangle,
   Radio,
   X,
+  Calendar,
+  MonitorPlay,
+  Copy,
+  Check,
 } from 'lucide-react';
+import { EpgRibbon } from '../epg/EpgRibbon';
+import { ExternalPlayerService } from '../../services/player/ExternalPlayerService';
 
-export const VideoPlayer: React.FC = () => {
+interface VideoPlayerProps {
+  onOpenEpgGuide?: () => void;
+}
+
+export const VideoPlayer: React.FC<VideoPlayerProps> = ({ onOpenEpgGuide }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const osdTimerRef = useRef<number | null>(null);
@@ -30,7 +40,13 @@ export const VideoPlayer: React.FC = () => {
   const [showOsd, setShowOsd] = useState(true);
   const [showAudioMenu, setShowAudioMenu] = useState(false);
   const [showSubtitleMenu, setShowSubtitleMenu] = useState(false);
+  const [showExternalMenu, setShowExternalMenu] = useState(false);
   const [isCastConnecting, setIsCastConnecting] = useState(false);
+
+  // External Player State
+  const [externalPlayerActive, setExternalPlayerActive] = useState<{ player: 'vlc' | 'mpv'; pid?: number } | null>(null);
+  const [externalToast, setExternalToast] = useState<string | null>(null);
+  const [copiedToast, setCopiedToast] = useState(false);
 
   const currentChannel = usePlayerStore((s) => s.currentChannel);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
@@ -64,9 +80,42 @@ export const VideoPlayer: React.FC = () => {
 
   const corsProxyEnabled = useSettingsStore((s) => s.corsProxyEnabled);
   const autoPlayNextOnError = useSettingsStore((s) => s.autoPlayNextOnError);
+  const customVlcPath = useSettingsStore((s) => s.customVlcPath);
+  const customMpvPath = useSettingsStore((s) => s.customMpvPath);
   const updateSettings = useSettingsStore((s) => s.updateSettings);
 
   const [autoSkipCountdown, setAutoSkipCountdown] = useState<number | null>(null);
+
+  // External Player Launch Handlers
+  const handleOpenExternal = async (player: 'vlc' | 'mpv') => {
+    setShowExternalMenu(false);
+    if (!currentChannel) return;
+
+    if (isPlaying) {
+      togglePlay();
+    }
+
+    const customPath = player === 'vlc' ? customVlcPath : customMpvPath;
+    const res = await ExternalPlayerService.launch(player, currentChannel.url, currentChannel.name, customPath);
+
+    if (res.success) {
+      setExternalPlayerActive({ player, pid: res.pid });
+      setExternalToast(`Streaming in ${player.toUpperCase()} Player`);
+      setTimeout(() => setExternalToast(null), 4000);
+    } else {
+      setExternalToast(res.error || `Could not start ${player.toUpperCase()}`);
+      setTimeout(() => setExternalToast(null), 5000);
+    }
+  };
+
+  const handleCopyStreamUrl = async () => {
+    if (!currentChannel) return;
+    const ok = await ExternalPlayerService.copyStreamUrl(currentChannel.url);
+    if (ok) {
+      setCopiedToast(true);
+      setTimeout(() => setCopiedToast(false), 2000);
+    }
+  };
 
   // In-App Auto Subtitles (Speech-to-Text)
   const [autoCaptionsEnabled, setAutoCaptionsEnabled] = useState(false);
@@ -255,6 +304,47 @@ export const VideoPlayer: React.FC = () => {
         onDoubleClick={toggleFullscreen}
       />
 
+      {/* Toast Notification */}
+      {externalToast && (
+        <div className="player-external-toast">
+          <MonitorPlay size={15} color="var(--accent-primary)" />
+          <span>{externalToast}</span>
+        </div>
+      )}
+
+      {/* External Player Active Overlay */}
+      {externalPlayerActive && (
+        <div className="player-external-overlay">
+          <MonitorPlay size={44} color="#6366f1" />
+          <h3 style={{ margin: '12px 0 6px', fontSize: '1.25rem', fontWeight: 700, color: '#fff' }}>
+            Streaming in {externalPlayerActive.player.toUpperCase()} Media Player
+          </h3>
+          <p style={{ margin: '0 0 16px 0', fontSize: '0.85rem', color: 'var(--text-secondary)', maxWidth: '420px' }}>
+            Broadcasting feed directly in external native window for high-performance zero-copy decoding.
+          </p>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              type="button"
+              onClick={() => {
+                setExternalPlayerActive(null);
+                togglePlay();
+              }}
+              className="tokerian-btn tokerian-btn-primary"
+            >
+              <Play size={16} fill="currentColor" /> Resume in Tokerian
+            </button>
+            <button
+              type="button"
+              onClick={handleCopyStreamUrl}
+              className="tokerian-btn"
+            >
+              {copiedToast ? <Check size={16} color="#10b981" /> : <Copy size={16} />}
+              {copiedToast ? 'URL Copied!' : 'Copy Stream URL'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Real-Time Live Speech Caption Overlay */}
       {autoCaptionsEnabled && liveCaptionText && (
         <div className="player-live-captions-overlay">
@@ -333,6 +423,22 @@ export const VideoPlayer: React.FC = () => {
                 </button>
                 <button
                   type="button"
+                  onClick={() => handleOpenExternal('vlc')}
+                  className="tokerian-btn"
+                  title="Play in VLC Media Player"
+                >
+                  <MonitorPlay size={16} /> Open in VLC
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleOpenExternal('mpv')}
+                  className="tokerian-btn"
+                  title="Play in MPV Media Player"
+                >
+                  <MonitorPlay size={16} /> Open in MPV
+                </button>
+                <button
+                  type="button"
                   onClick={() => {
                     const nextMode = !corsProxyEnabled;
                     updateSettings({ corsProxyEnabled: nextMode });
@@ -340,14 +446,7 @@ export const VideoPlayer: React.FC = () => {
                   }}
                   className="tokerian-btn"
                 >
-                  {corsProxyEnabled ? 'Switch to Direct Connection' : 'Try via CORS Proxy'}
-                </button>
-                <button
-                  type="button"
-                  onClick={zapNext}
-                  className="tokerian-btn"
-                >
-                  <SkipForward size={16} /> Next Channel
+                  {corsProxyEnabled ? 'Direct Mode' : 'CORS Proxy'}
                 </button>
               </div>
             </>
@@ -381,6 +480,69 @@ export const VideoPlayer: React.FC = () => {
           </div>
 
           <div className="osd-top-actions">
+            {/* Desktop External Player Launcher */}
+            <div className="osd-dropdown-wrapper">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowExternalMenu(!showExternalMenu);
+                  setShowAudioMenu(false);
+                  setShowSubtitleMenu(false);
+                }}
+                className={`tokerian-btn-icon ${showExternalMenu ? 'btn-active' : ''}`}
+                title="Play in External Player (VLC / MPV)"
+              >
+                <MonitorPlay size={18} />
+              </button>
+
+              {showExternalMenu && (
+                <div className="osd-menu-popup glass-panel" style={{ minWidth: '210px' }}>
+                  <div className="osd-menu-header">External Players</div>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenExternal('vlc')}
+                    className="osd-menu-item"
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    <MonitorPlay size={15} color="#f97316" />
+                    <span>Open in VLC Player</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenExternal('mpv')}
+                    className="osd-menu-item"
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    <MonitorPlay size={15} color="#8b5cf6" />
+                    <span>Open in MPV Player</span>
+                  </button>
+                  <div className="subtitle-menu-divider" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleCopyStreamUrl();
+                      setShowExternalMenu(false);
+                    }}
+                    className="osd-menu-item"
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    {copiedToast ? <Check size={15} color="#10b981" /> : <Copy size={15} />}
+                    <span>{copiedToast ? 'URL Copied!' : 'Copy Stream URL'}</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {onOpenEpgGuide && (
+              <button
+                type="button"
+                onClick={onOpenEpgGuide}
+                className="tokerian-btn-icon"
+                title="TV Guide & Schedule (EPG)"
+              >
+                <Calendar size={18} />
+              </button>
+            )}
             <button
               type="button"
               onClick={() => toggleFavorite(currentChannel.id)}
@@ -398,6 +560,15 @@ export const VideoPlayer: React.FC = () => {
               <X size={18} />
             </button>
           </div>
+        </div>
+
+        {/* Middle Floating Area: Live EPG Program Ribbon */}
+        <div style={{ maxWidth: '480px', margin: 'auto 0 10px 0', pointerEvents: 'auto' }}>
+          <EpgRibbon
+            tvgId={currentChannel.tvgId}
+            channelName={currentChannel.name}
+            onOpenFullGuide={onOpenEpgGuide}
+          />
         </div>
 
         {/* Bottom Bar: Playback Controls */}

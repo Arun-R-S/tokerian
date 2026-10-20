@@ -1,14 +1,33 @@
 import React from 'react';
 import { useChannelStore } from '../../stores/useChannelStore';
 import { useSettingsStore } from '../../stores/useSettingsStore';
-import { Search, Sliders, Tv, Radio, X, Menu } from 'lucide-react';
+import { Search, Sliders, Tv, Radio, X, Menu, FolderPlus, Calendar, Command } from 'lucide-react';
+import { useMultiPlaylistStore } from '../../stores/useMultiPlaylistStore';
+
+import type { SidebarTab } from './Sidebar';
 
 interface HeaderProps {
   onOpenSettings: () => void;
+  onOpenPlaylists?: () => void;
+  onOpenEpgGuide?: () => void;
+  onOpenCommandPalette?: () => void;
   onToggleMobileMenu?: () => void;
+  activeTab?: SidebarTab;
+  onTabChange?: (tab: SidebarTab) => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleMobileMenu }) => {
+export const Header: React.FC<HeaderProps> = ({
+  onOpenSettings,
+  onOpenPlaylists,
+  onOpenEpgGuide,
+  onOpenCommandPalette,
+  onToggleMobileMenu,
+  activeTab = 'channels',
+  onTabChange,
+}) => {
+  const activePlaylistId = useMultiPlaylistStore((s) => s.activePlaylistId);
+  const playlists = useMultiPlaylistStore((s) => s.playlists);
+  const activePlaylist = playlists.find((p) => p.id === activePlaylistId);
   const searchQuery = useChannelStore((s) => s.searchQuery);
   const setSearchQuery = useChannelStore((s) => s.setSearchQuery);
   const channels = useChannelStore((s) => s.channels);
@@ -37,9 +56,49 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleMobileMe
         </div>
         <div className="brand-text-col">
           <h1 className="brand-title">Tokerian</h1>
-          <span className="brand-subtitle">Live Stream Hub</span>
+          <span className="brand-subtitle">Cinema & Live Hub</span>
         </div>
       </div>
+
+      {/* Content Mode Switcher: Live TV | Movies | Series */}
+      {onTabChange && (
+        <div
+          className="header-view-switcher"
+          style={{
+            display: 'flex',
+            gap: '4px',
+            background: 'rgba(255, 255, 255, 0.04)',
+            padding: '3px',
+            borderRadius: 'var(--radius-full)',
+            border: '1px solid var(--border-subtle)',
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => onTabChange('channels')}
+            className={`tokerian-btn ${activeTab === 'channels' ? 'tokerian-btn-primary' : ''}`}
+            style={{ fontSize: '0.78rem', padding: '4px 12px', borderRadius: 'var(--radius-full)', border: 'none' }}
+          >
+            Live TV
+          </button>
+          <button
+            type="button"
+            onClick={() => onTabChange('movies')}
+            className={`tokerian-btn ${activeTab === 'movies' ? 'tokerian-btn-primary' : ''}`}
+            style={{ fontSize: '0.78rem', padding: '4px 12px', borderRadius: 'var(--radius-full)', border: 'none' }}
+          >
+            Movies
+          </button>
+          <button
+            type="button"
+            onClick={() => onTabChange('series')}
+            className={`tokerian-btn ${activeTab === 'series' ? 'tokerian-btn-primary' : ''}`}
+            style={{ fontSize: '0.78rem', padding: '4px 12px', borderRadius: 'var(--radius-full)', border: 'none' }}
+          >
+            Series
+          </button>
+        </div>
+      )}
 
       {/* Instant Search Bar */}
       <div className="header-search-wrapper">
@@ -51,7 +110,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleMobileMe
           placeholder="Search 30,000+ channels, countries, languages..."
           className="header-search-input"
         />
-        {searchQuery && (
+        {searchQuery ? (
           <button
             type="button"
             onClick={() => setSearchQuery('')}
@@ -59,11 +118,44 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleMobileMe
           >
             <X size={16} />
           </button>
-        )}
+        ) : onOpenCommandPalette ? (
+          <button
+            type="button"
+            onClick={onOpenCommandPalette}
+            className="search-kbd-hint"
+            title="Open Command Palette (Ctrl+K)"
+            style={{
+              background: 'rgba(255, 255, 255, 0.08)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              borderRadius: '4px',
+              padding: '2px 6px',
+              fontSize: '0.68rem',
+              color: 'var(--text-muted)',
+              cursor: 'pointer',
+              fontWeight: 600,
+            }}
+          >
+            ⌘K
+          </button>
+        ) : null}
       </div>
 
       {/* Actions */}
       <div className="header-actions">
+        {/* Playlists & Accounts Trigger */}
+        <button
+          type="button"
+          onClick={onOpenPlaylists}
+          className="tokerian-btn"
+          style={{ padding: '6px 12px', fontSize: '0.8rem', gap: '6px' }}
+          title={`Active Playlist: ${activePlaylist?.title || 'Default'} - Click to manage or add sources`}
+        >
+          <FolderPlus size={16} color="var(--accent-primary)" />
+          <span style={{ maxWidth: '120px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {activePlaylist?.title || 'Playlists'}
+          </span>
+        </button>
+
         {/* Total Channels Pill */}
         <div className="channels-count-pill" title="Total active channels loaded">
           {isLoading ? (
@@ -72,6 +164,30 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleMobileMe
             <span>{channels.length.toLocaleString()} Channels</span>
           )}
         </div>
+
+        {/* Command Palette Trigger */}
+        {onOpenCommandPalette && (
+          <button
+            type="button"
+            onClick={onOpenCommandPalette}
+            className="tokerian-btn-icon"
+            title="Command Palette (Ctrl+K / ⌘K)"
+          >
+            <Command size={18} />
+          </button>
+        )}
+
+        {/* TV Guide (EPG Matrix) Button */}
+        {onOpenEpgGuide && (
+          <button
+            type="button"
+            onClick={onOpenEpgGuide}
+            className="tokerian-btn-icon"
+            title="TV Guide & Schedule (EPG Matrix)"
+          >
+            <Calendar size={18} />
+          </button>
+        )}
 
         {/* TV Mode Toggle */}
         <button

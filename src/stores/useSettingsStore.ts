@@ -3,10 +3,20 @@ import type { Settings } from '../core/domain/types';
 import { DEFAULT_PLAYLIST_URL, DEFAULT_CORS_PROXY } from '../core/presets/iptvPresets';
 import { storageAdapter } from '../adapters/storage/IndexedDbAdapter';
 
+import {
+  hashParentalPin,
+  verifyParentalPin,
+  DEFAULT_ADULT_KEYWORDS,
+} from '../utils/parentalLock';
+
 interface SettingsState extends Settings {
+  isSessionUnlocked: boolean;
   updateSettings: (newSettings: Partial<Settings>) => Promise<void>;
   loadInitialSettings: () => Promise<void>;
   resolveStreamUrl: (rawUrl: string, forceMode?: 'direct' | 'proxy') => string;
+  unlockParentalSession: (pin: string) => Promise<boolean>;
+  lockParentalSession: () => void;
+  setParentalPin: (newPin: string) => Promise<void>;
 }
 
 const getPreferredProxy = () => {
@@ -29,6 +39,41 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   theme: 'dark',
   tvMode: false,
   pageSize: 100,
+  defaultExternalPlayer: 'vlc',
+  customVlcPath: '',
+  customMpvPath: '',
+  cleanChannelTitles: false,
+  parentalLockEnabled: false,
+  parentalLockPinHash: null,
+  lockedKeywords: DEFAULT_ADULT_KEYWORDS,
+  isSessionUnlocked: false,
+
+  unlockParentalSession: async (pin: string) => {
+    const { parentalLockPinHash } = get();
+    if (!parentalLockPinHash) {
+      set({ isSessionUnlocked: true });
+      return true;
+    }
+    const ok = await verifyParentalPin(pin, parentalLockPinHash);
+    if (ok) {
+      set({ isSessionUnlocked: true });
+    }
+    return ok;
+  },
+
+  lockParentalSession: () => {
+    set({ isSessionUnlocked: false });
+  },
+
+  setParentalPin: async (newPin: string) => {
+    const hash = await hashParentalPin(newPin);
+    const updates = {
+      parentalLockPinHash: hash,
+      parentalLockEnabled: true,
+    };
+    set(updates);
+    await storageAdapter.saveSettings(updates);
+  },
 
   updateSettings: async (newSettings) => {
     set(newSettings);

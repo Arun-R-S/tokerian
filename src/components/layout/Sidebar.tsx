@@ -15,13 +15,17 @@ import {
   Play,
   Pause,
   X,
+  FolderPlus,
+  Calendar,
 } from 'lucide-react';
 
-export type SidebarTab = 'channels' | 'favorites' | 'history';
+export type SidebarTab = 'channels' | 'movies' | 'series' | 'favorites' | 'history';
 
 interface SidebarProps {
   activeTab: SidebarTab;
   onTabChange: (tab: SidebarTab) => void;
+  onOpenPlaylists?: () => void;
+  onOpenEpgGuide?: () => void;
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
 }
@@ -29,6 +33,8 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   onTabChange,
+  onOpenPlaylists,
+  onOpenEpgGuide,
   isMobileOpen = false,
   onCloseMobile,
 }) => {
@@ -83,7 +89,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Primary Navigation */}
         <div className="sidebar-nav-group">
-          <span className="sidebar-group-title">Menu</span>
+          <span className="sidebar-group-title">Catalog</span>
 
           <button
             type="button"
@@ -94,6 +100,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <Tv size={18} />
             <span>Live Channels</span>
           </button>
+
+          <button
+            type="button"
+            tabIndex={0}
+            onClick={() => handleTabSelect('movies')}
+            className={`sidebar-nav-item ${activeTab === 'movies' ? 'sidebar-item-active' : ''}`}
+          >
+            <Film size={18} />
+            <span>Movies (VOD)</span>
+          </button>
+
+          <button
+            type="button"
+            tabIndex={0}
+            onClick={() => handleTabSelect('series')}
+            className={`sidebar-nav-item ${activeTab === 'series' ? 'sidebar-item-active' : ''}`}
+          >
+            <Sparkles size={18} />
+            <span>TV Series</span>
+          </button>
+
+          <div style={{ height: '1px', background: 'var(--border-subtle)', margin: '8px 0' }} />
 
           <button
             type="button"
@@ -116,6 +144,36 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <span>Recently Watched</span>
             {historyCount > 0 && <span className="nav-badge">{historyCount}</span>}
           </button>
+
+          {onOpenPlaylists && (
+            <button
+              type="button"
+              tabIndex={0}
+              onClick={() => {
+                onOpenPlaylists();
+                onCloseMobile?.();
+              }}
+              className="sidebar-nav-item"
+            >
+              <FolderPlus size={18} />
+              <span>Playlists & Sources</span>
+            </button>
+          )}
+
+          {onOpenEpgGuide && (
+            <button
+              type="button"
+              tabIndex={0}
+              onClick={() => {
+                onOpenEpgGuide();
+                onCloseMobile?.();
+              }}
+              className="sidebar-nav-item"
+            >
+              <Calendar size={18} />
+              <span>TV Guide & Schedule</span>
+            </button>
+          )}
         </div>
 
       {/* Quick Category Filter Presets */}

@@ -17,6 +17,7 @@ interface ChannelState {
 
   // Actions
   loadPlaylist: (url: string, forceRefresh?: boolean) => Promise<void>;
+  setLoadedChannels: (channels: Channel[], playlistTitle?: string) => void;
   setActiveCategory: (category: string) => void;
   setSearchQuery: (query: string) => void;
   getFilteredChannels: () => Channel[];
@@ -126,6 +127,36 @@ export const useChannelStore = create<ChannelState>((set, get) => ({
         loadingStatusText: 'Error loading playlist',
       });
     }
+  },
+
+  setLoadedChannels: (channels: Channel[], playlistTitle?: string) => {
+    const groupSet = new Set<string>();
+    const groupMap = new Map<string, string[]>();
+
+    for (const ch of channels) {
+      groupSet.add(ch.group);
+      const list = groupMap.get(ch.group);
+      if (list) {
+        list.push(ch.id);
+      } else {
+        groupMap.set(ch.group, [ch.id]);
+      }
+    }
+
+    const groups = Array.from(groupSet).sort((a, b) => a.localeCompare(b));
+
+    set({
+      channels,
+      groups: ['All', ...groups],
+      groupMap,
+      activeCategory: 'All',
+      searchQuery: '',
+      isLoading: false,
+      loadingProgress: 100,
+      loadingStatusText: playlistTitle
+        ? `Loaded ${channels.length.toLocaleString()} channels from ${playlistTitle}`
+        : `Ready: ${channels.length.toLocaleString()} channels`,
+    });
   },
 
   setActiveCategory: (category: string) => {

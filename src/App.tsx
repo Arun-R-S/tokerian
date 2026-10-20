@@ -6,11 +6,20 @@ import { CategoryPills } from './components/channel/CategoryPills';
 import { ChannelGrid } from './components/channel/ChannelGrid';
 import { VideoPlayer } from './components/player/VideoPlayer';
 import { SettingsModal } from './components/settings/SettingsModal';
+import { AddPlaylistModal } from './components/playlist/AddPlaylistModal';
+import { PlaylistManagerModal } from './components/playlist/PlaylistManagerModal';
+import { EpgGridModal } from './components/epg/EpgGridModal';
+import { VodCatalog } from './components/vod/VodCatalog';
+import { VodDetailModal } from './components/vod/VodDetailModal';
+import { CommandPalette } from './components/command/CommandPalette';
 
 import { useChannelStore } from './stores/useChannelStore';
 import { useSettingsStore } from './stores/useSettingsStore';
 import { useUserStore } from './stores/useUserStore';
 import { usePlayerStore } from './stores/usePlayerStore';
+import { useMultiPlaylistStore } from './stores/useMultiPlaylistStore';
+import { useEpgStore } from './stores/useEpgStore';
+import { useVodStore } from './stores/useVodStore';
 import { dpadNavigation } from './adapters/input/DpadNavigationAdapter';
 
 import './styles/index.css';
@@ -20,6 +29,10 @@ export function App() {
   const [activeTab, setActiveTab] = useState<SidebarTab>('channels');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isAddPlaylistOpen, setIsAddPlaylistOpen] = useState(false);
+  const [isPlaylistManagerOpen, setIsPlaylistManagerOpen] = useState(false);
+  const [isEpgGridOpen, setIsEpgGridOpen] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
   const m3uUrl = useSettingsStore((s) => s.m3uUrl);
   const loadInitialSettings = useSettingsStore((s) => s.loadInitialSettings);
@@ -27,6 +40,10 @@ export function App() {
 
   const loadUserData = useUserStore((s) => s.loadUserData);
   const loadPlaylist = useChannelStore((s) => s.loadPlaylist);
+  const initPlaylists = useMultiPlaylistStore((s) => s.initPlaylists);
+  const playlists = useMultiPlaylistStore((s) => s.playlists);
+  const activePlaylistId = useMultiPlaylistStore((s) => s.activePlaylistId);
+  const channels = useChannelStore((s) => s.channels);
   const currentChannel = usePlayerStore((s) => s.currentChannel);
   const togglePlay = usePlayerStore((s) => s.togglePlay);
   const toggleMute = usePlayerStore((s) => s.toggleMute);
@@ -34,16 +51,54 @@ export function App() {
   const zapNext = usePlayerStore((s) => s.zapNext);
   const zapPrev = usePlayerStore((s) => s.zapPrev);
 
-  // Initialize settings, user data (favorites/history), and default playlist
+  // Initialize settings, user data (favorites/history), and multi-playlist system
   useEffect(() => {
     async function init() {
       await loadInitialSettings();
       await loadUserData();
-      // Load current playlist
-      loadPlaylist(m3uUrl, false);
+      await initPlaylists();
+
+      // Only load default catalog if still on built-in
+      const currentActive = useMultiPlaylistStore.getState().activePlaylistId;
+      if (currentActive === 'built-in') {
+        loadPlaylist(m3uUrl, false);
+      }
     }
     init();
-  }, [loadInitialSettings, loadUserData, loadPlaylist, m3uUrl]);
+  }, [loadInitialSettings, loadUserData, initPlaylists, loadPlaylist, m3uUrl]);
+
+  // EPG Periodic Ticker: Update current time every 30 seconds for live progress ribbon & grid
+  useEffect(() => {
+    const ticker = setInterval(() => {
+      useEpgStore.getState().updateCurrentTime();
+    }, 30000);
+    return () => clearInterval(ticker);
+  }, []);
+
+  // Auto-fetch EPG when active playlist changes (if playlist defines epgUrls)
+  useEffect(() => {
+    const active = playlists.find((p) => p.id === activePlaylistId);
+    if (active?.epgUrls && active.epgUrls.length > 0) {
+      useEpgStore.getState().loadEpgUrl(active.epgUrls[0]);
+    }
+  }, [activePlaylistId, playlists]);
+
+  // Fetch Xtream live EPG whenever playing channel changes on an Xtream playlist
+  useEffect(() => {
+    if (!currentChannel) return;
+    const active = playlists.find((p) => p.id === activePlaylistId);
+    if (active?.type === 'xtream' && active.credentials && currentChannel.id) {
+      useEpgStore.getState().loadXtreamEpg(active.credentials, currentChannel.id);
+    }
+  }, [currentChannel, activePlaylistId, playlists]);
+
+  // Auto-load VOD Movies & Series Catalog when active playlist or channels change
+  useEffect(() => {
+    const active = playlists.find((p) => p.id === activePlaylistId);
+    if (active) {
+      useVodStore.getState().loadCatalog(active, channels);
+    }
+  }, [activePlaylistId, playlists, channels]);
 
   // Setup Global Keyboard & TV Remote Navigation
   useEffect(() => {
@@ -56,8 +111,18 @@ export function App() {
       onChannelNext: () => zapNext(),
       onChannelPrev: () => zapPrev(),
       onBack: () => {
-        if (isSettingsOpen) {
+        if (isCommandPaletteOpen) {
+          setIsCommandPaletteOpen(false);
+        } else if (useVodStore.getState().activeItem) {
+          useVodStore.getState().closeDetail();
+        } else if (isEpgGridOpen) {
+          setIsEpgGridOpen(false);
+        } else if (isSettingsOpen) {
           setIsSettingsOpen(false);
+        } else if (isPlaylistManagerOpen) {
+          setIsPlaylistManagerOpen(false);
+        } else if (isAddPlaylistOpen) {
+          setIsAddPlaylistOpen(false);
         } else if (isMobileSidebarOpen) {
           setIsMobileSidebarOpen(false);
         }
@@ -65,6 +130,13 @@ export function App() {
     });
 
     const handleGlobalShortcuts = (e: KeyboardEvent) => {
+      // Global Ctrl+K / Cmd+K Command Palette trigger
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+        return;
+      }
+
       const target = e.target as HTMLElement | null;
       if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA') return;
 
@@ -72,6 +144,8 @@ export function App() {
         toggleMute();
       } else if (e.key === 'f' || e.key === 'F') {
         toggleFullscreen();
+      } else if (e.key === 'g' || e.key === 'G' || e.key === 'e' || e.key === 'E') {
+        setIsEpgGridOpen((prev) => !prev);
       }
     };
 
@@ -82,13 +156,31 @@ export function App() {
       unsubscribe();
       window.removeEventListener('keydown', handleGlobalShortcuts);
     };
-  }, [currentChannel, isSettingsOpen, isMobileSidebarOpen, togglePlay, toggleMute, toggleFullscreen, zapNext, zapPrev]);
+  }, [
+    currentChannel,
+    isCommandPaletteOpen,
+    isEpgGridOpen,
+    isSettingsOpen,
+    isPlaylistManagerOpen,
+    isAddPlaylistOpen,
+    isMobileSidebarOpen,
+    togglePlay,
+    toggleMute,
+    toggleFullscreen,
+    zapNext,
+    zapPrev,
+  ]);
 
   return (
     <div className={`tokerian-shell ${tvMode ? 'tv-mode-active' : ''}`}>
       {/* Top Application Header */}
       <Header
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
         onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenPlaylists={() => setIsPlaylistManagerOpen(true)}
+        onOpenEpgGuide={() => setIsEpgGridOpen(true)}
+        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
         onToggleMobileMenu={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
       />
 
@@ -97,6 +189,8 @@ export function App() {
         <Sidebar
           activeTab={activeTab}
           onTabChange={setActiveTab}
+          onOpenPlaylists={() => setIsPlaylistManagerOpen(true)}
+          onOpenEpgGuide={() => setIsEpgGridOpen(true)}
           isMobileOpen={isMobileSidebarOpen}
           onCloseMobile={() => setIsMobileSidebarOpen(false)}
         />
@@ -104,13 +198,26 @@ export function App() {
         {/* Center Main Browsing Area */}
         <main className="tokerian-main">
           {/* Top Video Player (if a channel is currently loaded) */}
-          {currentChannel && <VideoPlayer />}
+          {currentChannel && <VideoPlayer onOpenEpgGuide={() => setIsEpgGridOpen(true)} />}
 
-          {/* Category Quick Filter Pills (visible in channels tab) */}
-          {activeTab === 'channels' && <CategoryPills />}
+          {/* Live Channels View */}
+          {activeTab === 'channels' && (
+            <>
+              <CategoryPills />
+              <ChannelGrid activeTab="channels" />
+            </>
+          )}
 
-          {/* Virtualized Channel Cards Grid */}
-          <ChannelGrid activeTab={activeTab} />
+          {/* Movies (VOD) View */}
+          {activeTab === 'movies' && <VodCatalog type="movies" />}
+
+          {/* TV Series View */}
+          {activeTab === 'series' && <VodCatalog type="series" />}
+
+          {/* Favorites & History Views */}
+          {(activeTab === 'favorites' || activeTab === 'history') && (
+            <ChannelGrid activeTab={activeTab} />
+          )}
         </main>
       </div>
 
@@ -126,6 +233,38 @@ export function App() {
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
+      />
+
+      {/* Playlists & Accounts Manager Modal */}
+      <PlaylistManagerModal
+        isOpen={isPlaylistManagerOpen}
+        onClose={() => setIsPlaylistManagerOpen(false)}
+        onOpenAddModal={() => setIsAddPlaylistOpen(true)}
+      />
+
+      {/* Add Playlist Modal (M3U File/URL & Xtream Codes) */}
+      <AddPlaylistModal
+        isOpen={isAddPlaylistOpen}
+        onClose={() => setIsAddPlaylistOpen(false)}
+      />
+
+      {/* Fullscreen Multi-Channel EPG Timeline Matrix */}
+      <EpgGridModal
+        isOpen={isEpgGridOpen}
+        onClose={() => setIsEpgGridOpen(false)}
+      />
+
+      {/* VOD & TV Series Detail Modal */}
+      <VodDetailModal />
+
+      {/* Global Command Palette (Ctrl+K / Cmd+K) */}
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenPlaylists={() => setIsPlaylistManagerOpen(true)}
+        onOpenEpgGuide={() => setIsEpgGridOpen(true)}
+        onTabChange={setActiveTab}
       />
     </div>
   );

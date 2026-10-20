@@ -2,6 +2,8 @@ import { memo, useCallback, useState } from 'react';
 import type { Channel } from '../../core/domain/types';
 import { useUserStore } from '../../stores/useUserStore';
 import { usePlayerStore } from '../../stores/usePlayerStore';
+import { useSettingsStore } from '../../stores/useSettingsStore';
+import { ChannelSanitizer } from '../../utils/channelSanitizer';
 import { Tv, Star } from 'lucide-react';
 
 interface ChannelCardProps {
@@ -18,6 +20,9 @@ export const ChannelCard: React.FC<ChannelCardProps> = memo(({ channel }) => {
   // Atomic state subscriptions
   const isFav = useUserStore(useCallback((s) => s.favorites.has(channel.id), [channel.id]));
   const isPlaying = usePlayerStore(useCallback((s) => s.currentChannel?.id === channel.id, [channel.id]));
+  const cleanChannelTitles = useSettingsStore((s) => s.cleanChannelTitles);
+
+  const displayName = cleanChannelTitles ? ChannelSanitizer.cleanTitle(channel.name) : channel.name;
 
   const playChannel = usePlayerStore((s) => s.playChannel);
   const toggleFavorite = useUserStore((s) => s.toggleFavorite);
@@ -72,8 +77,8 @@ export const ChannelCard: React.FC<ChannelCardProps> = memo(({ channel }) => {
       </div>
 
       <div className="channel-card-body">
-        <h3 className="channel-name" title={channel.name}>
-          {channel.name}
+        <h3 className="channel-name" title={displayName}>
+          {displayName}
         </h3>
         
         <div className="channel-meta">

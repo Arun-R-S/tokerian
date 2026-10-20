@@ -65,4 +65,11 @@ export interface Settings {
   theme: 'dark' | 'midnight' | 'oled';
   tvMode: boolean;
   pageSize: number;
+  defaultExternalPlayer?: 'vlc' | 'mpv';
+  customVlcPath?: string;
+  customMpvPath?: string;
+  cleanChannelTitles?: boolean;
+  parentalLockEnabled?: boolean;
+  parentalLockPinHash?: string | null;
+  lockedKeywords?: string[];
 }
