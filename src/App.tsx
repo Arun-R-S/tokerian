@@ -4,6 +4,7 @@ import { Sidebar, type SidebarTab } from './components/layout/Sidebar';
 import { MobileBottomNav } from './components/layout/MobileBottomNav';
 import { CategoryPills } from './components/channel/CategoryPills';
 import { ChannelGrid } from './components/channel/ChannelGrid';
+import { ChannelExplorer } from './components/channel/ChannelExplorer';
 import { VideoPlayer } from './components/player/VideoPlayer';
 import { SettingsModal } from './components/settings/SettingsModal';
 import { AddPlaylistModal } from './components/playlist/AddPlaylistModal';
@@ -12,6 +13,9 @@ import { EpgGridModal } from './components/epg/EpgGridModal';
 import { VodCatalog } from './components/vod/VodCatalog';
 import { VodDetailModal } from './components/vod/VodDetailModal';
 import { CommandPalette } from './components/command/CommandPalette';
+import { KeyboardShortcutsModal } from './components/layout/KeyboardShortcutsModal';
+import { HomeDashboard } from './components/home/HomeDashboard';
+import { Tv } from 'lucide-react';
 
 import { useChannelStore } from './stores/useChannelStore';
 import { useSettingsStore } from './stores/useSettingsStore';
@@ -26,13 +30,14 @@ import './styles/index.css';
 import './styles/components.css';
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<SidebarTab>('channels');
+  const [activeTab, setActiveTab] = useState<SidebarTab>('home');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isAddPlaylistOpen, setIsAddPlaylistOpen] = useState(false);
   const [isPlaylistManagerOpen, setIsPlaylistManagerOpen] = useState(false);
   const [isEpgGridOpen, setIsEpgGridOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
 
   const m3uUrl = useSettingsStore((s) => s.m3uUrl);
   const loadInitialSettings = useSettingsStore((s) => s.loadInitialSettings);
@@ -111,7 +116,9 @@ export function App() {
       onChannelNext: () => zapNext(),
       onChannelPrev: () => zapPrev(),
       onBack: () => {
-        if (isCommandPaletteOpen) {
+        if (isShortcutsOpen) {
+          setIsShortcutsOpen(false);
+        } else if (isCommandPaletteOpen) {
           setIsCommandPaletteOpen(false);
         } else if (useVodStore.getState().activeItem) {
           useVodStore.getState().closeDetail();
@@ -146,6 +153,8 @@ export function App() {
         toggleFullscreen();
       } else if (e.key === 'g' || e.key === 'G' || e.key === 'e' || e.key === 'E') {
         setIsEpgGridOpen((prev) => !prev);
+      } else if (e.key === '?') {
+        setIsShortcutsOpen((prev) => !prev);
       }
     };
 
@@ -158,6 +167,7 @@ export function App() {
     };
   }, [
     currentChannel,
+    isShortcutsOpen,
     isCommandPaletteOpen,
     isEpgGridOpen,
     isSettingsOpen,
@@ -179,8 +189,10 @@ export function App() {
         onTabChange={setActiveTab}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenPlaylists={() => setIsPlaylistManagerOpen(true)}
+        onOpenAddPlaylist={() => setIsAddPlaylistOpen(true)}
         onOpenEpgGuide={() => setIsEpgGridOpen(true)}
         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+        onOpenKeyboardShortcuts={() => setIsShortcutsOpen(true)}
         onToggleMobileMenu={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
       />
 
@@ -190,6 +202,8 @@ export function App() {
           activeTab={activeTab}
           onTabChange={setActiveTab}
           onOpenPlaylists={() => setIsPlaylistManagerOpen(true)}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
           onOpenEpgGuide={() => setIsEpgGridOpen(true)}
           isMobileOpen={isMobileSidebarOpen}
           onCloseMobile={() => setIsMobileSidebarOpen(false)}
@@ -200,13 +214,17 @@ export function App() {
           {/* Top Video Player (if a channel is currently loaded) */}
           {currentChannel && <VideoPlayer onOpenEpgGuide={() => setIsEpgGridOpen(true)} />}
 
-          {/* Live Channels View */}
-          {activeTab === 'channels' && (
-            <>
-              <CategoryPills />
-              <ChannelGrid activeTab="channels" />
-            </>
+          {/* Home / Dashboard View (IPTVnator 1:1 Clone) */}
+          {activeTab === 'home' && (
+            <HomeDashboard
+              onTabChange={setActiveTab}
+              onOpenPlaylists={() => setIsPlaylistManagerOpen(true)}
+              onOpenAddPlaylist={() => setIsAddPlaylistOpen(true)}
+            />
           )}
+
+          {/* Live Channels View (IPTVnator 2-Pane Explorer) */}
+          {activeTab === 'channels' && <ChannelExplorer activeTab="channels" />}
 
           {/* Movies (VOD) View */}
           {activeTab === 'movies' && <VodCatalog type="movies" />}
@@ -214,9 +232,41 @@ export function App() {
           {/* TV Series View */}
           {activeTab === 'series' && <VodCatalog type="series" />}
 
-          {/* Favorites & History Views */}
+          {/* Favorites & History Views (IPTVnator Explorer) */}
           {(activeTab === 'favorites' || activeTab === 'history') && (
-            <ChannelGrid activeTab={activeTab} />
+            <ChannelExplorer activeTab={activeTab} />
+          )}
+
+          {/* Live TV Cinema Mode View */}
+          {activeTab === 'livetv' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {!currentChannel && (
+                <div
+                  style={{
+                    padding: '40px',
+                    textAlign: 'center',
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    borderRadius: 'var(--radius-lg)',
+                    border: '1px solid var(--border-subtle)',
+                  }}
+                >
+                  <Tv size={42} style={{ opacity: 0.4, marginBottom: '12px' }} />
+                  <h3 style={{ color: '#fff', margin: '0 0 8px 0' }}>No Channel Selected</h3>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '18px' }}>
+                    Choose any live channel below to start cinema stream playback.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('channels')}
+                    className="tokerian-btn tokerian-btn-primary"
+                  >
+                    Browse Live Channels
+                  </button>
+                </div>
+              )}
+              <CategoryPills />
+              <ChannelGrid activeTab="channels" />
+            </div>
           )}
         </main>
       </div>
@@ -265,6 +315,12 @@ export function App() {
         onOpenPlaylists={() => setIsPlaylistManagerOpen(true)}
         onOpenEpgGuide={() => setIsEpgGridOpen(true)}
         onTabChange={setActiveTab}
+      />
+
+      {/* Keyboard Shortcuts Cheatsheet Modal */}
+      <KeyboardShortcutsModal
+        isOpen={isShortcutsOpen}
+        onClose={() => setIsShortcutsOpen(false)}
       />
     </div>
   );

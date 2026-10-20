@@ -1,7 +1,7 @@
 import React from 'react';
 import type { SidebarTab } from './Sidebar';
 import { useUserStore } from '../../stores/useUserStore';
-import { Tv, Film, Sparkles, Star, Sliders } from 'lucide-react';
+import { LayoutGrid, Tv, Film, Sparkles, Star, Sliders } from 'lucide-react';
 
 interface MobileBottomNavProps {
   activeTab: SidebarTab;
@@ -21,19 +21,31 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
     <nav className="mobile-bottom-nav glass-panel">
       <button
         type="button"
+        onClick={() => onTabChange('home')}
+        className={`bottom-nav-item ${activeTab === 'home' ? 'bottom-item-active' : ''}`}
+        title="Home"
+      >
+        <LayoutGrid size={19} />
+        <span>Home</span>
+      </button>
+
+      <button
+        type="button"
         onClick={() => onTabChange('channels')}
         className={`bottom-nav-item ${activeTab === 'channels' ? 'bottom-item-active' : ''}`}
+        title="Channels"
       >
-        <Tv size={20} />
-        <span>Live</span>
+        <Tv size={19} />
+        <span>Channels</span>
       </button>
 
       <button
         type="button"
         onClick={() => onTabChange('movies')}
         className={`bottom-nav-item ${activeTab === 'movies' ? 'bottom-item-active' : ''}`}
+        title="Movies"
       >
-        <Film size={20} />
+        <Film size={19} />
         <span>Movies</span>
       </button>
 
@@ -41,8 +53,9 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         type="button"
         onClick={() => onTabChange('series')}
         className={`bottom-nav-item ${activeTab === 'series' ? 'bottom-item-active' : ''}`}
+        title="Series"
       >
-        <Sparkles size={20} />
+        <Sparkles size={19} />
         <span>Series</span>
       </button>
 
@@ -50,9 +63,10 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         type="button"
         onClick={() => onTabChange('favorites')}
         className={`bottom-nav-item ${activeTab === 'favorites' ? 'bottom-item-active' : ''}`}
+        title="Favorites"
       >
         <div className="bottom-nav-icon-wrapper">
-          <Star size={20} />
+          <Star size={19} />
           {favoritesCount > 0 && <span className="bottom-nav-badge">{favoritesCount}</span>}
         </div>
         <span>Favorites</span>
@@ -64,7 +78,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         className="bottom-nav-item"
         title="Settings"
       >
-        <Sliders size={20} />
+        <Sliders size={19} />
         <span>Settings</span>
       </button>
     </nav>
