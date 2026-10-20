@@ -1,16 +1,35 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import {
+  Search,
+  Sliders,
+  Tv,
+  X,
+  Menu,
+  Folder,
+  Calendar,
+  RotateCw,
+  ChevronDown,
+  Keyboard,
+  Plus,
+  Download,
+  Check,
+  FolderPlus,
+  Minus,
+  Square,
+} from 'lucide-react';
 import { useChannelStore } from '../../stores/useChannelStore';
 import { useSettingsStore } from '../../stores/useSettingsStore';
-import { Search, Sliders, Tv, Radio, X, Menu, FolderPlus, Calendar, Command } from 'lucide-react';
 import { useMultiPlaylistStore } from '../../stores/useMultiPlaylistStore';
-
+import { useUserStore } from '../../stores/useUserStore';
 import type { SidebarTab } from './Sidebar';
 
 interface HeaderProps {
   onOpenSettings: () => void;
   onOpenPlaylists?: () => void;
+  onOpenAddPlaylist?: () => void;
   onOpenEpgGuide?: () => void;
   onOpenCommandPalette?: () => void;
+  onOpenKeyboardShortcuts?: () => void;
   onToggleMobileMenu?: () => void;
   activeTab?: SidebarTab;
   onTabChange?: (tab: SidebarTab) => void;
@@ -19,195 +38,335 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   onOpenSettings,
   onOpenPlaylists,
+  onOpenAddPlaylist,
   onOpenEpgGuide,
   onOpenCommandPalette,
+  onOpenKeyboardShortcuts,
   onToggleMobileMenu,
-  activeTab = 'channels',
-  onTabChange,
 }) => {
   const activePlaylistId = useMultiPlaylistStore((s) => s.activePlaylistId);
   const playlists = useMultiPlaylistStore((s) => s.playlists);
+  const selectPlaylist = useMultiPlaylistStore((s) => s.selectPlaylist);
   const activePlaylist = playlists.find((p) => p.id === activePlaylistId);
+
   const searchQuery = useChannelStore((s) => s.searchQuery);
   const setSearchQuery = useChannelStore((s) => s.setSearchQuery);
   const channels = useChannelStore((s) => s.channels);
   const isLoading = useChannelStore((s) => s.isLoading);
-  const loadingProgress = useChannelStore((s) => s.loadingProgress);
+  const loadPlaylist = useChannelStore((s) => s.loadPlaylist);
 
   const tvMode = useSettingsStore((s) => s.tvMode);
   const updateSettings = useSettingsStore((s) => s.updateSettings);
 
+  const [isPlaylistDropdownOpen, setIsPlaylistDropdownOpen] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsPlaylistDropdownOpen(false);
+      }
+    };
+    if (isPlaylistDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isPlaylistDropdownOpen]);
+
+  // Handle Playlist Reload / Sync
+  const handleSyncPlaylist = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!activePlaylist) return;
+    setIsSyncing(true);
+    try {
+      if (activePlaylist.url) {
+        await loadPlaylist(activePlaylist.url, true);
+      }
+    } finally {
+      setTimeout(() => setIsSyncing(false), 800);
+    }
+  };
+
+  // Handle Export / Download Backup (JSON of playlists + user favorites/history)
+  const handleExportBackup = () => {
+    const backupData = {
+      version: '1.0',
+      exportedAt: new Date().toISOString(),
+      playlists: useMultiPlaylistStore.getState().playlists,
+      activePlaylistId: useMultiPlaylistStore.getState().activePlaylistId,
+      favorites: Array.from(useUserStore.getState().favorites),
+      history: useUserStore.getState().history,
+    };
+
+    const blob = new Blob([JSON.stringify(backupData, null, 2)], {
+      type: 'application/json',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `tokerian-iptvnator-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const channelCountDisplay = isLoading
+    ? 'Syncing channels...'
+    : `${channels.length.toLocaleString()} channels`;
+
   return (
-    <header className="tokerian-header glass-panel">
-      {/* Mobile Hamburger Toggle Button */}
-      <button
-        type="button"
-        onClick={onToggleMobileMenu}
-        className="tokerian-btn-icon mobile-menu-btn"
-        title="Open menu"
-      >
-        <Menu size={20} />
-      </button>
-
-      {/* Brand Logo */}
-      <div className="header-brand">
-        <div className="brand-icon-wrapper">
-          <Radio size={22} className="brand-icon" />
-        </div>
-        <div className="brand-text-col">
-          <h1 className="brand-title">Tokerian</h1>
-          <span className="brand-subtitle">Cinema & Live Hub</span>
-        </div>
-      </div>
-
-      {/* Content Mode Switcher: Live TV | Movies | Series */}
-      {onTabChange && (
-        <div
-          className="header-view-switcher"
-          style={{
-            display: 'flex',
-            gap: '4px',
-            background: 'rgba(255, 255, 255, 0.04)',
-            padding: '3px',
-            borderRadius: 'var(--radius-full)',
-            border: '1px solid var(--border-subtle)',
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => onTabChange('channels')}
-            className={`tokerian-btn ${activeTab === 'channels' ? 'tokerian-btn-primary' : ''}`}
-            style={{ fontSize: '0.78rem', padding: '4px 12px', borderRadius: 'var(--radius-full)', border: 'none' }}
-          >
-            Live TV
-          </button>
-          <button
-            type="button"
-            onClick={() => onTabChange('movies')}
-            className={`tokerian-btn ${activeTab === 'movies' ? 'tokerian-btn-primary' : ''}`}
-            style={{ fontSize: '0.78rem', padding: '4px 12px', borderRadius: 'var(--radius-full)', border: 'none' }}
-          >
-            Movies
-          </button>
-          <button
-            type="button"
-            onClick={() => onTabChange('series')}
-            className={`tokerian-btn ${activeTab === 'series' ? 'tokerian-btn-primary' : ''}`}
-            style={{ fontSize: '0.78rem', padding: '4px 12px', borderRadius: 'var(--radius-full)', border: 'none' }}
-          >
-            Series
-          </button>
-        </div>
-      )}
-
-      {/* Instant Search Bar */}
-      <div className="header-search-wrapper">
-        <Search size={18} className="search-icon" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search 30,000+ channels, countries, languages..."
-          className="header-search-input"
-        />
-        {searchQuery ? (
-          <button
-            type="button"
-            onClick={() => setSearchQuery('')}
-            className="search-clear-btn"
-          >
-            <X size={16} />
-          </button>
-        ) : onOpenCommandPalette ? (
-          <button
-            type="button"
-            onClick={onOpenCommandPalette}
-            className="search-kbd-hint"
-            title="Open Command Palette (Ctrl+K)"
-            style={{
-              background: 'rgba(255, 255, 255, 0.08)',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              borderRadius: '4px',
-              padding: '2px 6px',
-              fontSize: '0.68rem',
-              color: 'var(--text-muted)',
-              cursor: 'pointer',
-              fontWeight: 600,
-            }}
-          >
-            ⌘K
-          </button>
-        ) : null}
-      </div>
-
-      {/* Actions */}
-      <div className="header-actions">
-        {/* Playlists & Accounts Trigger */}
+    <header className="tokerian-iptvnator-header">
+      {/* LEFT SECTION: Mobile Hamburger + Playlist Selector Dropdown Pill */}
+      <div className="header-left-col">
+        {/* Mobile Hamburger Toggle Button */}
         <button
           type="button"
-          onClick={onOpenPlaylists}
-          className="tokerian-btn"
-          style={{ padding: '6px 12px', fontSize: '0.8rem', gap: '6px' }}
-          title={`Active Playlist: ${activePlaylist?.title || 'Default'} - Click to manage or add sources`}
+          onClick={onToggleMobileMenu}
+          className="tokerian-btn-icon mobile-menu-btn"
+          title="Open menu"
         >
-          <FolderPlus size={16} color="var(--accent-primary)" />
-          <span style={{ maxWidth: '120px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {activePlaylist?.title || 'Playlists'}
-          </span>
+          <Menu size={18} />
         </button>
 
-        {/* Total Channels Pill */}
-        <div className="channels-count-pill" title="Total active channels loaded">
-          {isLoading ? (
-            <span className="count-loading">Syncing {loadingProgress}%</span>
-          ) : (
-            <span>{channels.length.toLocaleString()} Channels</span>
+        {/* Playlist Selector Dropdown Pill */}
+        <div className="playlist-pill-container" ref={dropdownRef}>
+          <div
+            className="playlist-selector-pill"
+            onClick={() => setIsPlaylistDropdownOpen(!isPlaylistDropdownOpen)}
+            title="Switch playlist or view source details"
+          >
+            <div className="playlist-pill-icon-box">
+              <Folder size={16} />
+            </div>
+
+            <div className="playlist-pill-text-col">
+              <span className="playlist-pill-title">
+                {activePlaylist?.title || 'IPTV Playlist'}
+              </span>
+              <span className="playlist-pill-subtitle">{channelCountDisplay}</span>
+            </div>
+
+            <button
+              type="button"
+              className={`playlist-pill-action-btn ${isSyncing || isLoading ? 'sync-spinning' : ''}`}
+              onClick={handleSyncPlaylist}
+              title="Refresh / Sync current playlist"
+            >
+              <RotateCw size={13} />
+            </button>
+
+            <div className="playlist-pill-chevron">
+              <ChevronDown
+                size={14}
+                style={{
+                  transform: isPlaylistDropdownOpen ? 'rotate(180deg)' : 'none',
+                  transition: 'transform 0.2s ease',
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Quick Playlist Switcher Popover */}
+          {isPlaylistDropdownOpen && (
+            <div className="playlist-dropdown-popover glass-panel">
+              <div className="playlist-dropdown-header">
+                <span>Select Source ({playlists.length})</span>
+                {onOpenAddPlaylist && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsPlaylistDropdownOpen(false);
+                      onOpenAddPlaylist();
+                    }}
+                    className="playlist-dropdown-add-btn"
+                    title="Add new playlist"
+                  >
+                    <Plus size={14} /> Add
+                  </button>
+                )}
+              </div>
+
+              <div className="playlist-dropdown-list">
+                {playlists.map((p) => {
+                  const isActive = p.id === activePlaylistId;
+                  return (
+                    <div
+                      key={p.id}
+                      className={`playlist-dropdown-item ${isActive ? 'playlist-item-active' : ''}`}
+                      onClick={() => {
+                        selectPlaylist(p.id);
+                        setIsPlaylistDropdownOpen(false);
+                      }}
+                    >
+                      <div className="playlist-dropdown-item-left">
+                        <Folder
+                          size={15}
+                          color={isActive ? 'var(--accent-primary)' : 'var(--text-muted)'}
+                        />
+                        <div className="playlist-dropdown-item-text">
+                          <div className="dropdown-item-title">{p.title}</div>
+                          <div className="dropdown-item-meta">
+                            {p.count ? `${p.count.toLocaleString()} channels` : p.type.toUpperCase()}
+                          </div>
+                        </div>
+                      </div>
+
+                      {isActive && (
+                        <Check size={16} color="var(--accent-primary)" />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {onOpenPlaylists && (
+                <div
+                  className="playlist-dropdown-footer"
+                  onClick={() => {
+                    setIsPlaylistDropdownOpen(false);
+                    onOpenPlaylists();
+                  }}
+                >
+                  <FolderPlus size={14} />
+                  <span>Manage All Sources & Accounts</span>
+                </div>
+              )}
+            </div>
           )}
         </div>
+      </div>
 
-        {/* Command Palette Trigger */}
-        {onOpenCommandPalette && (
+      {/* CENTER SECTION: IPTVnator Centered Pill Search Bar */}
+      <div className="header-center-col">
+        <div
+          className="iptvnator-search-pill"
+          onClick={() => {
+            if (onOpenCommandPalette && !searchQuery) {
+              onOpenCommandPalette();
+            }
+          }}
+        >
+          <Search size={16} className="search-pill-icon" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search in this playlist..."
+            className="search-pill-input"
+          />
+
+          {searchQuery ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSearchQuery('');
+              }}
+              className="search-pill-clear"
+              title="Clear search"
+            >
+              <X size={14} />
+            </button>
+          ) : (
+            <span
+              className="search-pill-shortcut"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenCommandPalette?.();
+              }}
+              title="Open Command Palette (Ctrl+K)"
+            >
+              Ctrl+K
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* RIGHT SECTION: Quick Action Icons & Window Controls */}
+      <div className="header-right-col">
+        {/* 1. Keyboard Shortcuts Cheatsheet */}
+        {onOpenKeyboardShortcuts && (
           <button
             type="button"
-            onClick={onOpenCommandPalette}
-            className="tokerian-btn-icon"
-            title="Command Palette (Ctrl+K / ⌘K)"
+            onClick={onOpenKeyboardShortcuts}
+            className="header-action-icon-btn"
+            title="Keyboard Shortcuts Cheatsheet"
           >
-            <Command size={18} />
+            <Keyboard size={18} />
           </button>
         )}
 
-        {/* TV Guide (EPG Matrix) Button */}
+        {/* 2. Add Playlist / Source */}
+        {onOpenAddPlaylist && (
+          <button
+            type="button"
+            onClick={onOpenAddPlaylist}
+            className="header-action-icon-btn"
+            title="Add Playlist / Source (+)"
+          >
+            <Plus size={18} />
+          </button>
+        )}
+
+        {/* 3. Export Backup Data */}
+        <button
+          type="button"
+          onClick={handleExportBackup}
+          className="header-action-icon-btn"
+          title="Export / Download Backup (JSON)"
+        >
+          <Download size={17} />
+        </button>
+
+        {/* 4. TV Guide (EPG Timeline Matrix) */}
         {onOpenEpgGuide && (
           <button
             type="button"
             onClick={onOpenEpgGuide}
-            className="tokerian-btn-icon"
-            title="TV Guide & Schedule (EPG Matrix)"
+            className="header-action-icon-btn"
+            title="TV Guide & Schedule (Key G)"
           >
-            <Calendar size={18} />
+            <Calendar size={17} />
           </button>
         )}
 
-        {/* TV Mode Toggle */}
+        {/* 5. TV D-Pad Mode Toggle */}
         <button
           type="button"
           onClick={() => updateSettings({ tvMode: !tvMode })}
-          className={`tokerian-btn-icon header-tv-btn ${tvMode ? 'tv-mode-active' : ''}`}
-          title={tvMode ? 'Disable TV D-pad Mode' : 'Enable TV D-pad Mode'}
+          className={`header-action-icon-btn ${tvMode ? 'action-icon-active' : ''}`}
+          title={tvMode ? 'Disable TV D-Pad Mode' : 'Enable 10-Foot TV D-Pad Mode'}
         >
-          <Tv size={18} />
+          <Tv size={17} />
         </button>
 
-        {/* Settings Button */}
+        {/* 6. Settings */}
         <button
           type="button"
           onClick={onOpenSettings}
-          className="tokerian-btn-icon"
-          title="Playlist & CORS Settings"
+          className="header-action-icon-btn"
+          title="App Settings & Parental Lock"
         >
-          <Sliders size={20} />
+          <Sliders size={18} />
         </button>
+
+        {/* 7. Subtle Desktop Window Controls (Minimize / Maximize / Close) */}
+        <div className="header-window-controls">
+          <button type="button" className="window-control-btn" title="Minimize">
+            <Minus size={13} />
+          </button>
+          <button type="button" className="window-control-btn" title="Maximize">
+            <Square size={11} />
+          </button>
+          <button type="button" className="window-control-btn close-btn" title="Close">
+            <X size={13} />
+          </button>
+        </div>
       </div>
     </header>
   );
