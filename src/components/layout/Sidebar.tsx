@@ -1,27 +1,31 @@
-import React from 'react';
-import { useUserStore } from '../../stores/useUserStore';
-import { useChannelStore } from '../../stores/useChannelStore';
-import { usePlayerStore } from '../../stores/usePlayerStore';
 import {
-  Tv,
-  Star,
-  Clock,
-  Newspaper,
-  Trophy,
-  Film,
-  Sparkles,
-  Music,
-  Radio,
-  Play,
-  Pause,
   X,
+  Radio,
 } from 'lucide-react';
+import { MatIcon } from '../common/MatIcon';
+import { AppVersionBadge } from '../common/AppVersionBadge';
+import { useUserStore } from '../../stores/useUserStore';
+import { usePlayerStore } from '../../stores/usePlayerStore';
 
-export type SidebarTab = 'channels' | 'favorites' | 'history';
+export type SidebarTab =
+  | 'home'
+  | 'channels'
+  | 'search'
+  | 'movies'
+  | 'series'
+  | 'favorites'
+  | 'history'
+  | 'livetv'
+  | 'playlists'
+  | 'downloads'
+  | 'settings';
 
 interface SidebarProps {
   activeTab: SidebarTab;
   onTabChange: (tab: SidebarTab) => void;
+  onOpenPlaylists?: () => void;
+  onOpenCommandPalette?: () => void;
+  onOpenEpgGuide?: () => void;
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
 }
@@ -29,25 +33,23 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   onTabChange,
+  onOpenPlaylists,
+  onOpenCommandPalette,
   isMobileOpen = false,
   onCloseMobile,
 }) => {
   const favoritesCount = useUserStore((s) => s.favorites.size);
   const historyCount = useUserStore((s) => s.history.length);
-  const setActiveCategory = useChannelStore((s) => s.setActiveCategory);
-
   const currentChannel = usePlayerStore((s) => s.currentChannel);
-  const isPlaying = usePlayerStore((s) => s.isPlaying);
-  const togglePlay = usePlayerStore((s) => s.togglePlay);
 
   const handleTabSelect = (tab: SidebarTab) => {
-    onTabChange(tab);
-    onCloseMobile?.();
-  };
-
-  const handleQuickCategory = (category: string) => {
-    onTabChange('channels');
-    setActiveCategory(category);
+    if (tab === 'playlists' && onOpenPlaylists) {
+      onOpenPlaylists();
+    } else if (tab === 'search' && onOpenCommandPalette) {
+      onOpenCommandPalette();
+    } else {
+      onTabChange(tab);
+    }
     onCloseMobile?.();
   };
 
@@ -55,154 +57,167 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <>
       {/* Mobile Drawer Backdrop */}
       {isMobileOpen && (
-        <div
-          className="sidebar-backdrop"
-          onClick={onCloseMobile}
-        />
+        <div className="sidebar-backdrop" onClick={onCloseMobile} />
       )}
 
-      <aside className={`tokerian-sidebar ${isMobileOpen ? 'sidebar-drawer-open' : ''}`}>
-        {/* Mobile Header with Close Button */}
-        <div className="sidebar-mobile-header">
-          <div className="header-brand" style={{ gap: '8px' }}>
-            <div className="brand-icon-wrapper" style={{ width: '32px', height: '32px' }}>
+      {/* 56px Left Icon Rail (Desktop & TV) / Slide-in Drawer (Mobile) */}
+      <aside className={`tokerian-icon-rail ${isMobileOpen ? 'icon-rail-mobile-open' : ''}`}>
+        {/* Mobile-Only Header */}
+        <div className="rail-mobile-header">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div className="brand-icon-wrapper" style={{ width: '30px', height: '30px' }}>
               <Radio size={16} />
             </div>
-            <span className="brand-title" style={{ fontSize: '1.05rem' }}>Tokerian</span>
+            <span className="brand-title" style={{ fontSize: '1rem' }}>Tokerian</span>
+            <AppVersionBadge variant="chip" />
           </div>
           <button
             type="button"
             onClick={onCloseMobile}
             className="tokerian-btn-icon"
             style={{ padding: '6px' }}
-            title="Close menu"
           >
             <X size={18} />
           </button>
         </div>
 
-        {/* Primary Navigation */}
-        <div className="sidebar-nav-group">
-          <span className="sidebar-group-title">Menu</span>
-
+        {/* Top Primary Navigation Icons */}
+        <div className="rail-icons-top">
+          {/* 1. Home / Dashboard */}
           <button
             type="button"
-            tabIndex={0}
+            onClick={() => handleTabSelect('home')}
+            className={`rail-icon-btn ${activeTab === 'home' ? 'rail-icon-active' : ''}`}
+            title="Home Dashboard"
+          >
+            <MatIcon name="dashboard" size={20} />
+            <span className="rail-mobile-label">Home</span>
+          </button>
+
+          {/* 2. Channel List / Explorer */}
+          <button
+            type="button"
             onClick={() => handleTabSelect('channels')}
-            className={`sidebar-nav-item ${activeTab === 'channels' ? 'sidebar-item-active' : ''}`}
+            className={`rail-icon-btn ${activeTab === 'channels' ? 'rail-icon-active' : ''}`}
+            title="All Channels & Groups"
           >
-            <Tv size={18} />
-            <span>Live Channels</span>
+            <MatIcon name="playlist_play" size={22} />
+            <span className="rail-mobile-label">Channels</span>
           </button>
 
+          {/* 3. Global Search */}
           <button
             type="button"
-            tabIndex={0}
+            onClick={() => handleTabSelect('search')}
+            className={`rail-icon-btn ${activeTab === 'search' ? 'rail-icon-active' : ''}`}
+            title="Search (Ctrl+K)"
+          >
+            <MatIcon name="search" size={20} />
+            <span className="rail-mobile-label">Search</span>
+          </button>
+
+          {/* 4. Favorites */}
+          <button
+            type="button"
             onClick={() => handleTabSelect('favorites')}
-            className={`sidebar-nav-item ${activeTab === 'favorites' ? 'sidebar-item-active' : ''}`}
+            className={`rail-icon-btn ${activeTab === 'favorites' ? 'rail-icon-active' : ''}`}
+            title={`Favorites (${favoritesCount})`}
           >
-            <Star size={18} />
-            <span>Favorites</span>
-            {favoritesCount > 0 && <span className="nav-badge">{favoritesCount}</span>}
+            <MatIcon name="favorite" size={20} />
+            {favoritesCount > 0 && <span className="rail-badge-dot" />}
+            <span className="rail-mobile-label">Favorites ({favoritesCount})</span>
           </button>
 
+          {/* 5. Recently Watched / History */}
           <button
             type="button"
-            tabIndex={0}
             onClick={() => handleTabSelect('history')}
-            className={`sidebar-nav-item ${activeTab === 'history' ? 'sidebar-item-active' : ''}`}
+            className={`rail-icon-btn ${activeTab === 'history' ? 'rail-icon-active' : ''}`}
+            title={`Watch History (${historyCount})`}
           >
-            <Clock size={18} />
-            <span>Recently Watched</span>
-            {historyCount > 0 && <span className="nav-badge">{historyCount}</span>}
+            <MatIcon name="history" size={20} />
+            <span className="rail-mobile-label">History ({historyCount})</span>
           </button>
-        </div>
 
-      {/* Quick Category Filter Presets */}
-      <div className="sidebar-nav-group">
-        <span className="sidebar-group-title">Genres</span>
-
-        <button
-          type="button"
-          onClick={() => handleQuickCategory('News')}
-          className="sidebar-nav-item"
-        >
-          <Newspaper size={18} />
-          <span>News</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleQuickCategory('Sports')}
-          className="sidebar-nav-item"
-        >
-          <Trophy size={18} />
-          <span>Sports</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleQuickCategory('Movies')}
-          className="sidebar-nav-item"
-        >
-          <Film size={18} />
-          <span>Movies</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleQuickCategory('Animation')}
-          className="sidebar-nav-item"
-        >
-          <Sparkles size={18} />
-          <span>Animation</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleQuickCategory('Music')}
-          className="sidebar-nav-item"
-        >
-          <Music size={18} />
-          <span>Music</span>
-        </button>
-      </div>
-
-      {/* Currently Playing Mini-Card (if stream is active) */}
-      {currentChannel && (
-        <div className="sidebar-mini-player glass-panel">
-          <div className="mini-player-top">
-            {currentChannel.logo ? (
-              <img
-                src={currentChannel.logo}
-                alt={currentChannel.name}
-                className="mini-player-logo"
-                onError={(e) => (e.currentTarget.style.display = 'none')}
-              />
-            ) : (
-              <Radio size={20} className="text-accent" />
-            )}
-            <div className="mini-player-text">
-              <span className="mini-player-title" title={currentChannel.name}>
-                {currentChannel.name}
-              </span>
-              <span className="mini-player-live">
-                <span className="live-indicator" /> LIVE
-              </span>
-            </div>
-          </div>
-
+          {/* 6. Live TV Cinema Player View */}
           <button
             type="button"
-            onClick={togglePlay}
-            className="tokerian-btn tokerian-btn-primary mini-play-btn"
+            onClick={() => handleTabSelect('livetv')}
+            className={`rail-icon-btn ${activeTab === 'livetv' ? 'rail-icon-active' : ''}`}
+            title={currentChannel ? `Now Playing: ${currentChannel.name}` : 'Live TV Player'}
           >
-            {isPlaying ? <Pause size={16} /> : <Play size={16} fill="currentColor" />}
-            <span>{isPlaying ? 'Pause' : 'Resume'}</span>
+            <MatIcon name="live_tv" size={20} />
+            <span className="rail-mobile-label">Live Player</span>
+          </button>
+
+          {/* 7. Movies VOD */}
+          <button
+            type="button"
+            onClick={() => handleTabSelect('movies')}
+            className={`rail-icon-btn ${activeTab === 'movies' ? 'rail-icon-active' : ''}`}
+            title="Movies (VOD)"
+          >
+            <MatIcon name="movie" size={20} />
+            <span className="rail-mobile-label">Movies</span>
+          </button>
+
+          {/* 8. TV Series */}
+          <button
+            type="button"
+            onClick={() => handleTabSelect('series')}
+            className={`rail-icon-btn ${activeTab === 'series' ? 'rail-icon-active' : ''}`}
+            title="TV Series Catalog"
+          >
+            <MatIcon name="tv" size={20} />
+            <span className="rail-mobile-label">Series</span>
+          </button>
+
+          {/* 9. Sources / Playlists Manager */}
+          <button
+            type="button"
+            onClick={() => handleTabSelect('playlists')}
+            className={`rail-icon-btn ${activeTab === 'playlists' ? 'rail-icon-active' : ''}`}
+            title="Playlists & Sources"
+          >
+            <MatIcon name="folder" size={20} />
+            <span className="rail-mobile-label">Sources</span>
+          </button>
+
+          {/* 10. Downloads & Recordings */}
+          <button
+            type="button"
+            onClick={() => handleTabSelect('downloads')}
+            className={`rail-icon-btn ${activeTab === 'downloads' ? 'rail-icon-active' : ''}`}
+            title="Downloads & Recordings"
+          >
+            <MatIcon name="download" size={20} />
+            <span className="rail-mobile-label">Downloads</span>
           </button>
         </div>
-      )}
-    </aside>
+
+        {/* Bottom Settings Icon */}
+        <div className="rail-icons-bottom">
+          <button
+            type="button"
+            onClick={() => {
+              onTabChange('settings');
+              onCloseMobile?.();
+            }}
+            className={`rail-icon-btn ${activeTab === 'settings' ? 'rail-icon-active' : ''}`}
+            title="Settings & Preferences"
+          >
+            <MatIcon name="settings" size={20} />
+            <span className="rail-mobile-label">Settings</span>
+          </button>
+          <AppVersionBadge
+            variant="compact"
+            onClick={() => {
+              onTabChange('settings');
+              onCloseMobile?.();
+            }}
+          />
+        </div>
+      </aside>
     </>
   );
 };

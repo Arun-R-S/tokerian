@@ -1,208 +1,291 @@
-# Tokerian: Architecture & Implementation Plan
+# Tokerian: Complete IPTVnator 1:1 UI Clone & Multi-Platform Architecture Plan
 
-> **Application Name**: **Tokerian**  
-> **Platforms Supported**: Web, Desktop (Windows/macOS/Linux), Mobile (Android/iOS), and Android TV (10-Foot UI / D-Pad Remote)  
-> **Source Playlist**: [iptv-org/iptv](https://github.com/iptv-org/iptv) (`https://iptv-org.github.io/iptv/index.m3u` + Presets)  
-> **Architecture Pattern**: Hexagonal Architecture (Ports & Adapters) + SOLID Principles + Clean Layering  
-> **Performance Benchmarks**: Vercel React Best Practices, React Native Architecture, and React Native Performance Skills
+> **Application**: **Tokerian** (IPTV, VOD & Series Client)  
+> **Target Reference**: [`F:\Projects\iptvnator`](file:///F:/Projects/iptvnator) (Open-source Angular/Electron IPTV Client)  
+> **Multi-Platform Target**: **Web**, **Tablet**, **Mobile** (iOS & Android via Capacitor), **Desktop** (Electron for Windows, macOS, Linux), and **Android TV** (10-foot D-Pad Remote Leanback UI)  
+> **Design Philosophy**: Pure Vanilla CSS design tokens (no Tailwind), cinema dark aesthetic, glassmorphic surfaces, instant responsive adaptability, zero-dependency WebCrypto security.
 
 ---
 
-## 1. Architectural Foundation & Principles
-
-### 1.1 Hexagonal Architecture (Ports and Adapters)
-The application decouples core domain rules (playlist parsing, channel indexing, favorites, history, settings) from external device platforms and streaming engines.
+## 1. Visual & Architectural Blueprint
 
 ```
-                      ┌──────────────────────────────────────────────┐
-                      │              DRIVING ADAPTERS                │
-                      │  Web Browser UI │ Desktop UI │ Android TV UI │
-                      └──────────────────────┬───────────────────────┘
-                                             │
-                      ┌──────────────────────▼───────────────────────┐
-                      │                DRIVING PORTS                 │
-                      │         (UI Actions & Navigation)            │
-                      ├──────────────────────────────────────────────┤
-                      │                 CORE DOMAIN                  │
-                      │  • Single-pass M3U Streaming Parser          │
-                      │  • Category & Country O(1) Index Engine      │
-                      │  • Reactive Stores (Zustand)                 │
-                      │  • Favorites & History Business Logic        │
-                      ├──────────────────────────────────────────────┤
-                      │                DRIVEN PORTS                  │
-                      │   IPlayerPort │ IStoragePort │ ICastPort     │
-                      └──────────────────────┬───────────────────────┘
-                                             │
-                      ┌──────────────────────▼───────────────────────┐
-                      │               DRIVEN ADAPTERS                │
-                      │  • Player:  Hls.js (Web/Desktop) / ExoPlayer │
-                      │  • Storage: IndexedDB (Web) / SQLite         │
-                      │  • Input:   D-Pad (Android TV) / Keyboard    │
-                      └──────────────────────────────────────────────┘
-```
-
-### 1.2 SOLID Principles Implementation
-* **S (Single Responsibility)**: M3U parser only parses; Player adapter only drives media playback; Storage adapter only handles persistence.
-* **O (Open/Closed)**: New target platforms (e.g. Apple TV, macOS) are added by implementing new Adapters without modifying core business code.
-* **L (Liskov Substitution)**: `HlsPlayerAdapter` (Web) and `ExoPlayerAdapter` (Android/TV) implement the identical `IPlayerPort` contract and can be swapped transparently.
-* **I (Interface Segregation)**: Segregated, focused ports (`IPlayerPort`, `IStoragePort`, `ICastPort`, `IInputPort`) rather than a monolithic interface.
-* **D (Dependency Inversion)**: High-level UI and business logic depend exclusively on abstract TypeScript Port interfaces, never concrete vendor libraries.
-
-### 1.3 Key Design Patterns
-* **Adapter Pattern**: Bridges third-party video engines (`hls.js`, ExoPlayer, Chromecast SDK) to unified internal ports.
-* **Facade Pattern**: `PlaybackFacade` orchestrates channel switching, proxy fallback, history updates, and error recovery.
-* **Proxy Pattern**: Transparent CORS routing for in-browser playback of non-CORS streams.
-* **Strategy Pattern**: Dynamic selection of playback engines (HLS.js vs Native HLS vs Direct MP4) and input handlers (D-pad vs Touch/Mouse).
-* **Command Pattern**: Encapsulates TV remote and keyboard actions (`ZapNext`, `ToggleFav`, `TogglePiP`, `ToggleFullscreen`) for remappable input.
-* **Observer Pattern**: Reactive Zustand stores synchronize player state (buffering, audio/sub tracks, errors) across UI overlays.
-
----
-
-## 2. Best-Practice Performance Rules Applied
-
-Incorporated from **Vercel React Best Practices**, **React Native Architecture**, and **React Native Skills**:
-
-1. **List Virtualization (`list-performance-virtualize`, `rendering-content-visibility`)**:
-   - `index.m3u` contains 30,000+ channels.
-   - **Native & Android TV**: Uses `@shopify/flash-list` with `estimatedItemSize={72}`, `removeClippedSubviews={true}`, and `getItemType`.
-   - **Web**: Virtualized viewport with CSS `content-visibility: auto`.
-2. **Channel Logo Caching (`ui-expo-image`, `list-performance-images`)**:
-   - Uses `expo-image` (Native) and memory/disk LRU caching to eliminate scroll stutter and OOM issues.
-   - SVG fallback placeholders when broadcaster logos are broken or offline.
-3. **Memoized Channel Cards (`list-performance-item-memo`, `rerender-memo`)**:
-   - `ChannelCard` is wrapped in `React.memo` with zero inline functions or inline style objects in render loops.
-4. **Fine-Grained Reactive Subscriptions (`rerender-derived-state`, `react-state-minimize`)**:
-   - Channel items subscribe only to boolean selectors (e.g., `useFavoritesStore(s => s.has(channelId))`), preventing full list re-renders when toggling favorites.
-5. **Non-Blocking Parser (`async-defer-await`, `async-parallel`)**:
-   - Playlist downloading and regex parsing run in a **Web Worker** / background isolate, ensuring 60fps UI responsiveness.
-6. **Offline-First Persistence**:
-   - Playlists and metadata are saved to `IndexedDB` (Web) and `SQLite` (Native) via TanStack Query's offline persister for instant startup (< 100ms).
-
----
-
-## 3. Directory & File Structure
-
-```text
-iptv-project/
-├── app/                                 # Expo Router / Application Screens
-│   ├── (tabs)/                          # Main Shell
-│   │   ├── _layout.tsx                  # Adaptive Navigation (Sidebar for Web/TV, Tabs for Mobile)
-│   │   ├── index.tsx                    # Live TV / Channel Browser Screen
-│   │   ├── categories.tsx               # Category Explorer Screen
-│   │   ├── favorites.tsx                # Pinned Favorites Screen
-│   │   ├── history.tsx                  # Watch History Screen
-│   │   └── settings.tsx                 # M3U Source, CORS Proxy, Audio/Sub defaults
-│   ├── player/
-│   │   └── [channelId].tsx              # Fullscreen OSD Video Player Screen
-│   └── _layout.tsx                      # Root Providers (QueryClient, Theme, PlayerProvider)
-│
-├── src/
-│   ├── core/                            # 100% Platform-Agnostic Hexagonal Core
-│   │   ├── domain/                      # Models & Types
-│   │   │   ├── Channel.ts               # Channel, Stream, Group, EPG types
-│   │   │   ├── Track.ts                 # AudioTrack, SubtitleTrack, QualityLevel
-│   │   │   └── Settings.ts              # ProxyConfig, BufferConfig, PlaylistConfig
-│   │   ├── parser/                      # Streaming M3U Parser
-│   │   │   ├── m3uParser.ts             # Single-pass regex parser
-│   │   │   └── m3uParser.worker.ts      # Web Worker for non-blocking execution
-│   │   ├── presets/
-│   │   │   └── iptvOrgPresets.ts        # Index, Categories (News, Sports, etc.), Countries
-│   │   └── ports/                       # Hexagonal Abstract Interfaces
-│   │       ├── IPlayerPort.ts           # play, pause, setAudioTrack, setSubtitleTrack, seek
-│   │       ├── IStoragePort.ts          # getChannels, saveChannels, getFavorites, getHistory
-│   │       ├── ICastPort.ts             # startCast, stopCast, getCastState
-│   │       └── IInputPort.ts            # D-pad and keyboard event contracts
-│   │
-│   ├── adapters/                        # Concrete Implementations of Ports
-│   │   ├── player/
-│   │   │   ├── HlsPlayerAdapter.web.ts  # Web & Desktop player via Hls.js
-│   │   │   ├── ExoPlayerAdapter.native.ts# Android Mobile & Android TV via ExoPlayer
-│   │   │   └── PipAdapter.ts            # Native Android PiP & Web HTML5 PiP
-│   │   ├── storage/
-│   │   │   ├── IndexedDbAdapter.web.ts  # Web high-volume IndexedDB storage
-│   │   │   └── SqliteAdapter.native.ts  # Native SQLite / AsyncStorage adapter
-│   │   └── input/
-│   │       ├── DpadNavigation.tv.ts     # Android TV D-pad spatial focus engine
-│   │       └── KeyboardShortcuts.web.ts # Desktop & Web hotkeys (F, M, Space, Up/Down)
-│   │
-│   ├── stores/                          # Atomic Reactive Stores (Zustand)
-│   │   ├── useChannelStore.ts           # Channel catalogue, active category, search
-│   │   ├── usePlayerStore.ts            # Stream state, tracks, volume, buffering
-│   │   ├── useFavoritesStore.ts         # Fast O(1) Set lookup for pinned channels
-│   │   └── useHistoryStore.ts           # LRU watch history with timestamps
-│   │
-│   ├── components/                      # High-Performance UI Layer
-│   │   ├── channel/
-│   │   │   ├── ChannelList.tsx          # FlashList / VirtualGrid container
-│   │   │   ├── ChannelCard.tsx          # Memoized item (expo-image logo, live badge, focus ring)
-│   │   │   └── CategoryPill.tsx         # Memoized horizontal category chip
-│   │   ├── player/
-│   │   │   ├── VideoSurface.tsx         # Platform-swapped video view
-│   │   │   ├── PlayerControls.tsx       # Auto-hiding OSD overlay
-│   │   │   ├── TrackSelectorModal.tsx   # Multiple audio & subtitle tracks selector
-│   │   │   └── CastButton.tsx           # Chromecast trigger
-│   │   └── ui/                          # Design System Primitives
-│   │       ├── FocusablePressable.tsx   # TV D-pad focus-aware pressable
-│   │       ├── SearchInput.tsx          # Debounced fast-filter input
-│   │       └── GlassModal.tsx           # Glassmorphic modal overlay
-│   │
-│   └── hooks/                           # Reusable Business Hooks
-│       ├── useChannelFilter.ts          # Memoized O(1) Category & Search indexing
-│       ├── useTvFocus.ts                # D-pad remote controller registration
-│       └── useAudioSubtitleTracks.ts   # Track synchronization with PlayerPort
-│
-├── package.json
-└── app.json                             # Expo Configuration (Android TV Leanback, TV banner, Web)
+┌──────┬────────────────────────────────────────────────────────────────────────────────────────┐
+│  --  │ [📁 IPTV 11374 ch 🔄 ▾]   [ 🔍 Search in this playlist...  Ctrl+K ]  [⌨] [+]   [⤓] [-][□][✕]│
+├──────┼────────────────────────────────────────────────────────────────────────────────────────┤
+│ [⊞]  │ ┌────────────────────────────────────────────────────────────────────────────────────┐ │
+│ [☰]  │ │ ┌──────────┐  Sirippoli TV (576p)                                                 │ │
+│ [🔍] │ │ │  [LOGO]  │  IPTV                                                                │ │
+│ [♥]  │ │ └──────────┘  [ ▶ Continue Watching ]                     (Radial Crimson Glow)   │ │
+│ [🕒] │ └────────────────────────────────────────────────────────────────────────────────────┘ │
+│ [📺] │                                                                                        │
+│ [📁] │ Live now on your favorites (2)                                              See all >  │
+│      │ ┌─────────────────────────┐  ┌─────────────────────────┐                               │
+│      │ │ [📺] Sirippoli TV (576p)│  │ [📺] Sun TV HD (1080p)   │                               │
+│      │ │ • LIVE   [━━━━━━━░░░░]  │  │ • LIVE   [━━━━░░░░░░░]   │                               │
+│      │ └─────────────────────────┘  └─────────────────────────┘                               │
+│      │                                                                                        │
+│      │ Recently watched live TV (3)                                                See all >  │
+│      │ ┌─────────────────────────┐  ┌─────────────────────────┐  ┌─────────────────────────┐  │
+│      │ │ [📺] Sirippoli TV       │  │ [📺] Sun TV HD          │  │ [📺] Jaya Plus (576p)   │  │
+│      │ │ • LIVE   [━━━━━━━░░░░]  │  │ • LIVE   [━━━━░░░░░░░]   │  │ • LIVE   [━━━━░░░░░░░]   │  │
+│      │ └─────────────────────────┘  └─────────────────────────┘  └─────────────────────────┘  │
+│      │                                                                                        │
+│      │ Recently Used Sources (1)                                                   See all >  │
+│      │ ┌───────────────────┐                                                                  │
+│      │ │ [📁]         [⋮]  │                                                                  │
+│      │ │ IPTV              │                                                                  │
+│      │ └───────────────────┘                                                                  │
+│ [⚙]  │                                                                                        │
+└──────┴────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 4. Feature Specifications Matrix
+## 2. All 10 Screens of IPTVnator — Detailed Specifications
 
-| Feature | Web / Desktop Implementation | Mobile & Android TV Implementation |
-| :--- | :--- | :--- |
-| **Channel Listing** | Virtualized grid with CSS `content-visibility: auto` | `@shopify/flash-list` with `estimatedItemSize={72}` |
-| **Categories** | Pre-indexed `group-title -> IDs` map; horizontal pill bar | Pre-indexed horizontal scroll list with TV D-pad focus |
-| **Live Playback** | `hls.js` with adaptive bitrate, auto buffer management | Google `ExoPlayer` with hardware decoding (4K/60fps) |
-| **Search** | Debounced (150ms) input with fuzzy and regex token matching | On-screen TV keyboard / voice input with debounced filter |
-| **Favorites** | `Set<string>` stored in `IndexedDB` with O(1) membership | `Set<string>` stored in `AsyncStorage`/`SQLite` |
-| **Viewing History** | LRU array (max 50) with channel ID and timestamp | LRU array (max 50) with channel ID and timestamp |
-| **Fullscreen Player** | HTML5 Fullscreen API with auto-hiding OSD | Native Fullscreen Activity with auto-hiding OSD |
-| **Multiple Audio Tracks** | `hls.audioTracks` API with selector modal | ExoPlayer `TrackSelectionOverride` selector modal |
-| **Subtitles / Captions** | `hls.subtitleTracks` and WebVTT support | ExoPlayer embedded CEA-608/708 & WebVTT tracks |
-| **Picture-in-Picture** | `video.requestPictureInPicture()` | Android OS native `enterPictureInPictureMode()` |
-| **Casting** | Google Cast Web SDK (Chromecast) | Google Cast SDK for Android / iOS |
-| **Changeable IPTV URL** | Settings modal supporting any custom M3U/M3U8 link | Settings screen with preset dropdown + custom URL field |
-| **CORS Stream Handling** | In-browser CORS Proxy switch with custom proxy input | Native direct streaming (CORS is not enforced on Android) |
-| **10-Foot Remote (TV)** | Keyboard hotkeys (`F`, `M`, `Space`, `Arrows`, `Enter`) | Full D-pad spatial navigation with high-contrast focus rings |
+### Screen 1: Home / Dashboard View (Route: `/home`)
+- **Top Spotlight Hero Card**:
+  - Radial gradient backdrop (deep dark obsidian with subtle crimson/burgundy radial light).
+  - Left: Large vertical channel/movie card with rounded border, high-res channel logo, or movie poster.
+  - Right: Title of the last played channel/program (`Sirippoli TV (576p)`), playlist source subtitle (`IPTV`).
+  - Action Button: **`▶ Continue Watching`** pill button with accent glow that immediately launches playback.
+- **Horizontal Carousels / Sections**:
+  - **"Live now on your favorites"** (Count badge e.g. `2`, `See all >` action link):
+    - Compact cards with square logo, clean channel title, red `• LIVE` badge, and dynamic broadcast progress bar calculated from EPG.
+  - **"Recently watched live TV"** (Count badge e.g. `3`, `See all >` action link):
+    - Recent watch history cards with live status and duration percentage.
+  - **"Recently Used Sources"** (Count badge e.g. `1`, `See all >` action link):
+    - Source cards displaying folder icon, source title (`IPTV`), total channels (`11,374 channels`), and `⋮` actions menu.
+
+### Screen 2: Channel Explorer & Groups View (Route: `/channels`)
+- **Left Category / Group Drawer**:
+  - Collapsible list of groups: *"All Channels"*, *"Sports"*, *"News"*, *"Cinema"*, *"Kids"*, *"Documentary"*, etc., each with a channel count badge.
+- **Toolbar & Actions**:
+  - Search input scoped to the selected group.
+  - View switcher: **Grid View** (modern visual cards with logos) vs. **List / Table View** (dense rows with channel index, logo, title, and group).
+  - Sort selector: Default order, Alphabetical, or Quality (FHD/4K/HD).
+- **Channel Item / Card**:
+  - Channel logo with fallback icon.
+  - Title (with automatic country prefix cleaner option).
+  - Category pill.
+  - Favorite heart toggle (`♥`).
+  - Context menu (`⋮`): Play in browser player, Open in VLC, Open in MPV, Copy stream URL.
+
+### Screen 3: Video Player & On-Screen Display (OSD)
+- **Cinema Video Viewport**:
+  - HLS.js adaptive live streaming + HTML5 native video.
+- **Top OSD Bar**:
+  - Close / Back button (`✕`).
+  - Channel logo and title.
+  - Current EPG broadcast title with start & end times (`18:00 - 19:30`).
+- **Bottom Control Bar**:
+  - Play / Pause toggle, Rewind 10s, Forward 10s.
+  - Audio volume slider & mute toggle.
+  - Stream track switcher: Multi-audio tracks, Subtitle/CC tracks, Quality level selector.
+  - **External Desktop Player button**: Direct one-click spawn into VLC (`vlc.exe`) or MPV (`mpv.exe`).
+  - Picture-in-Picture (PiP) toggle.
+  - Fullscreen toggle.
+- **EPG Live Ribbon**:
+  - Interactive live progress bar along the bottom showing start time, elapsed scrubber, end time, and "Next Up" preview.
+- **Quick Zap Channel Drawer**:
+  - Side drawer accessible while watching to browse and zap channels without closing video.
+
+### Screen 4: VOD Movies & TV Series Catalog (Route: `/vod` & `/series`)
+- View switcher between **Movies** and **TV Series**.
+- Category / Genre pills (Action, Comedy, Sci-Fi, Drama).
+- Poster cards with year badge, duration, and IMDB rating (`★ 8.4`).
+- **Detail Modal**:
+  - Big backdrop hero image.
+  - Synopsis, director, cast, release date.
+  - For series: Season dropdown selector + episode cards grid with individual thumbnail and plot.
+  - "Continue Watching" saved timestamp tracking.
+
+### Screen 5: Favorites Screen (Route: `/favorites`)
+- Dedicated view of all starred channels across all imported playlists.
+- Category filtering and search.
+- One-click heart toggle to remove.
+- "Play All" or click to launch player.
+
+### Screen 6: Watch History Screen (Route: `/history`)
+- Chronological list of previously played streams grouped by: *"Today"*, *"Yesterday"*, *"Earlier this week"*.
+- Channel thumbnail, stream title, last watched timestamp, and playback progress bar.
+- **"Clear All History"** confirmation action.
+
+### Screen 7: Playlists & Sources Manager (Route: `/playlists`)
+- Grid/list of all imported sources:
+  - Source title, badge (`M3U File`, `M3U URL`, `Xtream Codes API`).
+  - Channel count (`11,374 channels`), last sync date, auto-refresh state.
+  - Quick actions: Set active, Sync/Refresh (`🔄`), Edit, Delete (`🗑`).
+- Floating or header **"+ Add Source"** button.
+
+### Screen 8: Add Playlist / Import Modal
+- **Tab 1: M3U File Upload**: Drag-and-drop zone or file picker for `.m3u` / `.m3u8` files.
+- **Tab 2: Remote URL**: URL input with auto-refresh interval (Never, Hourly, Daily).
+- **Tab 3: Xtream Codes API**: Server address, Username, Password, with switches to load Live TV, VOD Movies, and TV Series.
+- **Tab 4: Paste Text**: Raw M3U playlist text area.
+
+### Screen 9: Electronic Program Guide (EPG Timeline Schedule Matrix)
+- Fullscreen multi-channel matrix grid:
+  - Left column: Channel logos and titles.
+  - Top header: 30-minute interval timestamps across a 24-hour window.
+  - Red vertical **Current Time Indicator Line** updating continuously.
+  - Program schedule blocks sized proportionally to duration with synopsis tooltips and click-to-play.
+
+### Screen 10: Extended Settings Center (5 Tabs)
+1. **General**: App theme, language, 10-foot TV remote mode toggle, data export/import.
+2. **Playback & Stream**: HLS buffer slider (5s - 120s), hardware acceleration, auto-play next channel on error.
+3. **External Desktop Players**: Default player (VLC / MPV), Windows executable path overrides (`vlc.exe`, `mpv.exe`), live status indicators.
+4. **Channel Title Cleaner**: Prefix/country tag cleaner with live before/after test bench.
+5. **Parental Control PIN**: 4-digit PIN setup via WebCrypto PBKDF2-SHA256, adult keyword blacklist, lock/unlock session toggle.
 
 ---
 
-## 5. Phased Execution Roadmap
+## 3. Multi-Platform UI Adaptation Matrix
 
-### Phase 1: Foundation, Hexagonal Ports & Streaming Engine
-1. Initialize project structure and dependencies (`zustand`, `@shopify/flash-list`, `expo-image`, `hls.js`, `lucide-react`).
-2. Implement `core/domain` and `core/ports` TypeScript contracts.
-3. Build the non-blocking single-pass M3U parser with `iptv-org` built-in presets.
-4. Set up offline-first storage adapter (`IndexedDB` & `AsyncStorage`).
+| Component / Screen | Desktop (Electron) | Web Browser | Tablet (iPad / Android) | Mobile Phone | Android TV (10-Foot) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Top Header** | Window drag area, window controls (min/max/close), playlist selector, centered search (`Ctrl+K`), quick icons. | Standard web header, playlist dropdown, search with `⌘K`, shortcut button. | Compact search, playlist pill, hamburger drawer button. | Ultra-compact brand logo, search icon (expands to overlay), playlist selector pill. | Hidden or minimal top status bar; focused via D-pad Up to search and playlists. |
+| **Navigation Sidebar** | Thin icon rail (56px) on the left with tooltip labels on hover. | Thin icon rail (56px) on the left. | Medium icon rail or slide-in drawer on touch. | **Bottom Navigation Bar** (`Home`, `Live TV`, `VOD`, `Favs`, `Settings`) + Slide-in drawer for groups. | Left vertical rail that expands on focus or top tab ribbon for remote left/right. |
+| **Home Dashboard** | Full hero banner with crimson glow + 3-4 cards per horizontal carousel. | Full hero banner + responsive 3-4 cards per carousel. | 2-3 cards per carousel, touch swipe horizontal scrolling. | Stacked hero banner + 1.5 cards per row with horizontal native snap swipe. | 10-foot large hero banner; D-pad down navigates row by row; cards scale `1.08x` on remote focus. |
+| **Channel Grid** | Multi-column grid (4-6 columns) or table list view. | Multi-column grid (3-5 columns) with virtual scroll. | 3-column grid, touch-friendly tap targets. | 1-column list or 2-column compact cards with quick favorite swipe. | 4-column large cards with high-contrast glowing border on focus (`box-shadow: 0 0 0 4px #6366f1`). |
+| **Video Player** | Full window / fullscreen with PiP and external VLC/MPV spawning. | Native HTML5 / HLS.js with browser PiP and custom OSD. | Touch tap to reveal OSD, pinch to zoom/fit, touch seek gestures. | Native mobile orientation lock (auto landscape on play), swipe volume/brightness. | 10-foot player with D-Pad Play/Pause, Left/Right 10s seek, Up/Down quick zap channel overlay. |
+| **Dialogs & Modals** | Centered floating glassmorphic windows with `ESC` to close. | Centered floating glassmorphic windows. | Sheet modals or centered popups. | Bottom slide-up bottom sheets with swipe-down to dismiss. | Fullscreen modal with auto-focused first button and remote `Back` button handling. |
 
-### Phase 2: High-Performance Channel Browser & Categories
-1. Implement the virtualized channel container with memoized `ChannelCard`s.
-2. Build category pill selector and instant debounced search bar.
-3. Wire O(1) Favorites store and LRU Viewing History store.
+---
 
-### Phase 3: Unified Media Player with Audio/Subtitles & PiP
-1. Implement `HlsPlayerAdapter` (Web/Desktop) and native player hooks.
-2. Build auto-hiding On-Screen Display (OSD) controls with channel zapping (`Prev` / `Next`).
-3. Build Audio Track and Subtitle selector modals.
-4. Implement Picture-in-Picture (PiP) and Fullscreen controls.
+## 4. Step-by-Step Implementation Roadmap
 
-### Phase 4: Android TV Spatial Navigation & Settings
-1. Integrate D-pad spatial navigation (`ArrowUp`, `ArrowDown`, `ArrowLeft`, `ArrowRight`, `Enter`, `Back`).
-2. Add high-contrast glowing focus indicators for 10-foot TV viewing.
-3. Build Settings screen for custom M3U playlist URLs, preset switching, and CORS proxy toggles.
+### Step 1: IPTVnator Navigation Shell (Icon Rail + Header) (COMPLETED)
+- [x] Build the slim left navigation rail (`56px` width):
+  - Icons: Home (`⊞`), Channels (`☰`), Search (`🔍`), Favorites (`♥`), History (`🕒`), Live TV (`📺`), Playlists (`📁`), and Settings (`⚙` at bottom).
+  - Active indicator pill with light-blue accent.
+- [x] Build the IPTVnator top header bar:
+  - Left: Playlist selector dropdown pill (Folder icon, title `IPTV`, channel count `11374 channels`, refresh icon, down arrow).
+  - Center: Pill-shaped `Search in this playlist...` with `Ctrl+K` shortcut badge.
+  - Right: Quick Action icons: Virtual keyboard cheatsheet (`⌨`), Add source (`+`), Export (`⤓`), Window controls (Electron).
 
-### Phase 5: Casting, Mobile Packaging & Production Verification
-1. Add Google Cast support.
-2. Configure Android TV Leanback banner and permissions in `app.json`.
-3. Validate performance with 30,000+ channel master playlist.
+### Step 2: IPTVnator Home / Dashboard View (Current Screenshot Clone) (COMPLETED)
+- [x] Create `src/components/home/HomeDashboard.tsx`:
+  - **Spotlight Hero Card**:
+    - Dark crimson radial glow background.
+    - Large channel poster card with logo.
+    - Channel title & playlist subtitle.
+    - Light-blue `▶ Continue Watching` button.
+  - **"Live now on your favorites" Row**:
+    - Horizontal scroll container.
+    - Channel cards with square logo, channel title, red `• LIVE` badge, and EPG broadcast progress bar.
+    - `See all >` link to navigate to `/favorites`.
+  - **"Recently watched live TV" Row**:
+    - Horizontal scroll container with history cards and playback progress.
+    - `See all >` link to navigate to `/history`.
+  - **"Recently Used Sources" Row**:
+    - Source folder card with folder icon, title, channel count, and `⋮` menu.
+    - `See all >` link to navigate to `/playlists`.
+
+### Step 3: Channels & Category Explorer (IPTVnator 2-Pane View) (COMPLETED)
+- [x] Upgrade channel browsing into IPTVnator layout:
+  - Collapsible left category drawer (list of groups with channel count badges).
+  - Top filter bar with view toggle (**Grid View** vs **Table / List View**).
+  - Channel cards with hover play overlay and favorite heart toggle.
+
+### Step 4: Video Player & Full Cinema OSD (COMPLETED)
+- [x] Refine `VideoPlayer.tsx` to match IPTVnator OSD:
+  - Top bar with close `✕` button (`ESC`), logo, sanitized title, red `• LIVE` badge, and current program timeline interval (`18:00 - 19:30`).
+  - Bottom bar with play/pause (`Space`), 10-second seek forward (`ArrowRight`) and rewind (`ArrowLeft`), volume slider (`M`), audio tracks selector, subtitles/captions menu, stream quality selector (Auto/1080p/720p), and external VLC/MPV player launcher.
+  - Middle floating real-time EPG ribbon.
+  - Side slide-in quick zap channel drawer (`Z` key or top right toggle) with instant live search and channel switching without interrupting playback.
+
+### Step 5: Multi-Platform Responsive & TV Remote Optimization (COMPLETED)
+- [x] **Mobile**: Bottom navigation bar includes `Home`, `Channels`, `Movies`, `Series`, `Favorites`, and `Settings`. Bottom padding prevents content clipping, and table rows adapt to small touch viewports.
+- [x] **Tablet**: Responsive 2-pane category explorer (`220px` width) with responsive 3-column grid and touch carousel snap.
+- [x] **Android TV**: Upgraded `DpadNavigationAdapter.ts` with 2D geometric Euclidean spatial navigation algorithm. Added `tabIndex={0}`, Enter key trigger, and high-contrast cyan/blue glowing halos (`box-shadow: 0 0 0 3px #38bdf8`) on all interactive cards, categories, table rows, and player controls for 10-foot remote operability.
+
+### Step 6: UI Refinement, Dedicated Settings, Downloads Page & Cinema Timeline (COMPLETED)
+- [x] **1. Hide Horizontal Scrollbars**:
+  - Eliminated visible X-axis scrollbar tracks on `.dashboard-horizontal-scroll` across Chromium, Firefox, and WebKit while preserving smooth horizontal mouse-drag and touch swiping.
+- [x] **2. Platform-Specific Window Controls**:
+  - Restrict Close, Maximize, and Minimize titlebar buttons in `Header.tsx` strictly to Electron Desktop builds (`(window as any).electronAPI`).
+  - Automatically hidden on Web browsers, Mobile (Capacitor), and Tablet viewports.
+- [x] **3. Reorderable Favorites & Loop-Bound Zapping**:
+  - Upgraded `useUserStore` to persist ordered favorite IDs (`orderedFavoriteIds: string[]`) and added `reorderFavorites`.
+  - Added HTML5 Drag-and-Drop (`draggable`, `onDragStart`, `onDragOver`, `onDrop`) with `GripVertical` handle in Favorites table view.
+  - Bound `zapNext()` and `zapPrev()` in `usePlayerStore` to loop within `orderedFavoriteIds` when played with `scope="favorites"`.
+- [x] **4. Dedicated Full-Page Settings View**:
+  - Built full-page `SettingsPage.tsx` (`activeTab === 'settings'`) with 7 IPTVnator sections:
+    - *General & Presets*, *Playback & Stream Engine*, *Recording & Storage*, *External Players (VLC/MPV)*, *Title Sanitizer*, *Parental Lock PIN*, *Backup & Factory Reset*.
+- [x] **5. Dedicated Downloads & Recordings View**:
+  - Added `activeTab === 'downloads'` into main navigation rail with segmented filter pills:
+    - *All*, *Movies*, *Series*, *In Progress*, *Recordings*.
+  - Added destination storage folder picker and live byte tracking metric.
+- [x] **6. Relocate Session Backup Export to Settings**:
+  - Removed JSON export icon from top header toolbar.
+  - Placed JSON Backup Export, Backup Import with validation, and Factory Reset inside **Settings → Backup & Reset**.
+- [x] **7. Interactive Player Timeline & Seek Progress Bar**:
+  - Ported IPTVnator's cinema scrub timeline (`player-timeline-wrapper`) into `VideoPlayer.tsx`:
+    - Current playback timestamp (`HH:mm:ss` / `mm:ss`) and duration / remaining time.
+    - Custom range slider with live gradient track fill (`--seek-progress`).
+    - Glowing animated `• LIVE` badge for live broadcast streams without finite duration.
+
+### Step 7: Mobile Screen Responsiveness Across All Core Views (COMPLETED)
+- [x] **1. Channels Page Mobile Responsiveness**:
+  - 2-column mobile channel card grid (`repeat(2, 1fr)`) with compact logos (40x40px) and clean ellipsis typography.
+  - Added swipeable horizontal category filter pill bar (`.mobile-categories-strip`) replacing the desktop left sidebar on phone screens with real-time channel counts.
+  - Responsive explorer toolbar with stacked full-width title/counter row and sort dropdown.
+  - Table mode hides secondary columns (`Group`, `Quality`) on small screens, keeping `#`, `Logo`, `Channel Name`, and `Play/Star Actions` legible.
+- [x] **2. Favorites Page Mobile Responsiveness**:
+  - Renders 2-column cards grid with instant star favorite toggle, channel count badge, and seamless playback scope loop.
+  - Clean responsive empty state with guide prompt when favorites list is empty.
+- [x] **3. Movies (VOD) Page Mobile Responsiveness**:
+  - 2-column responsive cinema poster grid (`repeat(2, 1fr)`) with 2:3 aspect ratio poster frames.
+  - Touch-friendly horizontal category filter pill scroll bar and resume shelf for partially watched movies.
+  - Search input and sort dropdown wrapped into full-width stacked rows.
+- [x] **4. TV Series Page Mobile Responsiveness**:
+  - 2-column posters grid for TV Series catalog with floating IMDb rating pills and release years.
+  - Responsive `VodDetailModal` with single-column layout on mobile, touch episode lists, and clean season pill selectors.
+- [x] **5. Mobile Bottom Navigation**:
+  - Top-left and top-right curved borders (`border-radius: 20px 20px 0 0`) with flat bottom edges adhering to native Android & iOS ergonomics.
+
+### Step 8: IPTVnator 1:1 Filled Material Icons & DM Sans Bold Typography (COMPLETED)
+- [x] **1. Material Design Icons Font Integration**:
+  - Installed `material-design-icons-iconfont` and `@fontsource/dm-sans` offline font packages.
+  - Imported in `index.css` for zero-network font bundling on Web, Mobile (Capacitor), and Electron desktop.
+  - Created reusable, memoized `<MatIcon />` component in `src/components/common/MatIcon.tsx`.
+- [x] **2. Left Sidebar Rail Filled Icons**:
+  - Replaced outline icons with filled Google Material Design ligatures matching IPTVnator:
+    - *Home*: `dashboard` (4 solid squares)
+    - *Channels*: `playlist_play` (3 bars with play arrow)
+    - *Search*: `search`
+    - *Favorites*: `favorite` (solid filled heart)
+    - *History*: `history`
+    - *Live TV*: `live_tv` (with IPTVnator active top amber/gold border accent)
+    - *Movies*: `movie`
+    - *Series*: `tv`
+    - *Sources*: `folder` (solid filled folder)
+    - *Downloads*: `download`
+    - *Settings*: `settings`
+- [x] **3. Settings Sub-Navigation & Bold Typography**:
+  - Styled `.settings-nav-item` with bold weight (`font-weight: 600`), DM Sans font family, and rounded pill active state (`border: 1px solid rgba(59, 130, 246, 0.55); background: rgba(59, 130, 246, 0.18)`).
+  - Filled icons in Settings menu matching IPTVnator 1:1:
+    - *General*: `tune`
+    - *Playback*: `play_circle`
+    - *EPG*: `calendar_month`
+    - *Dashboard*: `dashboard`
+    - *Remote*: `smartphone`
+    - *Metadata*: `movie`
+    - *Parental*: `family_restroom`
+    - *Backup*: `backup`
+    - *Reset*: `delete`
+    - *About*: `info`
+- [x] **4. Mobile Bottom Navigation & Channel Cards**:
+  - Replaced icons in `MobileBottomNav.tsx` with filled Material Icons (`dashboard`, `playlist_play`, `movie`, `tv`, `favorite`, `settings`).
+  - Channel cards now use filled `favorite` heart icon on save.
+
+---
+
+## 5. Verification Standards
+1. **Compilation**: `npm run build:web` must compile with 0 errors after each step.
+2. **Capacitor Android Sync**: `npx cap sync android` after web builds.
+3. **Electron Desktop**: Runs seamlessly with external VLC/MPV spawning and native shortcuts.
+4. **Android TV**: Tested with D-pad remote inputs (Up, Down, Left, Right, Select, Back).
+

@@ -1,42 +1,71 @@
 import React from 'react';
 import type { SidebarTab } from './Sidebar';
 import { useUserStore } from '../../stores/useUserStore';
-import { Tv, Star, Clock, Layers, Sliders } from 'lucide-react';
+import { MatIcon } from '../common/MatIcon';
 
 interface MobileBottomNavProps {
   activeTab: SidebarTab;
   onTabChange: (tab: SidebarTab) => void;
-  onOpenGenres: () => void;
-  onOpenSettings: () => void;
+  onOpenGenres?: () => void;
+  onOpenSettings?: () => void;
 }
 
 export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   activeTab,
   onTabChange,
-  onOpenGenres,
-  onOpenSettings,
 }) => {
   const favoritesCount = useUserStore((s) => s.favorites.size);
-  const historyCount = useUserStore((s) => s.history.length);
 
   return (
     <nav className="mobile-bottom-nav glass-panel">
       <button
         type="button"
+        onClick={() => onTabChange('home')}
+        className={`bottom-nav-item ${activeTab === 'home' ? 'bottom-item-active' : ''}`}
+        title="Home"
+      >
+        <MatIcon name="dashboard" size={20} />
+        <span>Home</span>
+      </button>
+
+      <button
+        type="button"
         onClick={() => onTabChange('channels')}
         className={`bottom-nav-item ${activeTab === 'channels' ? 'bottom-item-active' : ''}`}
+        title="Channels"
       >
-        <Tv size={20} />
-        <span>Live</span>
+        <MatIcon name="playlist_play" size={22} />
+        <span>Channels</span>
+      </button>
+
+      <button
+        type="button"
+        onClick={() => onTabChange('movies')}
+        className={`bottom-nav-item ${activeTab === 'movies' ? 'bottom-item-active' : ''}`}
+        title="Movies"
+      >
+        <MatIcon name="movie" size={20} />
+        <span>Movies</span>
+      </button>
+
+      <button
+        type="button"
+        onClick={() => onTabChange('series')}
+        className={`bottom-nav-item ${activeTab === 'series' ? 'bottom-item-active' : ''}`}
+        title="Series"
+      >
+        <MatIcon name="tv" size={20} />
+        <span>Series</span>
       </button>
 
       <button
         type="button"
         onClick={() => onTabChange('favorites')}
         className={`bottom-nav-item ${activeTab === 'favorites' ? 'bottom-item-active' : ''}`}
+        title="Favorites"
       >
         <div className="bottom-nav-icon-wrapper">
-          <Star size={20} />
+          <MatIcon name="favorite" size={20} />
           {favoritesCount > 0 && <span className="bottom-nav-badge">{favoritesCount}</span>}
         </div>
         <span>Favorites</span>
@@ -44,31 +73,11 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 
       <button
         type="button"
-        onClick={() => onTabChange('history')}
-        className={`bottom-nav-item ${activeTab === 'history' ? 'bottom-item-active' : ''}`}
+        onClick={() => onTabChange('settings')}
+        className={`bottom-nav-item ${activeTab === 'settings' ? 'bottom-item-active' : ''}`}
+        title="Settings"
       >
-        <div className="bottom-nav-icon-wrapper">
-          <Clock size={20} />
-          {historyCount > 0 && <span className="bottom-nav-badge">{historyCount}</span>}
-        </div>
-        <span>History</span>
-      </button>
-
-      <button
-        type="button"
-        onClick={onOpenGenres}
-        className="bottom-nav-item"
-      >
-        <Layers size={20} />
-        <span>Genres</span>
-      </button>
-
-      <button
-        type="button"
-        onClick={onOpenSettings}
-        className="bottom-nav-item"
-      >
-        <Sliders size={20} />
+        <MatIcon name="settings" size={20} />
         <span>Settings</span>
       </button>
     </nav>

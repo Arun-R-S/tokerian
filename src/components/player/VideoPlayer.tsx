@@ -1,7 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { usePlayerStore } from '../../stores/usePlayerStore';
 import { useSettingsStore } from '../../stores/useSettingsStore';
 import { useUserStore } from '../../stores/useUserStore';
+import { useChannelStore } from '../../stores/useChannelStore';
+import { useEpgStore } from '../../stores/useEpgStore';
+import { ChannelSanitizer } from '../../utils/channelSanitizer';
 import {
   Play,
   Pause,
@@ -17,12 +20,27 @@ import {
   Star,
   Cast,
   RotateCcw,
+  RotateCw,
   AlertTriangle,
   Radio,
   X,
+  Calendar,
+  MonitorPlay,
+  Copy,
+  Check,
+  ListVideo,
+  Settings2,
+  Search,
+  CheckCircle,
 } from 'lucide-react';
+import { EpgRibbon } from '../epg/EpgRibbon';
+import { ExternalPlayerService } from '../../services/player/ExternalPlayerService';
 
-export const VideoPlayer: React.FC = () => {
+interface VideoPlayerProps {
+  onOpenEpgGuide?: () => void;
+}
+
+export const VideoPlayer: React.FC<VideoPlayerProps> = ({ onOpenEpgGuide }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const osdTimerRef = useRef<number | null>(null);
@@ -30,11 +48,23 @@ export const VideoPlayer: React.FC = () => {
   const [showOsd, setShowOsd] = useState(true);
   const [showAudioMenu, setShowAudioMenu] = useState(false);
   const [showSubtitleMenu, setShowSubtitleMenu] = useState(false);
+  const [showQualityMenu, setShowQualityMenu] = useState(false);
+  const [showExternalMenu, setShowExternalMenu] = useState(false);
+  const [showZapDrawer, setShowZapDrawer] = useState(false);
+  const [zapSearchQuery, setZapSearchQuery] = useState('');
   const [isCastConnecting, setIsCastConnecting] = useState(false);
+
+  // External Player State
+  const [externalPlayerActive, setExternalPlayerActive] = useState<{ player: 'vlc' | 'mpv'; pid?: number } | null>(null);
+  const [externalToast, setExternalToast] = useState<string | null>(null);
+  const [copiedToast, setCopiedToast] = useState(false);
 
   const currentChannel = usePlayerStore((s) => s.currentChannel);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
   const isBuffering = usePlayerStore((s) => s.isBuffering);
+  const currentTime = usePlayerStore((s) => s.currentTime);
+  const duration = usePlayerStore((s) => s.duration);
+  const isLive = usePlayerStore((s) => s.isLive);
   const volume = usePlayerStore((s) => s.volume);
   const isMuted = usePlayerStore((s) => s.isMuted);
   const error = usePlayerStore((s) => s.error);
@@ -45,6 +75,10 @@ export const VideoPlayer: React.FC = () => {
 
   const subtitleTracks = usePlayerStore((s) => s.subtitleTracks);
   const selectedSubtitleTrack = usePlayerStore((s) => s.selectedSubtitleTrack);
+
+  const qualityLevels = usePlayerStore((s) => s.qualityLevels);
+  const selectedQualityLevel = usePlayerStore((s) => s.selectedQualityLevel);
+  const selectQualityLevel = usePlayerStore((s) => s.selectQualityLevel);
 
   const attachVideoElement = usePlayerStore((s) => s.attachVideoElement);
   const togglePlay = usePlayerStore((s) => s.togglePlay);
@@ -58,15 +92,113 @@ export const VideoPlayer: React.FC = () => {
   const zapPrev = usePlayerStore((s) => s.zapPrev);
   const playChannel = usePlayerStore((s) => s.playChannel);
   const closePlayer = usePlayerStore((s) => s.closePlayer);
+  const seek = usePlayerStore((s) => s.seek);
+
+  // Channel store for Quick Zap Drawer
+  const allChannels = useChannelStore((s) => s.channels);
+
+  // EPG store for Live Broadcast interval
+  const getLiveProgramInfo = useEpgStore((s) => s.getLiveProgramInfo);
+  const currentTimeMs = useEpgStore((s) => s.currentTimeMs);
+
+  const liveProgramInfo = useMemo(() => {
+    if (!currentChannel) return null;
+    return getLiveProgramInfo(currentChannel.tvgId, currentChannel.name);
+  }, [currentChannel, getLiveProgramInfo, currentTimeMs]);
 
   const isFav = useUserStore((s) => (currentChannel ? s.favorites.has(currentChannel.id) : false));
   const toggleFavorite = useUserStore((s) => s.toggleFavorite);
 
   const corsProxyEnabled = useSettingsStore((s) => s.corsProxyEnabled);
   const autoPlayNextOnError = useSettingsStore((s) => s.autoPlayNextOnError);
+  const customVlcPath = useSettingsStore((s) => s.customVlcPath);
+  const customMpvPath = useSettingsStore((s) => s.customMpvPath);
   const updateSettings = useSettingsStore((s) => s.updateSettings);
 
   const [autoSkipCountdown, setAutoSkipCountdown] = useState<number | null>(null);
+
+  // Cleaned channel title
+  const displayTitle = useMemo(() => {
+    if (!currentChannel) return '';
+    return ChannelSanitizer.cleanTitle(currentChannel.name) || currentChannel.name;
+  }, [currentChannel]);
+
+  // Formatted start - stop time for current EPG program
+  const programTimeInterval = useMemo(() => {
+    if (!liveProgramInfo?.current) return null;
+    try {
+      const s = new Date(liveProgramInfo.current.startTimestamp);
+      const e = new Date(liveProgramInfo.current.stopTimestamp);
+      const formatTime = (d: Date) =>
+        d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+      return `${formatTime(s)} - ${formatTime(e)}`;
+    } catch {
+      return null;
+    }
+  }, [liveProgramInfo]);
+
+  // Filtered channels for Quick Zap Drawer
+  const filteredZapChannels = useMemo(() => {
+    if (!zapSearchQuery.trim()) return allChannels.slice(0, 80);
+    const q = zapSearchQuery.toLowerCase();
+    return allChannels
+      .filter((ch) => ch.name.toLowerCase().includes(q) || ch.group.toLowerCase().includes(q))
+      .slice(0, 80);
+  }, [allChannels, zapSearchQuery]);
+
+  // Seek helper (Jump forward/backwards 10s)
+  const handleSeekDelta = (deltaSeconds: number) => {
+    if (!videoRef.current) return;
+    try {
+      const newTime = Math.max(0, videoRef.current.currentTime + deltaSeconds);
+      seek(newTime);
+      videoRef.current.currentTime = newTime;
+    } catch (e) {
+      console.warn('Seek error:', e);
+    }
+  };
+
+  const formatPlaybackTime = (seconds: number) => {
+    if (isNaN(seconds) || seconds < 0) return '00:00';
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    if (hrs > 0) {
+      return `${hrs}:${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+    }
+    return `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
+  // External Player Launch Handlers
+  const handleOpenExternal = async (player: 'vlc' | 'mpv') => {
+    setShowExternalMenu(false);
+    if (!currentChannel) return;
+
+    if (isPlaying) {
+      togglePlay();
+    }
+
+    const customPath = player === 'vlc' ? customVlcPath : customMpvPath;
+    const res = await ExternalPlayerService.launch(player, currentChannel.url, currentChannel.name, customPath);
+
+    if (res.success) {
+      setExternalPlayerActive({ player, pid: res.pid });
+      setExternalToast(`Streaming in ${player.toUpperCase()} Player`);
+      setTimeout(() => setExternalToast(null), 4000);
+    } else {
+      setExternalToast(res.error || `Could not start ${player.toUpperCase()}`);
+      setTimeout(() => setExternalToast(null), 5000);
+    }
+  };
+
+  const handleCopyStreamUrl = async () => {
+    if (!currentChannel) return;
+    const ok = await ExternalPlayerService.copyStreamUrl(currentChannel.url);
+    if (ok) {
+      setCopiedToast(true);
+      setTimeout(() => setCopiedToast(false), 2000);
+    }
+  };
 
   // In-App Auto Subtitles (Speech-to-Text)
   const [autoCaptionsEnabled, setAutoCaptionsEnabled] = useState(false);
@@ -198,13 +330,14 @@ export const VideoPlayer: React.FC = () => {
     if (osdTimerRef.current) {
       window.clearTimeout(osdTimerRef.current);
     }
-    // Auto-hide controls after 3.5 seconds if playing
-    if (isPlaying) {
+    // Auto-hide controls after 3.8 seconds if playing and drawer/menus are closed
+    if (isPlaying && !showZapDrawer && !showQualityMenu && !showAudioMenu && !showSubtitleMenu && !showExternalMenu) {
       osdTimerRef.current = window.setTimeout(() => {
         setShowOsd(false);
         setShowAudioMenu(false);
         setShowSubtitleMenu(false);
-      }, 3500);
+        setShowQualityMenu(false);
+      }, 3800);
     }
   };
 
@@ -213,7 +346,7 @@ export const VideoPlayer: React.FC = () => {
     return () => {
       if (osdTimerRef.current) window.clearTimeout(osdTimerRef.current);
     };
-  }, [isPlaying]);
+  }, [isPlaying, showZapDrawer, showQualityMenu, showAudioMenu, showSubtitleMenu, showExternalMenu]);
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -223,16 +356,36 @@ export const VideoPlayer: React.FC = () => {
       if (e.key === 'f' || e.key === 'F') {
         e.preventDefault();
         toggleFullscreen();
+      } else if (e.key === 'm' || e.key === 'M') {
+        e.preventDefault();
+        toggleMute();
+      } else if (e.key === ' ' || e.code === 'Space') {
+        e.preventDefault();
+        togglePlay();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        handleSeekDelta(-10);
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        handleSeekDelta(10);
+      } else if (e.key === 'z' || e.key === 'Z') {
+        e.preventDefault();
+        setShowZapDrawer((prev) => !prev);
+      } else if (e.key === 'Escape') {
+        if (showZapDrawer) {
+          setShowZapDrawer(false);
+        } else {
+          closePlayer();
+        }
       }
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [toggleFullscreen]);
+  }, [toggleFullscreen, toggleMute, togglePlay, showZapDrawer, closePlayer]);
 
   if (!currentChannel) return null;
 
   const handleCastClick = () => {
-    // Chromecast integration check
     setIsCastConnecting(true);
     setTimeout(() => {
       setIsCastConnecting(false);
@@ -254,6 +407,47 @@ export const VideoPlayer: React.FC = () => {
         onClick={togglePlay}
         onDoubleClick={toggleFullscreen}
       />
+
+      {/* Toast Notification */}
+      {externalToast && (
+        <div className="player-external-toast">
+          <MonitorPlay size={15} color="var(--accent-primary)" />
+          <span>{externalToast}</span>
+        </div>
+      )}
+
+      {/* External Player Active Overlay */}
+      {externalPlayerActive && (
+        <div className="player-external-overlay">
+          <MonitorPlay size={44} color="#6366f1" />
+          <h3 style={{ margin: '12px 0 6px', fontSize: '1.25rem', fontWeight: 700, color: '#fff' }}>
+            Streaming in {externalPlayerActive.player.toUpperCase()} Media Player
+          </h3>
+          <p style={{ margin: '0 0 16px 0', fontSize: '0.85rem', color: 'var(--text-secondary)', maxWidth: '420px' }}>
+            Broadcasting feed directly in external native window for high-performance zero-copy decoding.
+          </p>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              type="button"
+              onClick={() => {
+                setExternalPlayerActive(null);
+                togglePlay();
+              }}
+              className="tokerian-btn tokerian-btn-primary"
+            >
+              <Play size={16} fill="currentColor" /> Resume in Tokerian
+            </button>
+            <button
+              type="button"
+              onClick={handleCopyStreamUrl}
+              className="tokerian-btn"
+            >
+              {copiedToast ? <Check size={16} color="#10b981" /> : <Copy size={16} />}
+              {copiedToast ? 'URL Copied!' : 'Copy Stream URL'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Real-Time Live Speech Caption Overlay */}
       {autoCaptionsEnabled && liveCaptionText && (
@@ -333,6 +527,22 @@ export const VideoPlayer: React.FC = () => {
                 </button>
                 <button
                   type="button"
+                  onClick={() => handleOpenExternal('vlc')}
+                  className="tokerian-btn"
+                  title="Play in VLC Media Player"
+                >
+                  <MonitorPlay size={16} /> Open in VLC
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleOpenExternal('mpv')}
+                  className="tokerian-btn"
+                  title="Play in MPV Media Player"
+                >
+                  <MonitorPlay size={16} /> Open in MPV
+                </button>
+                <button
+                  type="button"
                   onClick={() => {
                     const nextMode = !corsProxyEnabled;
                     updateSettings({ corsProxyEnabled: nextMode });
@@ -340,14 +550,7 @@ export const VideoPlayer: React.FC = () => {
                   }}
                   className="tokerian-btn"
                 >
-                  {corsProxyEnabled ? 'Switch to Direct Connection' : 'Try via CORS Proxy'}
-                </button>
-                <button
-                  type="button"
-                  onClick={zapNext}
-                  className="tokerian-btn"
-                >
-                  <SkipForward size={16} /> Next Channel
+                  {corsProxyEnabled ? 'Direct Mode' : 'CORS Proxy'}
                 </button>
               </div>
             </>
@@ -356,7 +559,7 @@ export const VideoPlayer: React.FC = () => {
       )}
 
       {/* Auto-Hiding On-Screen Display (OSD) Overlay */}
-      <div className={`player-osd-overlay ${showOsd ? 'osd-visible' : 'osd-hidden'}`}>
+      <div className={`player-osd-overlay ${showOsd || showZapDrawer ? 'osd-visible' : 'osd-hidden'}`}>
         {/* Top Bar: Channel Info & Badges */}
         <div className="osd-top-bar">
           <div className="osd-channel-meta">
@@ -370,17 +573,106 @@ export const VideoPlayer: React.FC = () => {
             )}
             <div>
               <div className="osd-title-row">
-                <span className="live-indicator" />
-                <h2 className="osd-channel-name">{currentChannel.name}</h2>
+                <span className="live-indicator-dot" />
+                <span className="osd-live-text">LIVE</span>
+                <h2 className="osd-channel-name">{displayTitle}</h2>
                 {currentChannel.resolution && (
                   <span className="channel-badge badge-resolution">{currentChannel.resolution}</span>
                 )}
               </div>
-              <span className="osd-channel-group">{currentChannel.group}</span>
+              <div className="osd-submeta-row">
+                <span className="osd-channel-group">{currentChannel.group}</span>
+                {liveProgramInfo?.current?.title && (
+                  <>
+                    <span className="osd-meta-sep">•</span>
+                    <span className="osd-program-name">{liveProgramInfo.current.title}</span>
+                  </>
+                )}
+                {programTimeInterval && (
+                  <>
+                    <span className="osd-meta-sep">•</span>
+                    <span className="osd-program-time">{programTimeInterval}</span>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
           <div className="osd-top-actions">
+            {/* Quick Zap Drawer Toggle */}
+            <button
+              type="button"
+              onClick={() => setShowZapDrawer(!showZapDrawer)}
+              className={`tokerian-btn-icon ${showZapDrawer ? 'btn-active' : ''}`}
+              title="Quick Zap Channels (Z)"
+            >
+              <ListVideo size={18} />
+            </button>
+
+            {/* Desktop External Player Launcher */}
+            <div className="osd-dropdown-wrapper">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowExternalMenu(!showExternalMenu);
+                  setShowAudioMenu(false);
+                  setShowSubtitleMenu(false);
+                  setShowQualityMenu(false);
+                }}
+                className={`tokerian-btn-icon ${showExternalMenu ? 'btn-active' : ''}`}
+                title="Play in External Player (VLC / MPV)"
+              >
+                <MonitorPlay size={18} />
+              </button>
+
+              {showExternalMenu && (
+                <div className="osd-menu-popup glass-panel" style={{ minWidth: '210px' }}>
+                  <div className="osd-menu-header">External Players</div>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenExternal('vlc')}
+                    className="osd-menu-item"
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    <MonitorPlay size={15} color="#f97316" />
+                    <span>Open in VLC Player</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenExternal('mpv')}
+                    className="osd-menu-item"
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    <MonitorPlay size={15} color="#8b5cf6" />
+                    <span>Open in MPV Player</span>
+                  </button>
+                  <div className="subtitle-menu-divider" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleCopyStreamUrl();
+                      setShowExternalMenu(false);
+                    }}
+                    className="osd-menu-item"
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    {copiedToast ? <Check size={15} color="#10b981" /> : <Copy size={15} />}
+                    <span>{copiedToast ? 'URL Copied!' : 'Copy Stream URL'}</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {onOpenEpgGuide && (
+              <button
+                type="button"
+                onClick={onOpenEpgGuide}
+                className="tokerian-btn-icon"
+                title="TV Guide & Schedule (EPG)"
+              >
+                <Calendar size={18} />
+              </button>
+            )}
             <button
               type="button"
               onClick={() => toggleFavorite(currentChannel.id)}
@@ -393,11 +685,68 @@ export const VideoPlayer: React.FC = () => {
               type="button"
               onClick={closePlayer}
               className="tokerian-btn-icon"
-              title="Close player"
+              title="Close player (ESC)"
             >
               <X size={18} />
             </button>
           </div>
+        </div>
+
+        {/* Middle Floating Area: Live EPG Program Ribbon */}
+        <div style={{ maxWidth: '480px', margin: 'auto 0 10px 0', pointerEvents: 'auto' }}>
+          <EpgRibbon
+            tvgId={currentChannel.tvgId}
+            channelName={currentChannel.name}
+            onOpenFullGuide={onOpenEpgGuide}
+          />
+        </div>
+
+        {/* Cinema Timeline / Scrub Bar */}
+        <div className="player-timeline-wrapper" onClick={(e) => e.stopPropagation()}>
+          <span className="player-timeline-time current">
+            {formatPlaybackTime(currentTime)}
+          </span>
+          <div className="player-timeline-track-container">
+            <input
+              type="range"
+              min={0}
+              max={duration && isFinite(duration) && duration > 0 ? duration : 100}
+              step={0.5}
+              value={duration && isFinite(duration) && duration > 0 ? Math.min(currentTime, duration) : (isLive ? 100 : 0)}
+              onChange={(e) => {
+                const val = parseFloat(e.target.value);
+                seek(val);
+                if (videoRef.current) {
+                  try {
+                    videoRef.current.currentTime = val;
+                  } catch {}
+                }
+              }}
+              disabled={isLive && (!duration || !isFinite(duration))}
+              className="player-timeline-slider"
+              style={{
+                '--seek-progress': `${
+                  duration && isFinite(duration) && duration > 0
+                    ? Math.min(100, (currentTime / duration) * 100)
+                    : (isLive ? 100 : 0)
+                }%`,
+              } as React.CSSProperties}
+              title={
+                duration && isFinite(duration) && duration > 0
+                  ? `Seek: ${formatPlaybackTime(currentTime)} / ${formatPlaybackTime(duration)}`
+                  : 'Live Broadcast Stream'
+              }
+            />
+          </div>
+          <span className="player-timeline-time total">
+            {duration && isFinite(duration) && duration > 0 ? (
+              formatPlaybackTime(duration)
+            ) : (
+              <span className="player-live-badge">
+                <span className="live-dot" /> LIVE
+              </span>
+            )}
+          </span>
         </div>
 
         {/* Bottom Bar: Playback Controls */}
@@ -407,9 +756,19 @@ export const VideoPlayer: React.FC = () => {
               type="button"
               onClick={zapPrev}
               className="tokerian-btn-icon"
-              title="Previous channel (Arrow Left / PageDown)"
+              title="Previous channel (PageDown)"
             >
               <SkipBack size={18} />
+            </button>
+
+            {/* Jump -10 Seconds */}
+            <button
+              type="button"
+              onClick={() => handleSeekDelta(-10)}
+              className="tokerian-btn-icon"
+              title="Seek -10s (Arrow Left)"
+            >
+              <RotateCcw size={16} />
             </button>
 
             <button
@@ -421,11 +780,21 @@ export const VideoPlayer: React.FC = () => {
               {isPlaying ? <Pause size={18} /> : <Play size={18} fill="currentColor" />}
             </button>
 
+            {/* Jump +10 Seconds */}
+            <button
+              type="button"
+              onClick={() => handleSeekDelta(10)}
+              className="tokerian-btn-icon"
+              title="Seek +10s (Arrow Right)"
+            >
+              <RotateCw size={16} />
+            </button>
+
             <button
               type="button"
               onClick={zapNext}
               className="tokerian-btn-icon"
-              title="Next channel (Arrow Right / PageUp)"
+              title="Next channel (PageUp)"
             >
               <SkipForward size={18} />
             </button>
@@ -454,6 +823,58 @@ export const VideoPlayer: React.FC = () => {
           </div>
 
           <div className="osd-controls-right">
+            {/* Stream Quality Selector Dropdown */}
+            {qualityLevels.length > 0 && (
+              <div className="osd-dropdown-wrapper">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowQualityMenu(!showQualityMenu);
+                    setShowAudioMenu(false);
+                    setShowSubtitleMenu(false);
+                  }}
+                  className={`tokerian-btn-icon ${showQualityMenu || selectedQualityLevel !== -1 ? 'btn-active' : ''}`}
+                  title="Stream Quality (Resolution / Bitrate)"
+                >
+                  <Settings2 size={18} />
+                </button>
+
+                {showQualityMenu && (
+                  <div className="osd-menu-popup glass-panel">
+                    <div className="osd-menu-header">Stream Quality</div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        selectQualityLevel(-1);
+                        setShowQualityMenu(false);
+                      }}
+                      className={`osd-menu-item ${selectedQualityLevel === -1 ? 'menu-item-active' : ''}`}
+                    >
+                      <span>Auto (Adaptive)</span>
+                    </button>
+                    {qualityLevels.map((lvl) => (
+                      <button
+                        key={lvl.id}
+                        type="button"
+                        onClick={() => {
+                          selectQualityLevel(lvl.id);
+                          setShowQualityMenu(false);
+                        }}
+                        className={`osd-menu-item ${selectedQualityLevel === lvl.id ? 'menu-item-active' : ''}`}
+                      >
+                        <span>{lvl.name}</span>
+                        {lvl.bitrate && lvl.bitrate > 0 && (
+                          <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.6)', marginLeft: '6px' }}>
+                            {Math.round(lvl.bitrate / 1000)} kbps
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Multiple Audio Tracks Selector */}
             {audioTracks.length > 0 && (
               <div className="osd-dropdown-wrapper">
@@ -462,6 +883,7 @@ export const VideoPlayer: React.FC = () => {
                   onClick={() => {
                     setShowAudioMenu(!showAudioMenu);
                     setShowSubtitleMenu(false);
+                    setShowQualityMenu(false);
                   }}
                   className={`tokerian-btn-icon ${showAudioMenu ? 'btn-active' : ''}`}
                   title="Multiple Audio Tracks"
@@ -497,6 +919,7 @@ export const VideoPlayer: React.FC = () => {
                 onClick={() => {
                   setShowSubtitleMenu(!showSubtitleMenu);
                   setShowAudioMenu(false);
+                  setShowQualityMenu(false);
                 }}
                 className={`tokerian-btn-icon ${showSubtitleMenu || selectedSubtitleTrack !== -1 ? 'btn-active' : ''}`}
                 title={selectedSubtitleTrack !== -1 ? 'Subtitles Active' : 'Subtitles / Captions (CC)'}
@@ -619,6 +1042,92 @@ export const VideoPlayer: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Side Slide-in Quick Zap Channel Drawer */}
+      <div
+        className={`player-zap-drawer ${showZapDrawer ? 'zap-drawer-open' : ''}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="zap-drawer-header">
+          <div className="zap-drawer-title-row">
+            <ListVideo size={18} color="var(--accent-primary)" />
+            <span className="zap-drawer-title">Quick Zap Channels</span>
+            <button
+              type="button"
+              onClick={() => setShowZapDrawer(false)}
+              className="tokerian-btn-icon zap-close-btn"
+              title="Close drawer (Z / ESC)"
+            >
+              <X size={16} />
+            </button>
+          </div>
+          <div className="zap-search-wrapper">
+            <Search size={14} className="zap-search-icon" />
+            <input
+              type="text"
+              placeholder="Search channels or groups..."
+              value={zapSearchQuery}
+              onChange={(e) => setZapSearchQuery(e.target.value)}
+              className="zap-search-input"
+            />
+            {zapSearchQuery && (
+              <button
+                type="button"
+                onClick={() => setZapSearchQuery('')}
+                className="zap-search-clear"
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="zap-drawer-list">
+          {filteredZapChannels.map((channel) => {
+            const isCurrent = currentChannel?.id === channel.id;
+            const cleaned = ChannelSanitizer.cleanTitle(channel.name) || channel.name;
+            return (
+              <div
+                key={channel.id}
+                onClick={() => {
+                  playChannel(channel);
+                  setShowZapDrawer(false);
+                }}
+                className={`zap-channel-item ${isCurrent ? 'zap-channel-active' : ''}`}
+              >
+                <div className="zap-channel-logo-container">
+                  {channel.logo ? (
+                    <img
+                      src={channel.logo}
+                      alt={channel.name}
+                      className="zap-channel-logo"
+                      loading="lazy"
+                      onError={(e) => (e.currentTarget.style.display = 'none')}
+                    />
+                  ) : (
+                    <span className="zap-channel-initial">
+                      {cleaned.charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                <div className="zap-channel-info">
+                  <div className="zap-channel-name-row">
+                    <span className="zap-channel-name" title={channel.name}>
+                      {cleaned}
+                    </span>
+                    {isCurrent && <CheckCircle size={14} color="var(--accent-primary)" />}
+                  </div>
+                  <span className="zap-channel-group">{channel.group}</span>
+                </div>
+              </div>
+            );
+          })}
+          {filteredZapChannels.length === 0 && (
+            <div className="zap-empty-notice">No matching channels found</div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
+

@@ -7,6 +7,8 @@ import { useSettingsStore } from '../../stores/useSettingsStore';
 import { type SidebarTab } from '../layout/Sidebar';
 import { Star, Clock, Tv, RefreshCw, AlertCircle, ChevronDown, Check } from 'lucide-react';
 
+import { isContentRestricted } from '../../utils/parentalLock';
+
 interface ChannelGridProps {
   activeTab: SidebarTab;
 }
@@ -25,6 +27,9 @@ export const ChannelGrid: React.FC<ChannelGridProps> = ({ activeTab }) => {
   const favorites = useUserStore((s) => s.favorites);
   const history = useUserStore((s) => s.history);
   const pageSize = useSettingsStore((s) => s.pageSize) || 100;
+  const parentalLockEnabled = useSettingsStore((s) => s.parentalLockEnabled);
+  const isSessionUnlocked = useSettingsStore((s) => s.isSessionUnlocked);
+  const lockedKeywords = useSettingsStore((s) => s.lockedKeywords);
 
   // Track number of channels to render (starts at pageSize, e.g. 100)
   const [visibleCount, setVisibleCount] = useState<number>(pageSize);
@@ -53,6 +58,13 @@ export const ChannelGrid: React.FC<ChannelGridProps> = ({ activeTab }) => {
     const query = searchQuery.trim().toLowerCase();
 
     return sourceList.filter((ch) => {
+      // Parental lock check: hide adult/restricted content unless unlocked
+      if (parentalLockEnabled && !isSessionUnlocked) {
+        if (isContentRestricted(ch.group, ch.name, lockedKeywords)) {
+          return false;
+        }
+      }
+
       // Category filter applies only in 'channels' tab
       if (activeTab === 'channels' && activeCategory !== 'All' && ch.group !== activeCategory) {
         return false;
@@ -67,7 +79,17 @@ export const ChannelGrid: React.FC<ChannelGridProps> = ({ activeTab }) => {
         (ch.language && ch.language.toLowerCase().includes(query))
       );
     });
-  }, [channels, activeTab, activeCategory, searchQuery, favorites, history]);
+  }, [
+    channels,
+    activeTab,
+    activeCategory,
+    searchQuery,
+    favorites,
+    history,
+    parentalLockEnabled,
+    isSessionUnlocked,
+    lockedKeywords,
+  ]);
 
   // Slice down to visible batch (100, 200, 300, etc.)
   const visibleChannels = useMemo(() => {

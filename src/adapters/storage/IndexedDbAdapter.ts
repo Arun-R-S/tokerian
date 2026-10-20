@@ -1,4 +1,4 @@
-import { get, set, del } from 'idb-keyval';
+import { get, set, del, clear } from 'idb-keyval';
 import type { IStoragePort } from '../../core/ports/IStoragePort';
 import type { Channel, HistoryItem, Settings } from '../../core/domain/types';
 
@@ -90,6 +90,14 @@ export class IndexedDbAdapter implements IStoragePort {
     } catch (e) {
       console.warn('Failed to load settings:', e);
       return null;
+    }
+  }
+
+  async clearAll(): Promise<void> {
+    try {
+      await clear();
+    } catch (e) {
+      console.warn('Failed to clear IndexedDB:', e);
     }
   }
 }
