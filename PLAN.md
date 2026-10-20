@@ -1,143 +1,210 @@
-# Tokerian: Master Architecture & IPTVnator Feature Integration Plan
+# Tokerian: Complete IPTVnator 1:1 UI Clone & Multi-Platform Architecture Plan
 
-> **Application**: **Tokerian** (Live Television, VOD & Series Hub)  
-> **Target Platforms**: Web, Desktop (Electron for Windows/macOS/Linux), Android Mobile & Android TV (Capacitor with D-Pad Leanback)  
-> **Source Clone**: [`F:\Projects\iptvnator`](file:///F:/Projects/iptvnator) (Open-source IPTV client)  
-> **Architecture**: Hexagonal Ports & Adapters + TypeScript + Zustand + Pure Vanilla CSS Design System  
-> **Extraction Strategy**: Reusing and porting core modules, services, types, and logic directly from `F:\Projects\iptvnator` into Tokerian.
+> **Application**: **Tokerian** (IPTV, VOD & Series Client)  
+> **Target Reference**: [`F:\Projects\iptvnator`](file:///F:/Projects/iptvnator) (Open-source Angular/Electron IPTV Client)  
+> **Multi-Platform Target**: **Web**, **Tablet**, **Mobile** (iOS & Android via Capacitor), **Desktop** (Electron for Windows, macOS, Linux), and **Android TV** (10-foot D-Pad Remote Leanback UI)  
+> **Design Philosophy**: Pure Vanilla CSS design tokens (no Tailwind), cinema dark aesthetic, glassmorphic surfaces, instant responsive adaptability, zero-dependency WebCrypto security.
 
 ---
 
-## 1. System Architecture & Module Extraction Map
+## 1. Visual & Architectural Blueprint
 
-```mermaid
-graph TD
-  subgraph IPTNVATOR ["F:\Projects\iptvnator (Source Library)"]
-    M3U_SRC["libs/playlist/shared/util<br/>(playlist-file-import.service.ts)"]
-    XTREAM_SRC["libs/portal/xtream/data-access<br/>(xtream-api.service.ts & xtream-url.service.ts)"]
-    EPG_SRC["libs/epg/data-access<br/>(epg.service.ts & epg-current-programs.lookup.ts)"]
-    PLAYER_SRC["apps/electron-backend/src/app/events<br/>(player.events.ts & external-player-process.ts)"]
-    SETTINGS_SRC["libs/shared/interfaces<br/>(settings.interface.ts & parental-lock-pin.util.ts)"]
-  end
-
-  subgraph TOKERIAN ["f:\Projects\IP-TV (Tokerian App)"]
-    M3U_DST["src/services/playlist/<br/>• M3UImporter.ts<br/>• useMultiPlaylistStore.ts"]
-    XTREAM_DST["src/services/portal/<br/>• XtreamClient.ts<br/>• XtreamUrlBuilder.ts"]
-    EPG_DST["src/services/epg/<br/>• EpgService.ts<br/>• EpgTimelineLookup.ts"]
-    PLAYER_DST["electron/main.cjs & player/<br/>• VLC & MPV Process Spawner<br/>• ExternalPlaybackBar.tsx"]
-    SETTINGS_DST["src/components/settings/ & utils/<br/>• ExtendedSettingsModal.tsx<br/>• parentalLock.ts<br/>• channelSanitizer.ts"]
-  end
-
-  M3U_SRC -->|Direct logic port| M3U_DST
-  XTREAM_SRC -->|Direct API & URL builder port| XTREAM_DST
-  EPG_SRC -->|Direct XMLTV & timeline port| EPG_DST
-  PLAYER_SRC -->|IPC & spawn logic port| PLAYER_DST
-  SETTINGS_SRC -->|Port types & utilities| SETTINGS_DST
+```
+┌──────┬────────────────────────────────────────────────────────────────────────────────────────┐
+│  --  │ [📁 IPTV 11374 ch 🔄 ▾]   [ 🔍 Search in this playlist...  Ctrl+K ]  [⌨] [+]   [⤓] [-][□][✕]│
+├──────┼────────────────────────────────────────────────────────────────────────────────────────┤
+│ [⊞]  │ ┌────────────────────────────────────────────────────────────────────────────────────┐ │
+│ [☰]  │ │ ┌──────────┐  Sirippoli TV (576p)                                                 │ │
+│ [🔍] │ │ │  [LOGO]  │  IPTV                                                                │ │
+│ [♥]  │ │ └──────────┘  [ ▶ Continue Watching ]                     (Radial Crimson Glow)   │ │
+│ [🕒] │ └────────────────────────────────────────────────────────────────────────────────────┘ │
+│ [📺] │                                                                                        │
+│ [📁] │ Live now on your favorites (2)                                              See all >  │
+│      │ ┌─────────────────────────┐  ┌─────────────────────────┐                               │
+│      │ │ [📺] Sirippoli TV (576p)│  │ [📺] Sun TV HD (1080p)   │                               │
+│      │ │ • LIVE   [━━━━━━━░░░░]  │  │ • LIVE   [━━━━░░░░░░░]   │                               │
+│      │ └─────────────────────────┘  └─────────────────────────┘                               │
+│      │                                                                                        │
+│      │ Recently watched live TV (3)                                                See all >  │
+│      │ ┌─────────────────────────┐  ┌─────────────────────────┐  ┌─────────────────────────┐  │
+│      │ │ [📺] Sirippoli TV       │  │ [📺] Sun TV HD          │  │ [📺] Jaya Plus (576p)   │  │
+│      │ │ • LIVE   [━━━━━━━░░░░]  │  │ • LIVE   [━━━━░░░░░░░]   │  │ • LIVE   [━━━━░░░░░░░]   │  │
+│      │ └─────────────────────────┘  └─────────────────────────┘  └─────────────────────────┘  │
+│      │                                                                                        │
+│      │ Recently Used Sources (1)                                                   See all >  │
+│      │ ┌───────────────────┐                                                                  │
+│      │ │ [📁]         [⋮]  │                                                                  │
+│      │ │ IPTV              │                                                                  │
+│      │ └───────────────────┘                                                                  │
+│ [⚙]  │                                                                                        │
+└──────┴────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 2. Core Reusable Assets from IPTVnator
+## 2. All 10 Screens of IPTVnator — Detailed Specifications
 
-| Domain | IPTVnator Source Location | Tokerian Target File | Extracted Functionality |
-| :--- | :--- | :--- | :--- |
-| **M3U Import & Parsing** | `libs/playlist/shared/util/src/lib/playlist-file-import.service.ts` | [`src/services/playlist/M3UImporter.ts`](file:///f:/Projects/IP-TV/src/services/playlist/M3UImporter.ts) | Local file reading, `#EXTINF` tag extraction (`tvg-id`, `tvg-logo`, `group-title`, `catchup`), URL imports. |
-| **Xtream Codes API** | `libs/portal/xtream/data-access/src/lib/services/xtream-api.service.ts` | [`src/services/portal/XtreamClient.ts`](file:///f:/Projects/IP-TV/src/services/portal/XtreamClient.ts) | `/player_api.php` authentication, category fetching, Live, VOD Movies, and TV Series stream discovery. |
-| **Xtream URL Generation** | `libs/portal/xtream/data-access/src/lib/services/xtream-url.service.ts` | [`src/services/portal/XtreamUrlBuilder.ts`](file:///f:/Projects/IP-TV/src/services/portal/XtreamUrlBuilder.ts) | Constructing direct stream URLs for Live (`.m3u8`/`.ts`), Movies (`.mp4`/`.mkv`), and Series episodes. |
-| **EPG / XMLTV Guide** | `libs/epg/data-access/src/lib/` & `channel-epg-lookup.util.ts` | [`src/services/epg/EpgService.ts`](file:///f:/Projects/IP-TV/src/services/epg/EpgService.ts) | XMLTV (`.xml`/`.xml.gz`) parser, channel ID matching, live program progress percentage calculation. |
-| **Desktop External Players** | `apps/electron-backend/src/app/events/player.events.ts` | [`electron/main.cjs`](file:///f:/Projects/IP-TV/electron/main.cjs) | Spawning **VLC** (`vlc.exe`) and **MPV** (`mpv.exe`) with stream URL, headers, and window tracking. |
-| **Parental Lock PIN** | `libs/services/src/lib/parental-lock/` | [`src/utils/parentalLock.ts`](file:///f:/Projects/IP-TV/src/utils/parentalLock.ts) | 4-digit PIN SHA-256 hash validation, locked categories concealment, and configurable relock timeout. |
-| **Title Sanitization** | `libs/shared/interfaces/src/lib/channel-title.util.ts` | [`src/utils/channelSanitizer.ts`](file:///f:/Projects/IP-TV/src/utils/channelSanitizer.ts) | Stripping country prefixes (`"US | "`, `"UK - "`, `"IN: "`) for clean channel titles. |
+### Screen 1: Home / Dashboard View (Route: `/home`)
+- **Top Spotlight Hero Card**:
+  - Radial gradient backdrop (deep dark obsidian with subtle crimson/burgundy radial light).
+  - Left: Large vertical channel/movie card with rounded border, high-res channel logo, or movie poster.
+  - Right: Title of the last played channel/program (`Sirippoli TV (576p)`), playlist source subtitle (`IPTV`).
+  - Action Button: **`▶ Continue Watching`** pill button with accent glow that immediately launches playback.
+- **Horizontal Carousels / Sections**:
+  - **"Live now on your favorites"** (Count badge e.g. `2`, `See all >` action link):
+    - Compact cards with square logo, clean channel title, red `• LIVE` badge, and dynamic broadcast progress bar calculated from EPG.
+  - **"Recently watched live TV"** (Count badge e.g. `3`, `See all >` action link):
+    - Recent watch history cards with live status and duration percentage.
+  - **"Recently Used Sources"** (Count badge e.g. `1`, `See all >` action link):
+    - Source cards displaying folder icon, source title (`IPTV`), total channels (`11,374 channels`), and `⋮` actions menu.
+
+### Screen 2: Channel Explorer & Groups View (Route: `/channels`)
+- **Left Category / Group Drawer**:
+  - Collapsible list of groups: *"All Channels"*, *"Sports"*, *"News"*, *"Cinema"*, *"Kids"*, *"Documentary"*, etc., each with a channel count badge.
+- **Toolbar & Actions**:
+  - Search input scoped to the selected group.
+  - View switcher: **Grid View** (modern visual cards with logos) vs. **List / Table View** (dense rows with channel index, logo, title, and group).
+  - Sort selector: Default order, Alphabetical, or Quality (FHD/4K/HD).
+- **Channel Item / Card**:
+  - Channel logo with fallback icon.
+  - Title (with automatic country prefix cleaner option).
+  - Category pill.
+  - Favorite heart toggle (`♥`).
+  - Context menu (`⋮`): Play in browser player, Open in VLC, Open in MPV, Copy stream URL.
+
+### Screen 3: Video Player & On-Screen Display (OSD)
+- **Cinema Video Viewport**:
+  - HLS.js adaptive live streaming + HTML5 native video.
+- **Top OSD Bar**:
+  - Close / Back button (`✕`).
+  - Channel logo and title.
+  - Current EPG broadcast title with start & end times (`18:00 - 19:30`).
+- **Bottom Control Bar**:
+  - Play / Pause toggle, Rewind 10s, Forward 10s.
+  - Audio volume slider & mute toggle.
+  - Stream track switcher: Multi-audio tracks, Subtitle/CC tracks, Quality level selector.
+  - **External Desktop Player button**: Direct one-click spawn into VLC (`vlc.exe`) or MPV (`mpv.exe`).
+  - Picture-in-Picture (PiP) toggle.
+  - Fullscreen toggle.
+- **EPG Live Ribbon**:
+  - Interactive live progress bar along the bottom showing start time, elapsed scrubber, end time, and "Next Up" preview.
+- **Quick Zap Channel Drawer**:
+  - Side drawer accessible while watching to browse and zap channels without closing video.
+
+### Screen 4: VOD Movies & TV Series Catalog (Route: `/vod` & `/series`)
+- View switcher between **Movies** and **TV Series**.
+- Category / Genre pills (Action, Comedy, Sci-Fi, Drama).
+- Poster cards with year badge, duration, and IMDB rating (`★ 8.4`).
+- **Detail Modal**:
+  - Big backdrop hero image.
+  - Synopsis, director, cast, release date.
+  - For series: Season dropdown selector + episode cards grid with individual thumbnail and plot.
+  - "Continue Watching" saved timestamp tracking.
+
+### Screen 5: Favorites Screen (Route: `/favorites`)
+- Dedicated view of all starred channels across all imported playlists.
+- Category filtering and search.
+- One-click heart toggle to remove.
+- "Play All" or click to launch player.
+
+### Screen 6: Watch History Screen (Route: `/history`)
+- Chronological list of previously played streams grouped by: *"Today"*, *"Yesterday"*, *"Earlier this week"*.
+- Channel thumbnail, stream title, last watched timestamp, and playback progress bar.
+- **"Clear All History"** confirmation action.
+
+### Screen 7: Playlists & Sources Manager (Route: `/playlists`)
+- Grid/list of all imported sources:
+  - Source title, badge (`M3U File`, `M3U URL`, `Xtream Codes API`).
+  - Channel count (`11,374 channels`), last sync date, auto-refresh state.
+  - Quick actions: Set active, Sync/Refresh (`🔄`), Edit, Delete (`🗑`).
+- Floating or header **"+ Add Source"** button.
+
+### Screen 8: Add Playlist / Import Modal
+- **Tab 1: M3U File Upload**: Drag-and-drop zone or file picker for `.m3u` / `.m3u8` files.
+- **Tab 2: Remote URL**: URL input with auto-refresh interval (Never, Hourly, Daily).
+- **Tab 3: Xtream Codes API**: Server address, Username, Password, with switches to load Live TV, VOD Movies, and TV Series.
+- **Tab 4: Paste Text**: Raw M3U playlist text area.
+
+### Screen 9: Electronic Program Guide (EPG Timeline Schedule Matrix)
+- Fullscreen multi-channel matrix grid:
+  - Left column: Channel logos and titles.
+  - Top header: 30-minute interval timestamps across a 24-hour window.
+  - Red vertical **Current Time Indicator Line** updating continuously.
+  - Program schedule blocks sized proportionally to duration with synopsis tooltips and click-to-play.
+
+### Screen 10: Extended Settings Center (5 Tabs)
+1. **General**: App theme, language, 10-foot TV remote mode toggle, data export/import.
+2. **Playback & Stream**: HLS buffer slider (5s - 120s), hardware acceleration, auto-play next channel on error.
+3. **External Desktop Players**: Default player (VLC / MPV), Windows executable path overrides (`vlc.exe`, `mpv.exe`), live status indicators.
+4. **Channel Title Cleaner**: Prefix/country tag cleaner with live before/after test bench.
+5. **Parental Control PIN**: 4-digit PIN setup via WebCrypto PBKDF2-SHA256, adult keyword blacklist, lock/unlock session toggle.
 
 ---
 
-## 3. Directory Structure with Imported Modules
+## 3. Multi-Platform UI Adaptation Matrix
 
-```text
-f:\Projects\IP-TV\
-├── electron/
-│   ├── main.cjs                         # Enhanced with VLC & MPV child_process spawner
-│   └── preload.cjs                      # Exposes window.electron.openVlc / openMpv
-│
-├── src/
-│   ├── services/
-│   │   ├── playlist/                    # Ported from IPTVnator libs/playlist
-│   │   │   ├── M3UImporter.ts           # Local file reader, URL fetcher & raw text parser
-│   │   │   └── PlaylistStorage.ts       # Multi-playlist IndexedDB storage
-│   │   ├── portal/                      # Ported from IPTVnator libs/portal/xtream
-│   │   │   ├── XtreamClient.ts          # player_api.php authentication & catalog queries
-│   │   │   └── XtreamUrlBuilder.ts      # Live, VOD, and Series streaming URL constructor
-│   │   └── epg/                         # Ported from IPTVnator libs/epg
-│   │       ├── EpgService.ts            # XMLTV parser & program lookup
-│   │       └── EpgTimeline.ts           # "Now Playing" & "Next Up" progress calculation
-│   │
-│   ├── stores/
-│   │   ├── useChannelStore.ts           # Active channels catalog & filtering
-│   │   ├── useMultiPlaylistStore.ts     # Multi-playlist manager & active source switcher
-│   │   ├── usePlayerStore.ts            # Playback state, audio/subtitle tracks, OSD timers
-│   │   ├── useEpgStore.ts               # Program guide data cache & channel schedule map
-│   │   └── useSettingsStore.ts          # Application settings & parental controls
-│   │
-│   ├── components/
-│   │   ├── playlist/
-│   │   │   ├── AddPlaylistModal.tsx     # 3 Tabs: Tokerian Free TV, M3U (File/URL), Xtream Codes
-│   │   │   └── PlaylistManagerModal.tsx # Manage, rename, auto-refresh, and delete playlists
-│   │   ├── epg/
-│   │   │   ├── EpgRibbon.tsx            # Live progress bar under player & channel cards
-│   │   │   └── EpgGridModal.tsx         # Multi-channel program guide timeline
-│   │   ├── vod/
-│   │   │   ├── VodCatalog.tsx           # Movies & Series grid with category filters
-│   │   │   └── VodDetailModal.tsx       # Synopsis, cast, duration, and "Continue Watching"
-│   │   ├── player/
-│   │   │   └── VideoPlayer.tsx          # With external player buttons (VLC/MPV) & EPG ribbon
-│   │   ├── settings/
-│   │   │   └── ExtendedSettingsModal.tsx# General, Playback, External Player, EPG, Parental Lock
-│   │   └── command/
-│   │       └── CommandPalette.tsx       # Ctrl+K global search & action launcher
-│   │
-│   └── utils/
-│       ├── parentalLock.ts              # PIN hashing & category filter
-│       └── channelSanitizer.ts          # Country prefix cleaner
-```
+| Component / Screen | Desktop (Electron) | Web Browser | Tablet (iPad / Android) | Mobile Phone | Android TV (10-Foot) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Top Header** | Window drag area, window controls (min/max/close), playlist selector, centered search (`Ctrl+K`), quick icons. | Standard web header, playlist dropdown, search with `⌘K`, shortcut button. | Compact search, playlist pill, hamburger drawer button. | Ultra-compact brand logo, search icon (expands to overlay), playlist selector pill. | Hidden or minimal top status bar; focused via D-pad Up to search and playlists. |
+| **Navigation Sidebar** | Thin icon rail (56px) on the left with tooltip labels on hover. | Thin icon rail (56px) on the left. | Medium icon rail or slide-in drawer on touch. | **Bottom Navigation Bar** (`Home`, `Live TV`, `VOD`, `Favs`, `Settings`) + Slide-in drawer for groups. | Left vertical rail that expands on focus or top tab ribbon for remote left/right. |
+| **Home Dashboard** | Full hero banner with crimson glow + 3-4 cards per horizontal carousel. | Full hero banner + responsive 3-4 cards per carousel. | 2-3 cards per carousel, touch swipe horizontal scrolling. | Stacked hero banner + 1.5 cards per row with horizontal native snap swipe. | 10-foot large hero banner; D-pad down navigates row by row; cards scale `1.08x` on remote focus. |
+| **Channel Grid** | Multi-column grid (4-6 columns) or table list view. | Multi-column grid (3-5 columns) with virtual scroll. | 3-column grid, touch-friendly tap targets. | 1-column list or 2-column compact cards with quick favorite swipe. | 4-column large cards with high-contrast glowing border on focus (`box-shadow: 0 0 0 4px #6366f1`). |
+| **Video Player** | Full window / fullscreen with PiP and external VLC/MPV spawning. | Native HTML5 / HLS.js with browser PiP and custom OSD. | Touch tap to reveal OSD, pinch to zoom/fit, touch seek gestures. | Native mobile orientation lock (auto landscape on play), swipe volume/brightness. | 10-foot player with D-Pad Play/Pause, Left/Right 10s seek, Up/Down quick zap channel overlay. |
+| **Dialogs & Modals** | Centered floating glassmorphic windows with `ESC` to close. | Centered floating glassmorphic windows. | Sheet modals or centered popups. | Bottom slide-up bottom sheets with swipe-down to dismiss. | Fullscreen modal with auto-focused first button and remote `Back` button handling. |
 
 ---
 
-## 4. Phased Implementation Roadmap
+## 4. Step-by-Step Implementation Roadmap
 
-### Phase 1: Multi-Playlist Engine & M3U / Xtream Import (COMPLETED)
-- [x] Install `iptv-playlist-parser` and parser dependencies.
-- [x] Port `M3UImporter.ts` (File drag-and-drop, remote URL, raw text paste).
-- [x] Port `XtreamClient.ts` & `XtreamUrlBuilder.ts` (Authentication, categories, live streams, movies, and series).
-- [x] Implement `useMultiPlaylistStore.ts` with IndexedDB persistence for switching between playlists.
-- [x] Build `AddPlaylistModal.tsx` and `PlaylistManagerModal.tsx` in UI.
+### Step 1: IPTVnator Navigation Shell (Icon Rail + Header)
+- [ ] Build the slim left navigation rail (`56px` width):
+  - Icons: Home (`⊞`), Channels (`☰`), Search (`🔍`), Favorites (`♥`), History (`🕒`), Live TV (`📺`), Playlists (`📁`), and Settings (`⚙` at bottom).
+  - Active indicator pill with light-blue accent.
+- [ ] Build the IPTVnator top header bar:
+  - Left: Playlist selector dropdown pill (Folder icon, title `IPTV`, channel count `11374 channels`, refresh icon, down arrow).
+  - Center: Pill-shaped `Search in this playlist...` with `Ctrl+K` shortcut badge.
+  - Right: Quick Action icons: Virtual keyboard cheatsheet (`⌨`), Add source (`+`), Export (`⤓`), Window controls (Electron).
 
-### Phase 2: Electronic Program Guide (EPG / XMLTV) Engine (COMPLETED)
-- [x] Install `epg-parser` and port XMLTV parser logic from `libs/epg`.
-- [x] Implement `EpgService.ts` matching channels by `tvg-id`, `tvg-name`, or channel name.
-- [x] Build `EpgRibbon.tsx` displaying "Now Playing" and "Next Up" with a live progress percentage bar.
-- [x] Build `EpgGridModal.tsx` multi-channel timeline schedule matrix.
+### Step 2: IPTVnator Home / Dashboard View (Current Screenshot Clone)
+- [ ] Create `src/components/home/HomeDashboard.tsx`:
+  - **Spotlight Hero Card**:
+    - Dark crimson radial glow background.
+    - Large channel poster card with logo.
+    - Channel title & playlist subtitle.
+    - Light-blue `▶ Continue Watching` button.
+  - **"Live now on your favorites" Row**:
+    - Horizontal scroll container.
+    - Channel cards with square logo, channel title, red `• LIVE` badge, and EPG broadcast progress bar.
+    - `See all >` link to navigate to `/favorites`.
+  - **"Recently watched live TV" Row**:
+    - Horizontal scroll container with history cards and playback progress.
+    - `See all >` link to navigate to `/history`.
+  - **"Recently Used Sources" Row**:
+    - Source folder card with folder icon, title, channel count, and `⋮` menu.
+    - `See all >` link to navigate to `/playlists`.
 
-### Phase 3: Desktop External Players (VLC & MPV via Electron) (COMPLETED)
-- [x] Port `external-player-process.ts` logic into `electron/main.cjs`.
-- [x] Auto-detect standard Windows paths for `vlc.exe` and `mpv.exe`.
-- [x] Expose `openVlc` and `openMpv` in `electron/preload.cjs`.
-- [x] Add "Open in VLC" and "Open in MPV" options in the video player OSD and channel menu.
+### Step 3: Channels & Category Explorer (IPTVnator 2-Pane View)
+- [ ] Upgrade channel browsing into IPTVnator layout:
+  - Collapsible left category drawer (list of groups with channel count badges).
+  - Top filter bar with view toggle (**Grid View** vs **Table / List View**).
+  - Channel cards with hover play overlay and favorite heart toggle.
 
-### Phase 4: VOD (Movies) & TV Series Catalog (COMPLETED)
-- [x] Add **Live TV**, **Movies**, and **Series** view toggle in header/navigation.
-- [x] Implement `VodCatalog.tsx` with category filters, poster cards, and sorting (name, rating, date).
-- [x] Build `VodDetailModal.tsx` with synopsis, episode selector, and "Resume Watching" timestamp tracking.
+### Step 4: Video Player & Full Cinema OSD
+- [ ] Refine `VideoPlayer.tsx` to match IPTVnator OSD:
+  - Top bar with back `✕` button, logo, title, and current program timeline (`18:00 - 19:30`).
+  - Bottom bar with play/pause, seek, volume, audio tracks, subtitles, quality, and external player buttons.
+  - Integrated EPG ribbon along the bottom.
+  - Side slide-in quick zap channel drawer.
 
-### Phase 5: Extended Settings, Parental Lock & Command Palette (`Ctrl+K`) (COMPLETED)
-- [x] Port Parental Lock PIN verification and category hiding (`parentalLock.ts`).
-- [x] Implement Country Prefix Cleaner toggle (`channelSanitizer.ts`).
-- [x] Upgrade Settings modal into a tabbed preferences center (General, Playback, External Players, Title Cleaner, Parental Lock).
-- [x] Implement `CommandPalette.tsx` accessible via `Ctrl+K` for global search and navigation.
+### Step 5: Multi-Platform Responsive & TV Remote Optimization
+- [ ] **Mobile**: Ensure bottom navigation bar and mobile drawer are pixel-perfect.
+- [ ] **Tablet**: Support responsive 2-pane category explorer and touch carousels.
+- [ ] **Android TV**: Ensure every card on the Home Dashboard, Channel Explorer, and Player is 100% operable via D-Pad remote with smooth focus rings and remote key bindings.
 
 ---
 
-## 5. Verification & Testing Standards
-1. **Compilation**: `npm run build:web` must compile with 0 TypeScript/build errors after every phase.
-2. **Multi-Platform Sync**: `npx cap sync android` must sync web dist assets to Android seamlessly.
-3. **Desktop Executable**: `npm run build:desktop` packages the standalone Windows `.exe` installer.
-4. **Responsive UI**: All newly added dialogs, grids, and ribbons must adhere to the pure Vanilla CSS cinema dark design system and remain fully touch-responsive on small screens and TV D-pad compatible.
+## 5. Verification Standards
+1. **Compilation**: `npm run build:web` must compile with 0 errors after each step.
+2. **Capacitor Android Sync**: `npx cap sync android` after web builds.
+3. **Electron Desktop**: Runs seamlessly with external VLC/MPV spawning and native shortcuts.
+4. **Android TV**: Tested with D-pad remote inputs (Up, Down, Left, Right, Select, Back).
