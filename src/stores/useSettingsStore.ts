@@ -46,6 +46,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   parentalLockEnabled: false,
   parentalLockPinHash: null,
   lockedKeywords: DEFAULT_ADULT_KEYWORDS,
+  recordingFolder: 'C:\\Users\\arunr\\Downloads\\TokerianRecordings',
+  recordingFormat: 'mp4',
   isSessionUnlocked: false,
 
   unlockParentalSession: async (pin: string) => {

@@ -11,7 +11,6 @@ import {
   ChevronDown,
   Keyboard,
   Plus,
-  Download,
   Check,
   FolderPlus,
   Minus,
@@ -20,7 +19,6 @@ import {
 import { useChannelStore } from '../../stores/useChannelStore';
 import { useSettingsStore } from '../../stores/useSettingsStore';
 import { useMultiPlaylistStore } from '../../stores/useMultiPlaylistStore';
-import { useUserStore } from '../../stores/useUserStore';
 import type { SidebarTab } from './Sidebar';
 
 interface HeaderProps {
@@ -89,30 +87,6 @@ export const Header: React.FC<HeaderProps> = ({
     } finally {
       setTimeout(() => setIsSyncing(false), 800);
     }
-  };
-
-  // Handle Export / Download Backup (JSON of playlists + user favorites/history)
-  const handleExportBackup = () => {
-    const backupData = {
-      version: '1.0',
-      exportedAt: new Date().toISOString(),
-      playlists: useMultiPlaylistStore.getState().playlists,
-      activePlaylistId: useMultiPlaylistStore.getState().activePlaylistId,
-      favorites: Array.from(useUserStore.getState().favorites),
-      history: useUserStore.getState().history,
-    };
-
-    const blob = new Blob([JSON.stringify(backupData, null, 2)], {
-      type: 'application/json',
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `tokerian-iptvnator-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
   };
 
   const channelCountDisplay = isLoading
@@ -313,17 +287,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         )}
 
-        {/* 3. Export Backup Data */}
-        <button
-          type="button"
-          onClick={handleExportBackup}
-          className="header-action-icon-btn"
-          title="Export / Download Backup (JSON)"
-        >
-          <Download size={17} />
-        </button>
-
-        {/* 4. TV Guide (EPG Timeline Matrix) */}
+        {/* 3. TV Guide (EPG Timeline Matrix) */}
         {onOpenEpgGuide && (
           <button
             type="button"
@@ -335,7 +299,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         )}
 
-        {/* 5. TV D-Pad Mode Toggle */}
+        {/* 4. TV D-Pad Mode Toggle */}
         <button
           type="button"
           onClick={() => updateSettings({ tvMode: !tvMode })}
@@ -345,28 +309,45 @@ export const Header: React.FC<HeaderProps> = ({
           <Tv size={17} />
         </button>
 
-        {/* 6. Settings */}
+        {/* 5. Settings */}
         <button
           type="button"
           onClick={onOpenSettings}
           className="header-action-icon-btn"
-          title="App Settings & Parental Lock"
+          title="App Settings & Preferences"
         >
           <Sliders size={18} />
         </button>
 
-        {/* 7. Subtle Desktop Window Controls (Minimize / Maximize / Close) */}
-        <div className="header-window-controls">
-          <button type="button" className="window-control-btn" title="Minimize">
-            <Minus size={13} />
-          </button>
-          <button type="button" className="window-control-btn" title="Maximize">
-            <Square size={11} />
-          </button>
-          <button type="button" className="window-control-btn close-btn" title="Close">
-            <X size={13} />
-          </button>
-        </div>
+        {/* 6. Subtle Desktop Window Controls (Visible ONLY in Desktop Electron App) */}
+        {typeof window !== 'undefined' && (window as any).electronAPI && (
+          <div className="header-window-controls">
+            <button
+              type="button"
+              onClick={() => (window as any).electronAPI?.minimize?.()}
+              className="window-control-btn"
+              title="Minimize"
+            >
+              <Minus size={13} />
+            </button>
+            <button
+              type="button"
+              onClick={() => (window as any).electronAPI?.maximize?.()}
+              className="window-control-btn"
+              title="Maximize"
+            >
+              <Square size={11} />
+            </button>
+            <button
+              type="button"
+              onClick={() => (window as any).electronAPI?.close?.()}
+              className="window-control-btn close-btn"
+              title="Close"
+            >
+              <X size={13} />
+            </button>
+          </div>
+        )}
       </div>
     </header>
   );

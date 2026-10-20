@@ -12,6 +12,7 @@ import {
   Radio,
   Film,
   Layers,
+  Download,
 } from 'lucide-react';
 import { useUserStore } from '../../stores/useUserStore';
 import { usePlayerStore } from '../../stores/usePlayerStore';
@@ -25,7 +26,9 @@ export type SidebarTab =
   | 'favorites'
   | 'history'
   | 'livetv'
-  | 'playlists';
+  | 'playlists'
+  | 'downloads'
+  | 'settings';
 
 interface SidebarProps {
   activeTab: SidebarTab;
@@ -190,6 +193,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <Folder size={20} />
             <span className="rail-mobile-label">Sources</span>
           </button>
+
+          {/* 10. Downloads & Recordings */}
+          <button
+            type="button"
+            onClick={() => handleTabSelect('downloads')}
+            className={`rail-icon-btn ${activeTab === 'downloads' ? 'rail-icon-active' : ''}`}
+            title="Downloads & Recordings"
+          >
+            <Download size={20} />
+            <span className="rail-mobile-label">Downloads</span>
+          </button>
         </div>
 
         {/* Bottom Settings Icon */}
@@ -197,10 +211,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             type="button"
             onClick={() => {
-              if (onOpenSettings) onOpenSettings();
+              onTabChange('settings');
+              onOpenSettings?.();
               onCloseMobile?.();
             }}
-            className="rail-icon-btn"
+            className={`rail-icon-btn ${activeTab === 'settings' ? 'rail-icon-active' : ''}`}
             title="Settings & Preferences"
           >
             <Sliders size={20} />

@@ -8,13 +8,14 @@ import { Tv, Star } from 'lucide-react';
 
 interface ChannelCardProps {
   channel: Channel;
+  scope?: 'all' | 'favorites';
 }
 
 /**
  * High-performance memoized ChannelCard.
  * Adheres to Vercel React Best Practices (rerender-memo, rerender-derived-state, list-performance-item-memo).
  */
-export const ChannelCard: React.FC<ChannelCardProps> = memo(({ channel }) => {
+export const ChannelCard: React.FC<ChannelCardProps> = memo(({ channel, scope }) => {
   const [imageError, setImageError] = useState(false);
 
   // Atomic state subscriptions
@@ -28,7 +29,7 @@ export const ChannelCard: React.FC<ChannelCardProps> = memo(({ channel }) => {
   const toggleFavorite = useUserStore((s) => s.toggleFavorite);
 
   const handleCardClick = () => {
-    playChannel(channel);
+    playChannel(channel, undefined, scope);
   };
 
   const handleFavoriteClick = (e: React.MouseEvent) => {

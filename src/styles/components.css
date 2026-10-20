@@ -678,6 +678,122 @@
   color: var(--text-muted);
 }
 
+/* Cinema Timeline / Scrub Bar (IPTVnator Clone) */
+.player-timeline-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 4px 0;
+  pointer-events: auto;
+}
+
+.player-timeline-time {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  font-variant-numeric: tabular-nums;
+  min-width: 44px;
+}
+
+.player-timeline-time.current {
+  text-align: right;
+}
+
+.player-timeline-time.total {
+  text-align: left;
+}
+
+.player-timeline-track-container {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.player-timeline-slider {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  outline: none;
+  background: linear-gradient(
+    to right,
+    var(--accent-primary) 0%,
+    var(--accent-primary) var(--seek-progress, 0%),
+    rgba(255, 255, 255, 0.2) var(--seek-progress, 0%),
+    rgba(255, 255, 255, 0.2) 100%
+  );
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  transition: height 0.15s ease;
+}
+
+.player-timeline-slider:hover {
+  height: 8px;
+}
+
+.player-timeline-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.8), 0 2px 4px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.player-timeline-slider:hover::-webkit-slider-thumb {
+  transform: scale(1.25);
+}
+
+.player-timeline-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.8), 0 2px 4px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+}
+
+.player-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  text-transform: uppercase;
+}
+
+.player-live-badge .live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ef4444;
+  animation: pulse-live-dot 1.6s infinite ease-in-out;
+}
+
+@keyframes pulse-live-dot {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.8);
+  }
+}
+
 .osd-bottom-bar {
   display: flex;
   align-items: center;
@@ -2868,21 +2984,15 @@ input:checked + .toggle-slider:before {
   align-items: center;
   gap: 16px;
   overflow-x: auto;
-  padding-bottom: 8px;
-  scrollbar-width: thin;
+  padding-bottom: 4px;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
 }
 
 .dashboard-horizontal-scroll::-webkit-scrollbar {
-  height: 6px;
-}
-
-.dashboard-horizontal-scroll::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.dashboard-horizontal-scroll::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
-  border-radius: 4px;
+  display: none; /* Chrome, Safari, Opera */
+  width: 0;
+  height: 0;
 }
 
 /* --- COMPACT LIVE CHANNEL CARDS (Favorites & History) --- */
@@ -3656,6 +3766,340 @@ body.tv-mode,
 
 .iptvnator-hero-card:focus-within {
   box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.4), 0 20px 48px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* =========================================================================
+   DEDICATED SETTINGS PAGE (IPTVNATOR FULL-PAGE SYSTEM)
+   ========================================================================= */
+.settings-page-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  padding: 24px 32px;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.settings-page-header {
+  margin-bottom: 24px;
+}
+
+.settings-page-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+
+.settings-page-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.settings-page-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.settings-nav-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border-radius: var(--radius-md);
+}
+
+.settings-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.88rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.settings-nav-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+}
+
+.settings-nav-item.nav-item-active {
+  background: rgba(56, 189, 248, 0.14);
+  color: #38bdf8;
+  font-weight: 600;
+  border-left: 3px solid #38bdf8;
+}
+
+.settings-section-card {
+  padding: 28px;
+  border-radius: var(--radius-md);
+  min-height: 480px;
+}
+
+.settings-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.section-heading {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 8px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.setting-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-sm);
+}
+
+.setting-label {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.settings-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* Custom CSS Toggle Switch */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.16);
+  transition: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 24px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: #ffffff;
+  transition: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background: var(--accent-primary);
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+  transform: translateX(20px);
+}
+
+.preset-card:hover {
+  background: rgba(56, 189, 248, 0.08) !important;
+  border-color: rgba(56, 189, 248, 0.4) !important;
+}
+
+/* =========================================================================
+   DEDICATED DOWNLOADS & RECORDINGS PAGE
+   ========================================================================= */
+.downloads-page-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  padding: 24px 32px;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.downloads-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.downloads-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.downloads-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.downloads-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+
+.downloads-active-pill {
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  background: rgba(34, 197, 94, 0.2);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  color: #22c55e;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.downloads-tracked-metric {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.downloads-folder-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.folder-path-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-sm);
+}
+
+.folder-path-text {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.8);
+  max-width: 280px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: monospace;
+}
+
+.downloads-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.download-filter-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 16px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.download-filter-pill:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.download-filter-pill.pill-active {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: #38bdf8;
+  color: #38bdf8;
+  font-weight: 600;
+}
+
+.download-pill-badge {
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 0.7rem;
+}
+
+.downloads-content-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.download-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  text-align: center;
+  border-radius: var(--radius-md);
+  margin-top: 10px;
+}
+
+/* Responsive adjustments for Settings & Downloads */
+@media (max-width: 768px) {
+  .settings-page-layout {
+    grid-template-columns: 1fr;
+  }
+  .settings-page-container,
+  .downloads-page-container {
+    padding: 16px;
+  }
+  .downloads-folder-bar {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .folder-path-box {
+    max-width: 100%;
+  }
+  .folder-path-text {
+    max-width: 100%;
+  }
 }
 
 

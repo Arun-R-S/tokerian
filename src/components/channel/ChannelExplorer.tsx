@@ -18,6 +18,7 @@ import {
   AlertCircle,
   RefreshCw,
   Folder,
+  GripVertical,
 } from 'lucide-react';
 import type { Channel } from '../../core/domain/types';
 import type { SidebarTab } from '../layout/Sidebar';
@@ -73,9 +74,37 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({ activeTab = 'c
   const [visibleCount, setVisibleCount] = useState<number>(pageSize);
   const [activeMenuChannelId, setActiveMenuChannelId] = useState<string | null>(null);
   const [copiedChannelId, setCopiedChannelId] = useState<string | null>(null);
+  const [draggedChannelId, setDraggedChannelId] = useState<string | null>(null);
+
+  const reorderFavorites = useUserStore((s) => s.reorderFavorites);
+  const orderedFavoriteIds = useUserStore((s) => s.orderedFavoriteIds);
 
   const sentinelRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    e.dataTransfer.setData('text/plain', id);
+    setDraggedChannelId(id);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDropOnChannel = (targetId: string) => {
+    if (!draggedChannelId || draggedChannelId === targetId) return;
+
+    const currentOrder = [...orderedFavoriteIds];
+    const fromIdx = currentOrder.indexOf(draggedChannelId);
+    const toIdx = currentOrder.indexOf(targetId);
+
+    if (fromIdx !== -1 && toIdx !== -1) {
+      currentOrder.splice(fromIdx, 1);
+      currentOrder.splice(toIdx, 0, draggedChannelId);
+      reorderFavorites(currentOrder);
+    }
+    setDraggedChannelId(null);
+  };
 
   // Close context menu when clicking outside
   useEffect(() => {
@@ -135,7 +164,12 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({ activeTab = 'c
     let sourceList: Channel[] = [];
 
     if (activeTab === 'favorites') {
-      sourceList = channels.filter((c) => favorites.has(c.id || c.url));
+      const channelMap = new Map<string, Channel>();
+      for (const c of channels) channelMap.set(c.id || c.url, c);
+      const ordered = useUserStore.getState().orderedFavoriteIds;
+      sourceList = ordered
+        .map((id) => channelMap.get(id))
+        .filter((c): c is Channel => !!c);
     } else if (activeTab === 'history') {
       const historyMap = new Map(history.map((h) => [h.channelId, h.timestamp]));
       sourceList = channels
@@ -441,7 +475,11 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({ activeTab = 'c
              ========================================================================= */
           <div className="explorer-channels-grid">
             {visibleChannels.map((channel) => (
-              <ChannelCard key={channel.id || channel.url} channel={channel} />
+              <ChannelCard
+                key={channel.id || channel.url}
+                channel={channel}
+                scope={activeTab === 'favorites' ? 'favorites' : 'all'}
+              />
             ))}
           </div>
         ) : (
@@ -470,18 +508,29 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({ activeTab = 'c
                   return (
                     <tr
                       key={chId}
-                      className={`table-channel-row ${isPlaying ? 'table-row-playing' : ''}`}
+                      className={`table-channel-row ${isPlaying ? 'table-row-playing' : ''} ${draggedChannelId === chId ? 'table-row-dragging' : ''}`}
                       tabIndex={0}
-                      onClick={() => playChannel(channel)}
+                      draggable={activeTab === 'favorites'}
+                      onDragStart={(e) => handleDragStart(e, chId)}
+                      onDragOver={handleDragOver}
+                      onDrop={() => handleDropOnChannel(chId)}
+                      onClick={() => playChannel(channel, undefined, activeTab === 'favorites' ? 'favorites' : 'all')}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === 'Select') {
                           e.preventDefault();
-                          playChannel(channel);
+                          playChannel(channel, undefined, activeTab === 'favorites' ? 'favorites' : 'all');
                         }
                       }}
                     >
                       <td style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.78rem' }}>
-                        {idx + 1}
+                        {activeTab === 'favorites' ? (
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px', cursor: 'grab' }}>
+                            <GripVertical size={13} style={{ opacity: 0.5 }} />
+                            <span>{idx + 1}</span>
+                          </div>
+                        ) : (
+                          idx + 1
+                        )}
                       </td>
 
                       <td>

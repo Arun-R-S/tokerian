@@ -72,4 +72,6 @@ export interface Settings {
   parentalLockEnabled?: boolean;
   parentalLockPinHash?: string | null;
   lockedKeywords?: string[];
+  recordingFolder?: string;
+  recordingFormat?: 'ts' | 'mp4' | 'mkv';
 }

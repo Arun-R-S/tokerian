@@ -15,6 +15,8 @@ import { VodDetailModal } from './components/vod/VodDetailModal';
 import { CommandPalette } from './components/command/CommandPalette';
 import { KeyboardShortcutsModal } from './components/layout/KeyboardShortcutsModal';
 import { HomeDashboard } from './components/home/HomeDashboard';
+import { SettingsPage } from './components/settings/SettingsPage';
+import { DownloadsPage } from './components/downloads/DownloadsPage';
 import { Tv } from 'lucide-react';
 
 import { useChannelStore } from './stores/useChannelStore';
@@ -268,6 +270,12 @@ export function App() {
               <ChannelGrid activeTab="channels" />
             </div>
           )}
+
+          {/* Downloads & DVR Recordings View */}
+          {activeTab === 'downloads' && <DownloadsPage />}
+
+          {/* Dedicated Full-Page Settings View */}
+          {activeTab === 'settings' && <SettingsPage />}
         </main>
       </div>
 

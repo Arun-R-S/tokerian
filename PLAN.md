@@ -201,31 +201,31 @@
 - [x] **Tablet**: Responsive 2-pane category explorer (`220px` width) with responsive 3-column grid and touch carousel snap.
 - [x] **Android TV**: Upgraded `DpadNavigationAdapter.ts` with 2D geometric Euclidean spatial navigation algorithm. Added `tabIndex={0}`, Enter key trigger, and high-contrast cyan/blue glowing halos (`box-shadow: 0 0 0 3px #38bdf8`) on all interactive cards, categories, table rows, and player controls for 10-foot remote operability.
 
-### Step 6: UI Refinement, Dedicated Settings, Downloads Page & Cinema Timeline (IN PROGRESS)
-- [ ] **1. Hide Horizontal Scrollbars**:
-  - Eliminate visible X-axis scrollbar tracks on `.dashboard-horizontal-scroll` across Chromium, Firefox, and WebKit while preserving smooth horizontal mouse-drag and touch swiping.
-- [ ] **2. Platform-Specific Window Controls**:
-  - Restrict Close, Maximize, and Minimize titlebar buttons in `Header.tsx` strictly to Electron Desktop builds.
-  - Automatically hide them on Web browsers, Mobile (Capacitor), and Tablet viewports.
-- [ ] **3. Reorderable Favorites & Loop-Bound Zapping**:
-  - Upgrade `useUserStore` to persist an explicit favorites array order (`favoriteIds: string[]`).
-  - Implement HTML5 Drag-and-Drop / move handles to rearrange channels within the Favorites view.
-  - When a channel is played from the Favorites screen, bind `zapNext()` and `zapPrev()` to loop through the Favorites list in current order.
-- [ ] **4. Dedicated Full-Page Settings View**:
-  - Transform Settings from a dialog modal into a full-page view (`activeTab === 'settings'`) with IPTVnator's side navigation tabs:
-    - *General*, *Playback & Stream*, *Recording & Storage*, *External Players*, *Title Cleaner*, *Parental Lock PIN*, *Backup & Data*.
-- [ ] **5. Dedicated Downloads & Recordings View**:
-  - Add `activeTab === 'downloads'` into the main navigation rail with segmented filters:
+### Step 6: UI Refinement, Dedicated Settings, Downloads Page & Cinema Timeline (COMPLETED)
+- [x] **1. Hide Horizontal Scrollbars**:
+  - Eliminated visible X-axis scrollbar tracks on `.dashboard-horizontal-scroll` across Chromium, Firefox, and WebKit while preserving smooth horizontal mouse-drag and touch swiping.
+- [x] **2. Platform-Specific Window Controls**:
+  - Restrict Close, Maximize, and Minimize titlebar buttons in `Header.tsx` strictly to Electron Desktop builds (`(window as any).electronAPI`).
+  - Automatically hidden on Web browsers, Mobile (Capacitor), and Tablet viewports.
+- [x] **3. Reorderable Favorites & Loop-Bound Zapping**:
+  - Upgraded `useUserStore` to persist ordered favorite IDs (`orderedFavoriteIds: string[]`) and added `reorderFavorites`.
+  - Added HTML5 Drag-and-Drop (`draggable`, `onDragStart`, `onDragOver`, `onDrop`) with `GripVertical` handle in Favorites table view.
+  - Bound `zapNext()` and `zapPrev()` in `usePlayerStore` to loop within `orderedFavoriteIds` when played with `scope="favorites"`.
+- [x] **4. Dedicated Full-Page Settings View**:
+  - Built full-page `SettingsPage.tsx` (`activeTab === 'settings'`) with 7 IPTVnator sections:
+    - *General & Presets*, *Playback & Stream Engine*, *Recording & Storage*, *External Players (VLC/MPV)*, *Title Sanitizer*, *Parental Lock PIN*, *Backup & Factory Reset*.
+- [x] **5. Dedicated Downloads & Recordings View**:
+  - Added `activeTab === 'downloads'` into main navigation rail with segmented filter pills:
     - *All*, *Movies*, *Series*, *In Progress*, *Recordings*.
-  - Configurable download and recording storage destination folder with live byte tracking.
-- [ ] **6. Relocate Session Backup Export to Settings**:
-  - Remove the JSON export download button from the top header bar.
-  - Place Import & Export JSON buttons cleanly inside **Settings → Backup & Data**.
-- [ ] **7. Interactive Player Timeline & Seek Progress Bar**:
-  - Add IPTVnator-styled `player-timeline` scrub bar directly above or within the player controls:
-    - Current playback time & remaining time/duration labels.
-    - Real-time scrub track with hover time tooltip.
-    - Live EPG broadcast elapsed progress overlay.
+  - Added destination storage folder picker and live byte tracking metric.
+- [x] **6. Relocate Session Backup Export to Settings**:
+  - Removed JSON export icon from top header toolbar.
+  - Placed JSON Backup Export, Backup Import with validation, and Factory Reset inside **Settings → Backup & Reset**.
+- [x] **7. Interactive Player Timeline & Seek Progress Bar**:
+  - Ported IPTVnator's cinema scrub timeline (`player-timeline-wrapper`) into `VideoPlayer.tsx`:
+    - Current playback timestamp (`HH:mm:ss` / `mm:ss`) and duration / remaining time.
+    - Custom range slider with live gradient track fill (`--seek-progress`).
+    - Glowing animated `• LIVE` badge for live broadcast streams without finite duration.
 
 ---
 

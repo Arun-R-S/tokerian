@@ -62,6 +62,9 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ onOpenEpgGuide }) => {
   const currentChannel = usePlayerStore((s) => s.currentChannel);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
   const isBuffering = usePlayerStore((s) => s.isBuffering);
+  const currentTime = usePlayerStore((s) => s.currentTime);
+  const duration = usePlayerStore((s) => s.duration);
+  const isLive = usePlayerStore((s) => s.isLive);
   const volume = usePlayerStore((s) => s.volume);
   const isMuted = usePlayerStore((s) => s.isMuted);
   const error = usePlayerStore((s) => s.error);
@@ -89,6 +92,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ onOpenEpgGuide }) => {
   const zapPrev = usePlayerStore((s) => s.zapPrev);
   const playChannel = usePlayerStore((s) => s.playChannel);
   const closePlayer = usePlayerStore((s) => s.closePlayer);
+  const seek = usePlayerStore((s) => s.seek);
 
   // Channel store for Quick Zap Drawer
   const allChannels = useChannelStore((s) => s.channels);
@@ -147,10 +151,22 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ onOpenEpgGuide }) => {
     if (!videoRef.current) return;
     try {
       const newTime = Math.max(0, videoRef.current.currentTime + deltaSeconds);
+      seek(newTime);
       videoRef.current.currentTime = newTime;
     } catch (e) {
       console.warn('Seek error:', e);
     }
+  };
+
+  const formatPlaybackTime = (seconds: number) => {
+    if (isNaN(seconds) || seconds < 0) return '00:00';
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    if (hrs > 0) {
+      return `${hrs}:${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+    }
+    return `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
   // External Player Launch Handlers
@@ -683,6 +699,54 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ onOpenEpgGuide }) => {
             channelName={currentChannel.name}
             onOpenFullGuide={onOpenEpgGuide}
           />
+        </div>
+
+        {/* Cinema Timeline / Scrub Bar (IPTVnator Clone) */}
+        <div className="player-timeline-wrapper" onClick={(e) => e.stopPropagation()}>
+          <span className="player-timeline-time current">
+            {formatPlaybackTime(currentTime)}
+          </span>
+          <div className="player-timeline-track-container">
+            <input
+              type="range"
+              min={0}
+              max={duration && isFinite(duration) && duration > 0 ? duration : 100}
+              step={0.5}
+              value={duration && isFinite(duration) && duration > 0 ? Math.min(currentTime, duration) : (isLive ? 100 : 0)}
+              onChange={(e) => {
+                const val = parseFloat(e.target.value);
+                seek(val);
+                if (videoRef.current) {
+                  try {
+                    videoRef.current.currentTime = val;
+                  } catch {}
+                }
+              }}
+              disabled={isLive && (!duration || !isFinite(duration))}
+              className="player-timeline-slider"
+              style={{
+                '--seek-progress': `${
+                  duration && isFinite(duration) && duration > 0
+                    ? Math.min(100, (currentTime / duration) * 100)
+                    : (isLive ? 100 : 0)
+                }%`,
+              } as React.CSSProperties}
+              title={
+                duration && isFinite(duration) && duration > 0
+                  ? `Seek: ${formatPlaybackTime(currentTime)} / ${formatPlaybackTime(duration)}`
+                  : 'Live Broadcast Stream'
+              }
+            />
+          </div>
+          <span className="player-timeline-time total">
+            {duration && isFinite(duration) && duration > 0 ? (
+              formatPlaybackTime(duration)
+            ) : (
+              <span className="player-live-badge">
+                <span className="live-dot" /> LIVE
+              </span>
+            )}
+          </span>
         </div>
 
         {/* Bottom Bar: Playback Controls */}

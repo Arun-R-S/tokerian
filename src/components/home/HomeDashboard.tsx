@@ -212,11 +212,11 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                   key={ch.id || ch.url}
                   className="iptvnator-compact-card"
                   tabIndex={0}
-                  onClick={() => playChannel(ch)}
+                  onClick={() => playChannel(ch, undefined, 'favorites')}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === 'Select') {
                       e.preventDefault();
-                      playChannel(ch);
+                      playChannel(ch, undefined, 'favorites');
                     }
                   }}
                   title={`Play ${ch.name}`}
