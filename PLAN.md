@@ -1,208 +1,143 @@
-# Tokerian: Architecture & Implementation Plan
+# Tokerian: Master Architecture & IPTVnator Feature Integration Plan
 
-> **Application Name**: **Tokerian**  
-> **Platforms Supported**: Web, Desktop (Windows/macOS/Linux), Mobile (Android/iOS), and Android TV (10-Foot UI / D-Pad Remote)  
-> **Source Playlist**: [iptv-org/iptv](https://github.com/iptv-org/iptv) (`https://iptv-org.github.io/iptv/index.m3u` + Presets)  
-> **Architecture Pattern**: Hexagonal Architecture (Ports & Adapters) + SOLID Principles + Clean Layering  
-> **Performance Benchmarks**: Vercel React Best Practices, React Native Architecture, and React Native Performance Skills
+> **Application**: **Tokerian** (Live Television, VOD & Series Hub)  
+> **Target Platforms**: Web, Desktop (Electron for Windows/macOS/Linux), Android Mobile & Android TV (Capacitor with D-Pad Leanback)  
+> **Source Clone**: [`F:\Projects\iptvnator`](file:///F:/Projects/iptvnator) (Open-source IPTV client)  
+> **Architecture**: Hexagonal Ports & Adapters + TypeScript + Zustand + Pure Vanilla CSS Design System  
+> **Extraction Strategy**: Reusing and porting core modules, services, types, and logic directly from `F:\Projects\iptvnator` into Tokerian.
 
 ---
 
-## 1. Architectural Foundation & Principles
+## 1. System Architecture & Module Extraction Map
 
-### 1.1 Hexagonal Architecture (Ports and Adapters)
-The application decouples core domain rules (playlist parsing, channel indexing, favorites, history, settings) from external device platforms and streaming engines.
+```mermaid
+graph TD
+  subgraph IPTNVATOR ["F:\Projects\iptvnator (Source Library)"]
+    M3U_SRC["libs/playlist/shared/util<br/>(playlist-file-import.service.ts)"]
+    XTREAM_SRC["libs/portal/xtream/data-access<br/>(xtream-api.service.ts & xtream-url.service.ts)"]
+    EPG_SRC["libs/epg/data-access<br/>(epg.service.ts & epg-current-programs.lookup.ts)"]
+    PLAYER_SRC["apps/electron-backend/src/app/events<br/>(player.events.ts & external-player-process.ts)"]
+    SETTINGS_SRC["libs/shared/interfaces<br/>(settings.interface.ts & parental-lock-pin.util.ts)"]
+  end
 
-```
-                      ┌──────────────────────────────────────────────┐
-                      │              DRIVING ADAPTERS                │
-                      │  Web Browser UI │ Desktop UI │ Android TV UI │
-                      └──────────────────────┬───────────────────────┘
-                                             │
-                      ┌──────────────────────▼───────────────────────┐
-                      │                DRIVING PORTS                 │
-                      │         (UI Actions & Navigation)            │
-                      ├──────────────────────────────────────────────┤
-                      │                 CORE DOMAIN                  │
-                      │  • Single-pass M3U Streaming Parser          │
-                      │  • Category & Country O(1) Index Engine      │
-                      │  • Reactive Stores (Zustand)                 │
-                      │  • Favorites & History Business Logic        │
-                      ├──────────────────────────────────────────────┤
-                      │                DRIVEN PORTS                  │
-                      │   IPlayerPort │ IStoragePort │ ICastPort     │
-                      └──────────────────────┬───────────────────────┘
-                                             │
-                      ┌──────────────────────▼───────────────────────┐
-                      │               DRIVEN ADAPTERS                │
-                      │  • Player:  Hls.js (Web/Desktop) / ExoPlayer │
-                      │  • Storage: IndexedDB (Web) / SQLite         │
-                      │  • Input:   D-Pad (Android TV) / Keyboard    │
-                      └──────────────────────────────────────────────┘
+  subgraph TOKERIAN ["f:\Projects\IP-TV (Tokerian App)"]
+    M3U_DST["src/services/playlist/<br/>• M3UImporter.ts<br/>• useMultiPlaylistStore.ts"]
+    XTREAM_DST["src/services/portal/<br/>• XtreamClient.ts<br/>• XtreamUrlBuilder.ts"]
+    EPG_DST["src/services/epg/<br/>• EpgService.ts<br/>• EpgTimelineLookup.ts"]
+    PLAYER_DST["electron/main.cjs & player/<br/>• VLC & MPV Process Spawner<br/>• ExternalPlaybackBar.tsx"]
+    SETTINGS_DST["src/components/settings/ & utils/<br/>• ExtendedSettingsModal.tsx<br/>• parentalLock.ts<br/>• channelSanitizer.ts"]
+  end
+
+  M3U_SRC -->|Direct logic port| M3U_DST
+  XTREAM_SRC -->|Direct API & URL builder port| XTREAM_DST
+  EPG_SRC -->|Direct XMLTV & timeline port| EPG_DST
+  PLAYER_SRC -->|IPC & spawn logic port| PLAYER_DST
+  SETTINGS_SRC -->|Port types & utilities| SETTINGS_DST
 ```
 
-### 1.2 SOLID Principles Implementation
-* **S (Single Responsibility)**: M3U parser only parses; Player adapter only drives media playback; Storage adapter only handles persistence.
-* **O (Open/Closed)**: New target platforms (e.g. Apple TV, macOS) are added by implementing new Adapters without modifying core business code.
-* **L (Liskov Substitution)**: `HlsPlayerAdapter` (Web) and `ExoPlayerAdapter` (Android/TV) implement the identical `IPlayerPort` contract and can be swapped transparently.
-* **I (Interface Segregation)**: Segregated, focused ports (`IPlayerPort`, `IStoragePort`, `ICastPort`, `IInputPort`) rather than a monolithic interface.
-* **D (Dependency Inversion)**: High-level UI and business logic depend exclusively on abstract TypeScript Port interfaces, never concrete vendor libraries.
+---
 
-### 1.3 Key Design Patterns
-* **Adapter Pattern**: Bridges third-party video engines (`hls.js`, ExoPlayer, Chromecast SDK) to unified internal ports.
-* **Facade Pattern**: `PlaybackFacade` orchestrates channel switching, proxy fallback, history updates, and error recovery.
-* **Proxy Pattern**: Transparent CORS routing for in-browser playback of non-CORS streams.
-* **Strategy Pattern**: Dynamic selection of playback engines (HLS.js vs Native HLS vs Direct MP4) and input handlers (D-pad vs Touch/Mouse).
-* **Command Pattern**: Encapsulates TV remote and keyboard actions (`ZapNext`, `ToggleFav`, `TogglePiP`, `ToggleFullscreen`) for remappable input.
-* **Observer Pattern**: Reactive Zustand stores synchronize player state (buffering, audio/sub tracks, errors) across UI overlays.
+## 2. Core Reusable Assets from IPTVnator
+
+| Domain | IPTVnator Source Location | Tokerian Target File | Extracted Functionality |
+| :--- | :--- | :--- | :--- |
+| **M3U Import & Parsing** | `libs/playlist/shared/util/src/lib/playlist-file-import.service.ts` | [`src/services/playlist/M3UImporter.ts`](file:///f:/Projects/IP-TV/src/services/playlist/M3UImporter.ts) | Local file reading, `#EXTINF` tag extraction (`tvg-id`, `tvg-logo`, `group-title`, `catchup`), URL imports. |
+| **Xtream Codes API** | `libs/portal/xtream/data-access/src/lib/services/xtream-api.service.ts` | [`src/services/portal/XtreamClient.ts`](file:///f:/Projects/IP-TV/src/services/portal/XtreamClient.ts) | `/player_api.php` authentication, category fetching, Live, VOD Movies, and TV Series stream discovery. |
+| **Xtream URL Generation** | `libs/portal/xtream/data-access/src/lib/services/xtream-url.service.ts` | [`src/services/portal/XtreamUrlBuilder.ts`](file:///f:/Projects/IP-TV/src/services/portal/XtreamUrlBuilder.ts) | Constructing direct stream URLs for Live (`.m3u8`/`.ts`), Movies (`.mp4`/`.mkv`), and Series episodes. |
+| **EPG / XMLTV Guide** | `libs/epg/data-access/src/lib/` & `channel-epg-lookup.util.ts` | [`src/services/epg/EpgService.ts`](file:///f:/Projects/IP-TV/src/services/epg/EpgService.ts) | XMLTV (`.xml`/`.xml.gz`) parser, channel ID matching, live program progress percentage calculation. |
+| **Desktop External Players** | `apps/electron-backend/src/app/events/player.events.ts` | [`electron/main.cjs`](file:///f:/Projects/IP-TV/electron/main.cjs) | Spawning **VLC** (`vlc.exe`) and **MPV** (`mpv.exe`) with stream URL, headers, and window tracking. |
+| **Parental Lock PIN** | `libs/services/src/lib/parental-lock/` | [`src/utils/parentalLock.ts`](file:///f:/Projects/IP-TV/src/utils/parentalLock.ts) | 4-digit PIN SHA-256 hash validation, locked categories concealment, and configurable relock timeout. |
+| **Title Sanitization** | `libs/shared/interfaces/src/lib/channel-title.util.ts` | [`src/utils/channelSanitizer.ts`](file:///f:/Projects/IP-TV/src/utils/channelSanitizer.ts) | Stripping country prefixes (`"US | "`, `"UK - "`, `"IN: "`) for clean channel titles. |
 
 ---
 
-## 2. Best-Practice Performance Rules Applied
-
-Incorporated from **Vercel React Best Practices**, **React Native Architecture**, and **React Native Skills**:
-
-1. **List Virtualization (`list-performance-virtualize`, `rendering-content-visibility`)**:
-   - `index.m3u` contains 30,000+ channels.
-   - **Native & Android TV**: Uses `@shopify/flash-list` with `estimatedItemSize={72}`, `removeClippedSubviews={true}`, and `getItemType`.
-   - **Web**: Virtualized viewport with CSS `content-visibility: auto`.
-2. **Channel Logo Caching (`ui-expo-image`, `list-performance-images`)**:
-   - Uses `expo-image` (Native) and memory/disk LRU caching to eliminate scroll stutter and OOM issues.
-   - SVG fallback placeholders when broadcaster logos are broken or offline.
-3. **Memoized Channel Cards (`list-performance-item-memo`, `rerender-memo`)**:
-   - `ChannelCard` is wrapped in `React.memo` with zero inline functions or inline style objects in render loops.
-4. **Fine-Grained Reactive Subscriptions (`rerender-derived-state`, `react-state-minimize`)**:
-   - Channel items subscribe only to boolean selectors (e.g., `useFavoritesStore(s => s.has(channelId))`), preventing full list re-renders when toggling favorites.
-5. **Non-Blocking Parser (`async-defer-await`, `async-parallel`)**:
-   - Playlist downloading and regex parsing run in a **Web Worker** / background isolate, ensuring 60fps UI responsiveness.
-6. **Offline-First Persistence**:
-   - Playlists and metadata are saved to `IndexedDB` (Web) and `SQLite` (Native) via TanStack Query's offline persister for instant startup (< 100ms).
-
----
-
-## 3. Directory & File Structure
+## 3. Directory Structure with Imported Modules
 
 ```text
-iptv-project/
-├── app/                                 # Expo Router / Application Screens
-│   ├── (tabs)/                          # Main Shell
-│   │   ├── _layout.tsx                  # Adaptive Navigation (Sidebar for Web/TV, Tabs for Mobile)
-│   │   ├── index.tsx                    # Live TV / Channel Browser Screen
-│   │   ├── categories.tsx               # Category Explorer Screen
-│   │   ├── favorites.tsx                # Pinned Favorites Screen
-│   │   ├── history.tsx                  # Watch History Screen
-│   │   └── settings.tsx                 # M3U Source, CORS Proxy, Audio/Sub defaults
-│   ├── player/
-│   │   └── [channelId].tsx              # Fullscreen OSD Video Player Screen
-│   └── _layout.tsx                      # Root Providers (QueryClient, Theme, PlayerProvider)
+f:\Projects\IP-TV\
+├── electron/
+│   ├── main.cjs                         # Enhanced with VLC & MPV child_process spawner
+│   └── preload.cjs                      # Exposes window.electron.openVlc / openMpv
 │
 ├── src/
-│   ├── core/                            # 100% Platform-Agnostic Hexagonal Core
-│   │   ├── domain/                      # Models & Types
-│   │   │   ├── Channel.ts               # Channel, Stream, Group, EPG types
-│   │   │   ├── Track.ts                 # AudioTrack, SubtitleTrack, QualityLevel
-│   │   │   └── Settings.ts              # ProxyConfig, BufferConfig, PlaylistConfig
-│   │   ├── parser/                      # Streaming M3U Parser
-│   │   │   ├── m3uParser.ts             # Single-pass regex parser
-│   │   │   └── m3uParser.worker.ts      # Web Worker for non-blocking execution
-│   │   ├── presets/
-│   │   │   └── iptvOrgPresets.ts        # Index, Categories (News, Sports, etc.), Countries
-│   │   └── ports/                       # Hexagonal Abstract Interfaces
-│   │       ├── IPlayerPort.ts           # play, pause, setAudioTrack, setSubtitleTrack, seek
-│   │       ├── IStoragePort.ts          # getChannels, saveChannels, getFavorites, getHistory
-│   │       ├── ICastPort.ts             # startCast, stopCast, getCastState
-│   │       └── IInputPort.ts            # D-pad and keyboard event contracts
+│   ├── services/
+│   │   ├── playlist/                    # Ported from IPTVnator libs/playlist
+│   │   │   ├── M3UImporter.ts           # Local file reader, URL fetcher & raw text parser
+│   │   │   └── PlaylistStorage.ts       # Multi-playlist IndexedDB storage
+│   │   ├── portal/                      # Ported from IPTVnator libs/portal/xtream
+│   │   │   ├── XtreamClient.ts          # player_api.php authentication & catalog queries
+│   │   │   └── XtreamUrlBuilder.ts      # Live, VOD, and Series streaming URL constructor
+│   │   └── epg/                         # Ported from IPTVnator libs/epg
+│   │       ├── EpgService.ts            # XMLTV parser & program lookup
+│   │       └── EpgTimeline.ts           # "Now Playing" & "Next Up" progress calculation
 │   │
-│   ├── adapters/                        # Concrete Implementations of Ports
+│   ├── stores/
+│   │   ├── useChannelStore.ts           # Active channels catalog & filtering
+│   │   ├── useMultiPlaylistStore.ts     # Multi-playlist manager & active source switcher
+│   │   ├── usePlayerStore.ts            # Playback state, audio/subtitle tracks, OSD timers
+│   │   ├── useEpgStore.ts               # Program guide data cache & channel schedule map
+│   │   └── useSettingsStore.ts          # Application settings & parental controls
+│   │
+│   ├── components/
+│   │   ├── playlist/
+│   │   │   ├── AddPlaylistModal.tsx     # 3 Tabs: Tokerian Free TV, M3U (File/URL), Xtream Codes
+│   │   │   └── PlaylistManagerModal.tsx # Manage, rename, auto-refresh, and delete playlists
+│   │   ├── epg/
+│   │   │   ├── EpgRibbon.tsx            # Live progress bar under player & channel cards
+│   │   │   └── EpgGridModal.tsx         # Multi-channel program guide timeline
+│   │   ├── vod/
+│   │   │   ├── VodCatalog.tsx           # Movies & Series grid with category filters
+│   │   │   └── VodDetailModal.tsx       # Synopsis, cast, duration, and "Continue Watching"
 │   │   ├── player/
-│   │   │   ├── HlsPlayerAdapter.web.ts  # Web & Desktop player via Hls.js
-│   │   │   ├── ExoPlayerAdapter.native.ts# Android Mobile & Android TV via ExoPlayer
-│   │   │   └── PipAdapter.ts            # Native Android PiP & Web HTML5 PiP
-│   │   ├── storage/
-│   │   │   ├── IndexedDbAdapter.web.ts  # Web high-volume IndexedDB storage
-│   │   │   └── SqliteAdapter.native.ts  # Native SQLite / AsyncStorage adapter
-│   │   └── input/
-│   │       ├── DpadNavigation.tv.ts     # Android TV D-pad spatial focus engine
-│   │       └── KeyboardShortcuts.web.ts # Desktop & Web hotkeys (F, M, Space, Up/Down)
+│   │   │   └── VideoPlayer.tsx          # With external player buttons (VLC/MPV) & EPG ribbon
+│   │   ├── settings/
+│   │   │   └── ExtendedSettingsModal.tsx# General, Playback, External Player, EPG, Parental Lock
+│   │   └── command/
+│   │       └── CommandPalette.tsx       # Ctrl+K global search & action launcher
 │   │
-│   ├── stores/                          # Atomic Reactive Stores (Zustand)
-│   │   ├── useChannelStore.ts           # Channel catalogue, active category, search
-│   │   ├── usePlayerStore.ts            # Stream state, tracks, volume, buffering
-│   │   ├── useFavoritesStore.ts         # Fast O(1) Set lookup for pinned channels
-│   │   └── useHistoryStore.ts           # LRU watch history with timestamps
-│   │
-│   ├── components/                      # High-Performance UI Layer
-│   │   ├── channel/
-│   │   │   ├── ChannelList.tsx          # FlashList / VirtualGrid container
-│   │   │   ├── ChannelCard.tsx          # Memoized item (expo-image logo, live badge, focus ring)
-│   │   │   └── CategoryPill.tsx         # Memoized horizontal category chip
-│   │   ├── player/
-│   │   │   ├── VideoSurface.tsx         # Platform-swapped video view
-│   │   │   ├── PlayerControls.tsx       # Auto-hiding OSD overlay
-│   │   │   ├── TrackSelectorModal.tsx   # Multiple audio & subtitle tracks selector
-│   │   │   └── CastButton.tsx           # Chromecast trigger
-│   │   └── ui/                          # Design System Primitives
-│   │       ├── FocusablePressable.tsx   # TV D-pad focus-aware pressable
-│   │       ├── SearchInput.tsx          # Debounced fast-filter input
-│   │       └── GlassModal.tsx           # Glassmorphic modal overlay
-│   │
-│   └── hooks/                           # Reusable Business Hooks
-│       ├── useChannelFilter.ts          # Memoized O(1) Category & Search indexing
-│       ├── useTvFocus.ts                # D-pad remote controller registration
-│       └── useAudioSubtitleTracks.ts   # Track synchronization with PlayerPort
-│
-├── package.json
-└── app.json                             # Expo Configuration (Android TV Leanback, TV banner, Web)
+│   └── utils/
+│       ├── parentalLock.ts              # PIN hashing & category filter
+│       └── channelSanitizer.ts          # Country prefix cleaner
 ```
 
 ---
 
-## 4. Feature Specifications Matrix
+## 4. Phased Implementation Roadmap
 
-| Feature | Web / Desktop Implementation | Mobile & Android TV Implementation |
-| :--- | :--- | :--- |
-| **Channel Listing** | Virtualized grid with CSS `content-visibility: auto` | `@shopify/flash-list` with `estimatedItemSize={72}` |
-| **Categories** | Pre-indexed `group-title -> IDs` map; horizontal pill bar | Pre-indexed horizontal scroll list with TV D-pad focus |
-| **Live Playback** | `hls.js` with adaptive bitrate, auto buffer management | Google `ExoPlayer` with hardware decoding (4K/60fps) |
-| **Search** | Debounced (150ms) input with fuzzy and regex token matching | On-screen TV keyboard / voice input with debounced filter |
-| **Favorites** | `Set<string>` stored in `IndexedDB` with O(1) membership | `Set<string>` stored in `AsyncStorage`/`SQLite` |
-| **Viewing History** | LRU array (max 50) with channel ID and timestamp | LRU array (max 50) with channel ID and timestamp |
-| **Fullscreen Player** | HTML5 Fullscreen API with auto-hiding OSD | Native Fullscreen Activity with auto-hiding OSD |
-| **Multiple Audio Tracks** | `hls.audioTracks` API with selector modal | ExoPlayer `TrackSelectionOverride` selector modal |
-| **Subtitles / Captions** | `hls.subtitleTracks` and WebVTT support | ExoPlayer embedded CEA-608/708 & WebVTT tracks |
-| **Picture-in-Picture** | `video.requestPictureInPicture()` | Android OS native `enterPictureInPictureMode()` |
-| **Casting** | Google Cast Web SDK (Chromecast) | Google Cast SDK for Android / iOS |
-| **Changeable IPTV URL** | Settings modal supporting any custom M3U/M3U8 link | Settings screen with preset dropdown + custom URL field |
-| **CORS Stream Handling** | In-browser CORS Proxy switch with custom proxy input | Native direct streaming (CORS is not enforced on Android) |
-| **10-Foot Remote (TV)** | Keyboard hotkeys (`F`, `M`, `Space`, `Arrows`, `Enter`) | Full D-pad spatial navigation with high-contrast focus rings |
+### Phase 1: Multi-Playlist Engine & M3U / Xtream Import
+- [ ] Install `iptv-playlist-parser` and parser dependencies.
+- [ ] Port `M3UImporter.ts` (File drag-and-drop, remote URL, raw text paste).
+- [ ] Port `XtreamClient.ts` & `XtreamUrlBuilder.ts` (Authentication, categories, live streams, movies, and series).
+- [ ] Implement `useMultiPlaylistStore.ts` with IndexedDB persistence for switching between playlists.
+- [ ] Build `AddPlaylistModal.tsx` and `PlaylistManagerModal.tsx` in UI.
+
+### Phase 2: Electronic Program Guide (EPG / XMLTV) Engine
+- [ ] Install `epg-parser` and port XMLTV parser logic from `libs/epg`.
+- [ ] Implement `EpgService.ts` matching channels by `tvg-id`, `tvg-name`, or channel name.
+- [ ] Build `EpgRibbon.tsx` displaying "Now Playing" and "Next Up" with a live progress percentage bar.
+- [ ] Build `EpgGridModal.tsx` multi-channel timeline schedule matrix.
+
+### Phase 3: Desktop External Players (VLC & MPV via Electron)
+- [ ] Port `external-player-process.ts` logic into `electron/main.cjs`.
+- [ ] Auto-detect standard Windows paths for `vlc.exe` and `mpv.exe`.
+- [ ] Expose `openVlc` and `openMpv` in `electron/preload.cjs`.
+- [ ] Add "Open in VLC" and "Open in MPV" options in the video player OSD and channel menu.
+
+### Phase 4: VOD (Movies) & TV Series Catalog
+- [ ] Add **Live TV**, **Movies**, and **Series** view toggle in header/navigation.
+- [ ] Implement `VodCatalog.tsx` with category filters, poster cards, and sorting (name, rating, date).
+- [ ] Build `VodDetailModal.tsx` with synopsis, episode selector, and "Resume Watching" timestamp tracking.
+
+### Phase 5: Extended Settings, Parental Lock & Command Palette (`Ctrl+K`)
+- [ ] Port Parental Lock PIN verification and category hiding (`parentalLock.ts`).
+- [ ] Implement Country Prefix Cleaner toggle (`channelSanitizer.ts`).
+- [ ] Upgrade Settings modal into a tabbed preferences center (General, Playback, External Players, EPG, Parental Lock).
+- [ ] Implement `CommandPalette.tsx` accessible via `Ctrl+K` for global search and navigation.
 
 ---
 
-## 5. Phased Execution Roadmap
-
-### Phase 1: Foundation, Hexagonal Ports & Streaming Engine
-1. Initialize project structure and dependencies (`zustand`, `@shopify/flash-list`, `expo-image`, `hls.js`, `lucide-react`).
-2. Implement `core/domain` and `core/ports` TypeScript contracts.
-3. Build the non-blocking single-pass M3U parser with `iptv-org` built-in presets.
-4. Set up offline-first storage adapter (`IndexedDB` & `AsyncStorage`).
-
-### Phase 2: High-Performance Channel Browser & Categories
-1. Implement the virtualized channel container with memoized `ChannelCard`s.
-2. Build category pill selector and instant debounced search bar.
-3. Wire O(1) Favorites store and LRU Viewing History store.
-
-### Phase 3: Unified Media Player with Audio/Subtitles & PiP
-1. Implement `HlsPlayerAdapter` (Web/Desktop) and native player hooks.
-2. Build auto-hiding On-Screen Display (OSD) controls with channel zapping (`Prev` / `Next`).
-3. Build Audio Track and Subtitle selector modals.
-4. Implement Picture-in-Picture (PiP) and Fullscreen controls.
-
-### Phase 4: Android TV Spatial Navigation & Settings
-1. Integrate D-pad spatial navigation (`ArrowUp`, `ArrowDown`, `ArrowLeft`, `ArrowRight`, `Enter`, `Back`).
-2. Add high-contrast glowing focus indicators for 10-foot TV viewing.
-3. Build Settings screen for custom M3U playlist URLs, preset switching, and CORS proxy toggles.
-
-### Phase 5: Casting, Mobile Packaging & Production Verification
-1. Add Google Cast support.
-2. Configure Android TV Leanback banner and permissions in `app.json`.
-3. Validate performance with 30,000+ channel master playlist.
+## 5. Verification & Testing Standards
+1. **Compilation**: `npm run build:web` must compile with 0 TypeScript/build errors after every phase.
+2. **Multi-Platform Sync**: `npx cap sync android` must sync web dist assets to Android seamlessly.
+3. **Desktop Executable**: `npm run build:desktop` packages the standalone Windows `.exe` installer.
+4. **Responsive UI**: All newly added dialogs, grids, and ribbons must adhere to the pure Vanilla CSS cinema dark design system and remain fully touch-responsive on small screens and TV D-pad compatible.
