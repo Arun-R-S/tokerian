@@ -242,11 +242,11 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* App Version & Stage Badge (Centralized Tracker) */}
-        <AppVersionBadge
+        {/* <AppVersionBadge
           variant="pill"
           className="header-version-badge"
           showStage={true}
-        />
+        /> */}
       </div>
 
       {/* CENTER SECTION: Centered Pill Search Bar */}

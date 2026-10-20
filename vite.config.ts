@@ -2,6 +2,14 @@ import react from '@vitejs/plugin-react';
 import { defineConfig, type Plugin } from 'vite';
 import http from 'node:http';
 import https from 'node:https';
+import { execSync } from 'node:child_process';
+
+let gitCommit = '8be8681';
+try {
+  gitCommit = execSync('git rev-parse --short HEAD').toString().trim();
+} catch {
+  // fallback if git is not in PATH
+}
 
 function localCorsProxyPlugin(): Plugin {
   return {
@@ -168,4 +176,7 @@ function localCorsProxyPlugin(): Plugin {
 export default defineConfig({
   base: './',
   plugins: [react(), localCorsProxyPlugin()],
+  define: {
+    __APP_GIT_COMMIT__: JSON.stringify(gitCommit),
+  },
 });

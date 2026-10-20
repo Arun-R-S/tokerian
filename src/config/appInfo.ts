@@ -27,12 +27,21 @@ export interface AppConfig {
   codename: string;
   /** ISO date string or release date */
   releaseDate: string;
+  /**
+   * Git commit hash.
+   * Options:
+   * - 'auto': Automatically injected from git HEAD at build/dev time via Vite define
+   * - A specific commit string (e.g. '8be8681') to manually override
+   */
+  commitHash: string;
 }
 
 /**
  * ============================================================================
  * CENTRALIZED APPLICATION CONFIGURATION
- * Edit the version and stage below to change across the entire application.
+ * 
+ * Edit the version, stage, buildNumber, and commitHash below to update
+ * across the entire application (Header, Titlebar, Settings Info page, Sidebar).
  * ============================================================================
  */
 export const APP_CONFIG: AppConfig = {
@@ -42,6 +51,7 @@ export const APP_CONFIG: AppConfig = {
   buildNumber: 105,
   codename: 'Aero Stream',
   releaseDate: '2026-10-20',
+  commitHash: 'auto', // 'auto' pulls latest Git commit automatically; or replace with e.g. '8be8681'
 };
 
 /**
@@ -137,4 +147,19 @@ export function getStageMeta(): StageMeta {
  */
 export function getBuildEnvironment(): 'Development' | 'Production Build' {
   return import.meta.env.DEV ? 'Development' : 'Production Build';
+}
+
+declare const __APP_GIT_COMMIT__: string | undefined;
+
+/**
+ * Returns the short git commit hash (either manually configured or injected by Vite at build/dev time)
+ */
+export function getCommitHash(): string {
+  if (APP_CONFIG.commitHash && APP_CONFIG.commitHash !== 'auto') {
+    return APP_CONFIG.commitHash;
+  }
+  if (typeof __APP_GIT_COMMIT__ !== 'undefined' && __APP_GIT_COMMIT__) {
+    return __APP_GIT_COMMIT__;
+  }
+  return '8be8681';
 }
