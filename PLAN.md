@@ -104,18 +104,18 @@ f:\Projects\IP-TV\
 
 ## 4. Phased Implementation Roadmap
 
-### Phase 1: Multi-Playlist Engine & M3U / Xtream Import
-- [ ] Install `iptv-playlist-parser` and parser dependencies.
-- [ ] Port `M3UImporter.ts` (File drag-and-drop, remote URL, raw text paste).
-- [ ] Port `XtreamClient.ts` & `XtreamUrlBuilder.ts` (Authentication, categories, live streams, movies, and series).
-- [ ] Implement `useMultiPlaylistStore.ts` with IndexedDB persistence for switching between playlists.
-- [ ] Build `AddPlaylistModal.tsx` and `PlaylistManagerModal.tsx` in UI.
+### Phase 1: Multi-Playlist Engine & M3U / Xtream Import (COMPLETED)
+- [x] Install `iptv-playlist-parser` and parser dependencies.
+- [x] Port `M3UImporter.ts` (File drag-and-drop, remote URL, raw text paste).
+- [x] Port `XtreamClient.ts` & `XtreamUrlBuilder.ts` (Authentication, categories, live streams, movies, and series).
+- [x] Implement `useMultiPlaylistStore.ts` with IndexedDB persistence for switching between playlists.
+- [x] Build `AddPlaylistModal.tsx` and `PlaylistManagerModal.tsx` in UI.
 
-### Phase 2: Electronic Program Guide (EPG / XMLTV) Engine
-- [ ] Install `epg-parser` and port XMLTV parser logic from `libs/epg`.
-- [ ] Implement `EpgService.ts` matching channels by `tvg-id`, `tvg-name`, or channel name.
-- [ ] Build `EpgRibbon.tsx` displaying "Now Playing" and "Next Up" with a live progress percentage bar.
-- [ ] Build `EpgGridModal.tsx` multi-channel timeline schedule matrix.
+### Phase 2: Electronic Program Guide (EPG / XMLTV) Engine (COMPLETED)
+- [x] Install `epg-parser` and port XMLTV parser logic from `libs/epg`.
+- [x] Implement `EpgService.ts` matching channels by `tvg-id`, `tvg-name`, or channel name.
+- [x] Build `EpgRibbon.tsx` displaying "Now Playing" and "Next Up" with a live progress percentage bar.
+- [x] Build `EpgGridModal.tsx` multi-channel timeline schedule matrix.
 
 ### Phase 3: Desktop External Players (VLC & MPV via Electron)
 - [ ] Port `external-player-process.ts` logic into `electron/main.cjs`.

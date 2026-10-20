@@ -8,12 +8,14 @@ import { VideoPlayer } from './components/player/VideoPlayer';
 import { SettingsModal } from './components/settings/SettingsModal';
 import { AddPlaylistModal } from './components/playlist/AddPlaylistModal';
 import { PlaylistManagerModal } from './components/playlist/PlaylistManagerModal';
+import { EpgGridModal } from './components/epg/EpgGridModal';
 
 import { useChannelStore } from './stores/useChannelStore';
 import { useSettingsStore } from './stores/useSettingsStore';
 import { useUserStore } from './stores/useUserStore';
 import { usePlayerStore } from './stores/usePlayerStore';
 import { useMultiPlaylistStore } from './stores/useMultiPlaylistStore';
+import { useEpgStore } from './stores/useEpgStore';
 import { dpadNavigation } from './adapters/input/DpadNavigationAdapter';
 
 import './styles/index.css';
@@ -25,6 +27,7 @@ export function App() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isAddPlaylistOpen, setIsAddPlaylistOpen] = useState(false);
   const [isPlaylistManagerOpen, setIsPlaylistManagerOpen] = useState(false);
+  const [isEpgGridOpen, setIsEpgGridOpen] = useState(false);
 
   const m3uUrl = useSettingsStore((s) => s.m3uUrl);
   const loadInitialSettings = useSettingsStore((s) => s.loadInitialSettings);
@@ -33,6 +36,8 @@ export function App() {
   const loadUserData = useUserStore((s) => s.loadUserData);
   const loadPlaylist = useChannelStore((s) => s.loadPlaylist);
   const initPlaylists = useMultiPlaylistStore((s) => s.initPlaylists);
+  const playlists = useMultiPlaylistStore((s) => s.playlists);
+  const activePlaylistId = useMultiPlaylistStore((s) => s.activePlaylistId);
   const currentChannel = usePlayerStore((s) => s.currentChannel);
   const togglePlay = usePlayerStore((s) => s.togglePlay);
   const toggleMute = usePlayerStore((s) => s.toggleMute);
@@ -56,6 +61,31 @@ export function App() {
     init();
   }, [loadInitialSettings, loadUserData, initPlaylists, loadPlaylist, m3uUrl]);
 
+  // EPG Periodic Ticker: Update current time every 30 seconds for live progress ribbon & grid
+  useEffect(() => {
+    const ticker = setInterval(() => {
+      useEpgStore.getState().updateCurrentTime();
+    }, 30000);
+    return () => clearInterval(ticker);
+  }, []);
+
+  // Auto-fetch EPG when active playlist changes (if playlist defines epgUrls)
+  useEffect(() => {
+    const active = playlists.find((p) => p.id === activePlaylistId);
+    if (active?.epgUrls && active.epgUrls.length > 0) {
+      useEpgStore.getState().loadEpgUrl(active.epgUrls[0]);
+    }
+  }, [activePlaylistId, playlists]);
+
+  // Fetch Xtream live EPG whenever playing channel changes on an Xtream playlist
+  useEffect(() => {
+    if (!currentChannel) return;
+    const active = playlists.find((p) => p.id === activePlaylistId);
+    if (active?.type === 'xtream' && active.credentials && currentChannel.id) {
+      useEpgStore.getState().loadXtreamEpg(active.credentials, currentChannel.id);
+    }
+  }, [currentChannel, activePlaylistId, playlists]);
+
   // Setup Global Keyboard & TV Remote Navigation
   useEffect(() => {
     dpadNavigation.start();
@@ -67,8 +97,14 @@ export function App() {
       onChannelNext: () => zapNext(),
       onChannelPrev: () => zapPrev(),
       onBack: () => {
-        if (isSettingsOpen) {
+        if (isEpgGridOpen) {
+          setIsEpgGridOpen(false);
+        } else if (isSettingsOpen) {
           setIsSettingsOpen(false);
+        } else if (isPlaylistManagerOpen) {
+          setIsPlaylistManagerOpen(false);
+        } else if (isAddPlaylistOpen) {
+          setIsAddPlaylistOpen(false);
         } else if (isMobileSidebarOpen) {
           setIsMobileSidebarOpen(false);
         }
@@ -83,6 +119,8 @@ export function App() {
         toggleMute();
       } else if (e.key === 'f' || e.key === 'F') {
         toggleFullscreen();
+      } else if (e.key === 'g' || e.key === 'G' || e.key === 'e' || e.key === 'E') {
+        setIsEpgGridOpen((prev) => !prev);
       }
     };
 
@@ -93,7 +131,19 @@ export function App() {
       unsubscribe();
       window.removeEventListener('keydown', handleGlobalShortcuts);
     };
-  }, [currentChannel, isSettingsOpen, isMobileSidebarOpen, togglePlay, toggleMute, toggleFullscreen, zapNext, zapPrev]);
+  }, [
+    currentChannel,
+    isEpgGridOpen,
+    isSettingsOpen,
+    isPlaylistManagerOpen,
+    isAddPlaylistOpen,
+    isMobileSidebarOpen,
+    togglePlay,
+    toggleMute,
+    toggleFullscreen,
+    zapNext,
+    zapPrev,
+  ]);
 
   return (
     <div className={`tokerian-shell ${tvMode ? 'tv-mode-active' : ''}`}>
@@ -101,6 +151,7 @@ export function App() {
       <Header
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenPlaylists={() => setIsPlaylistManagerOpen(true)}
+        onOpenEpgGuide={() => setIsEpgGridOpen(true)}
         onToggleMobileMenu={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
       />
 
@@ -110,6 +161,7 @@ export function App() {
           activeTab={activeTab}
           onTabChange={setActiveTab}
           onOpenPlaylists={() => setIsPlaylistManagerOpen(true)}
+          onOpenEpgGuide={() => setIsEpgGridOpen(true)}
           isMobileOpen={isMobileSidebarOpen}
           onCloseMobile={() => setIsMobileSidebarOpen(false)}
         />
@@ -117,7 +169,7 @@ export function App() {
         {/* Center Main Browsing Area */}
         <main className="tokerian-main">
           {/* Top Video Player (if a channel is currently loaded) */}
-          {currentChannel && <VideoPlayer />}
+          {currentChannel && <VideoPlayer onOpenEpgGuide={() => setIsEpgGridOpen(true)} />}
 
           {/* Category Quick Filter Pills (visible in channels tab) */}
           {activeTab === 'channels' && <CategoryPills />}
@@ -152,6 +204,12 @@ export function App() {
       <AddPlaylistModal
         isOpen={isAddPlaylistOpen}
         onClose={() => setIsAddPlaylistOpen(false)}
+      />
+
+      {/* Fullscreen Multi-Channel EPG Timeline Matrix */}
+      <EpgGridModal
+        isOpen={isEpgGridOpen}
+        onClose={() => setIsEpgGridOpen(false)}
       />
     </div>
   );

@@ -1,16 +1,22 @@
 import React from 'react';
 import { useChannelStore } from '../../stores/useChannelStore';
 import { useSettingsStore } from '../../stores/useSettingsStore';
-import { Search, Sliders, Tv, Radio, X, Menu, FolderPlus } from 'lucide-react';
+import { Search, Sliders, Tv, Radio, X, Menu, FolderPlus, Calendar } from 'lucide-react';
 import { useMultiPlaylistStore } from '../../stores/useMultiPlaylistStore';
 
 interface HeaderProps {
   onOpenSettings: () => void;
   onOpenPlaylists?: () => void;
+  onOpenEpgGuide?: () => void;
   onToggleMobileMenu?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenPlaylists, onToggleMobileMenu }) => {
+export const Header: React.FC<HeaderProps> = ({
+  onOpenSettings,
+  onOpenPlaylists,
+  onOpenEpgGuide,
+  onToggleMobileMenu,
+}) => {
   const activePlaylistId = useMultiPlaylistStore((s) => s.activePlaylistId);
   const playlists = useMultiPlaylistStore((s) => s.playlists);
   const activePlaylist = playlists.find((p) => p.id === activePlaylistId);
@@ -91,6 +97,18 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenPlaylists,
             <span>{channels.length.toLocaleString()} Channels</span>
           )}
         </div>
+
+        {/* TV Guide (EPG Matrix) Button */}
+        {onOpenEpgGuide && (
+          <button
+            type="button"
+            onClick={onOpenEpgGuide}
+            className="tokerian-btn-icon"
+            title="TV Guide & Schedule (EPG Matrix)"
+          >
+            <Calendar size={18} />
+          </button>
+        )}
 
         {/* TV Mode Toggle */}
         <button

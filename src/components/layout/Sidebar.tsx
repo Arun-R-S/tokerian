@@ -16,6 +16,7 @@ import {
   Pause,
   X,
   FolderPlus,
+  Calendar,
 } from 'lucide-react';
 
 export type SidebarTab = 'channels' | 'favorites' | 'history';
@@ -24,6 +25,7 @@ interface SidebarProps {
   activeTab: SidebarTab;
   onTabChange: (tab: SidebarTab) => void;
   onOpenPlaylists?: () => void;
+  onOpenEpgGuide?: () => void;
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
 }
@@ -32,6 +34,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   onTabChange,
   onOpenPlaylists,
+  onOpenEpgGuide,
   isMobileOpen = false,
   onCloseMobile,
 }) => {
@@ -132,6 +135,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               <FolderPlus size={18} />
               <span>Playlists & Sources</span>
+            </button>
+          )}
+
+          {onOpenEpgGuide && (
+            <button
+              type="button"
+              tabIndex={0}
+              onClick={() => {
+                onOpenEpgGuide();
+                onCloseMobile?.();
+              }}
+              className="sidebar-nav-item"
+            >
+              <Calendar size={18} />
+              <span>TV Guide & Schedule</span>
             </button>
           )}
         </div>

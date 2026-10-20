@@ -20,9 +20,15 @@ import {
   AlertTriangle,
   Radio,
   X,
+  Calendar,
 } from 'lucide-react';
+import { EpgRibbon } from '../epg/EpgRibbon';
 
-export const VideoPlayer: React.FC = () => {
+interface VideoPlayerProps {
+  onOpenEpgGuide?: () => void;
+}
+
+export const VideoPlayer: React.FC<VideoPlayerProps> = ({ onOpenEpgGuide }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const osdTimerRef = useRef<number | null>(null);
@@ -381,6 +387,16 @@ export const VideoPlayer: React.FC = () => {
           </div>
 
           <div className="osd-top-actions">
+            {onOpenEpgGuide && (
+              <button
+                type="button"
+                onClick={onOpenEpgGuide}
+                className="tokerian-btn-icon"
+                title="TV Guide & Schedule (EPG)"
+              >
+                <Calendar size={18} />
+              </button>
+            )}
             <button
               type="button"
               onClick={() => toggleFavorite(currentChannel.id)}
@@ -398,6 +414,15 @@ export const VideoPlayer: React.FC = () => {
               <X size={18} />
             </button>
           </div>
+        </div>
+
+        {/* Middle Floating Area: Live EPG Program Ribbon */}
+        <div style={{ maxWidth: '480px', margin: 'auto 0 10px 0', pointerEvents: 'auto' }}>
+          <EpgRibbon
+            tvgId={currentChannel.tvgId}
+            channelName={currentChannel.name}
+            onOpenFullGuide={onOpenEpgGuide}
+          />
         </div>
 
         {/* Bottom Bar: Playback Controls */}
