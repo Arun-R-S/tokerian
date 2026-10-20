@@ -126,6 +126,20 @@ export const VideoPlayer: React.FC = () => {
     };
   }, [isPlaying]);
 
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        toggleFullscreen();
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [toggleFullscreen]);
+
   if (!currentChannel) return null;
 
   const handleCastClick = () => {
@@ -149,6 +163,7 @@ export const VideoPlayer: React.FC = () => {
         playsInline
         className="video-canvas"
         onClick={togglePlay}
+        onDoubleClick={toggleFullscreen}
       />
 
       {/* Buffering Indicator */}

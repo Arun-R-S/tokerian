@@ -40,6 +40,7 @@ interface PlayerState {
   selectQualityLevel: (id: number) => void;
   togglePiP: () => Promise<void>;
   toggleFullscreen: () => void;
+  setIsFullscreen: (isFs: boolean) => void;
   zapNext: () => void;
   zapPrev: () => void;
   clearError: () => void;
@@ -47,6 +48,15 @@ interface PlayerState {
 }
 
 export const usePlayerStore = create<PlayerState>((set, get) => {
+  // Sync native browser fullscreen change events
+  if (typeof document !== 'undefined') {
+    const syncFs = () => {
+      set({ isFullscreen: !!document.fullscreenElement });
+    };
+    document.addEventListener('fullscreenchange', syncFs);
+    document.addEventListener('webkitfullscreenchange', syncFs);
+  }
+
   // Subscribe to low-level player adapter state changes
   playerAdapter.onStateChange((state) => {
     set({
@@ -183,12 +193,23 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
     toggleFullscreen: () => {
       const isCurrentlyFs = !!document.fullscreenElement;
       if (!isCurrentlyFs) {
-        document.documentElement.requestFullscreen?.().catch(console.warn);
+        const playerEl = document.querySelector('.video-player-container');
+        if (playerEl && playerEl.requestFullscreen) {
+          playerEl.requestFullscreen().catch(() => {
+            document.documentElement.requestFullscreen?.().catch(console.warn);
+          });
+        } else {
+          document.documentElement.requestFullscreen?.().catch(console.warn);
+        }
         set({ isFullscreen: true });
       } else {
         document.exitFullscreen?.().catch(console.warn);
         set({ isFullscreen: false });
       }
+    },
+
+    setIsFullscreen: (isFs: boolean) => {
+      set({ isFullscreen: isFs });
     },
 
     zapNext: () => {
