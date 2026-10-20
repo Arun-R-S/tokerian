@@ -9,10 +9,20 @@ interface SettingsState extends Settings {
   resolveStreamUrl: (rawUrl: string, forceMode?: 'direct' | 'proxy') => string;
 }
 
+const getPreferredProxy = () => {
+  if (
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ) {
+    return '/api/proxy?url=';
+  }
+  return DEFAULT_CORS_PROXY;
+};
+
 export const useSettingsStore = create<SettingsState>((set, get) => ({
   m3uUrl: DEFAULT_PLAYLIST_URL,
   corsProxyEnabled: false,
-  corsProxyUrl: DEFAULT_CORS_PROXY,
+  corsProxyUrl: getPreferredProxy(),
   bufferLength: 30,
   autoPlayNextOnError: true,
   hardwareAcceleration: true,
@@ -28,6 +38,13 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   loadInitialSettings: async () => {
     const saved = await storageAdapter.getSettings();
     if (saved) {
+      if (
+        typeof window !== 'undefined' &&
+        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') &&
+        saved.corsProxyUrl?.includes('corsproxy.io')
+      ) {
+        saved.corsProxyUrl = '/api/proxy?url=';
+      }
       set(saved);
     }
   },

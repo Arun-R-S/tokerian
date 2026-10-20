@@ -71,6 +71,24 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
     });
   });
 
+  let hasAttemptedFallback = false;
+  let currentRoutingMode: 'direct' | 'proxy' = 'direct';
+
+  // Self-healing automatic stream router
+  playerAdapter.setFallbackHandler((_failedUrl, _is403) => {
+    const { currentChannel } = get();
+    if (!currentChannel || hasAttemptedFallback) {
+      return false;
+    }
+
+    hasAttemptedFallback = true;
+    const nextMode = currentRoutingMode === 'direct' ? 'proxy' : 'direct';
+    console.info(`Self-healing stream: Retrying "${currentChannel.name}" via ${nextMode} mode...`);
+
+    get().playChannel(currentChannel, nextMode);
+    return true;
+  });
+
   return {
     currentChannel: null,
     isPlaying: false,
@@ -99,13 +117,20 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
     },
 
     playChannel: async (channel: Channel, forceMode?: 'direct' | 'proxy') => {
+      if (!forceMode) {
+        hasAttemptedFallback = false;
+        currentRoutingMode = useSettingsStore.getState().corsProxyEnabled ? 'proxy' : 'direct';
+      } else {
+        currentRoutingMode = forceMode;
+      }
+
       set({ currentChannel: channel, error: null, isBuffering: true });
 
       // Record in watch history
       useUserStore.getState().addToHistory(channel);
 
       // Resolve stream URL (supports direct or proxy routing)
-      const resolvedUrl = useSettingsStore.getState().resolveStreamUrl(channel.url, forceMode);
+      const resolvedUrl = useSettingsStore.getState().resolveStreamUrl(channel.url, currentRoutingMode);
 
       try {
         await playerAdapter.loadStream(resolvedUrl);

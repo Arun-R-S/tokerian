@@ -18,6 +18,7 @@ import {
   Cast,
   RotateCcw,
   AlertTriangle,
+  Radio,
   X,
 } from 'lucide-react';
 
@@ -62,7 +63,37 @@ export const VideoPlayer: React.FC = () => {
   const toggleFavorite = useUserStore((s) => s.toggleFavorite);
 
   const corsProxyEnabled = useSettingsStore((s) => s.corsProxyEnabled);
+  const autoPlayNextOnError = useSettingsStore((s) => s.autoPlayNextOnError);
   const updateSettings = useSettingsStore((s) => s.updateSettings);
+
+  const [autoSkipCountdown, setAutoSkipCountdown] = useState<number | null>(null);
+
+  // Auto-skip countdown when channel is offline or encounters fatal error
+  useEffect(() => {
+    if (!error || !autoPlayNextOnError) {
+      setAutoSkipCountdown(null);
+      return;
+    }
+
+    // Start 4-second countdown before auto-zapping
+    setAutoSkipCountdown(4);
+
+    const interval = window.setInterval(() => {
+      setAutoSkipCountdown((prev) => {
+        if (prev === null) return null;
+        if (prev <= 1) {
+          window.clearInterval(interval);
+          zapNext();
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [error, currentChannel?.id, autoPlayNextOnError, zapNext]);
 
   // Attach video element immediately using callback ref
   const setVideoRef = (node: HTMLVideoElement | null) => {
@@ -128,39 +159,88 @@ export const VideoPlayer: React.FC = () => {
         </div>
       )}
 
-      {/* Error Overlay with CORS Proxy Prompt */}
+      {/* Error / Offline Overlay */}
       {error && (
         <div className="player-error-overlay">
-          <AlertTriangle size={36} color="#ef4444" />
-          <h4 className="error-title">Stream Playback Error</h4>
-          <p className="error-description">{error}</p>
-          <div className="error-actions">
-            <button
-              type="button"
-              onClick={() => playChannel(currentChannel)}
-              className="tokerian-btn tokerian-btn-primary"
-            >
-              <RotateCcw size={16} /> Retry Channel
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                const nextMode = !corsProxyEnabled;
-                updateSettings({ corsProxyEnabled: nextMode });
-                playChannel(currentChannel, nextMode ? 'proxy' : 'direct');
-              }}
-              className="tokerian-btn tokerian-btn-primary"
-            >
-              {corsProxyEnabled ? 'Switch to Direct Connection' : 'Try via CORS Proxy'}
-            </button>
-            <button
-              type="button"
-              onClick={zapNext}
-              className="tokerian-btn"
-            >
-              <SkipForward size={16} /> Next Channel
-            </button>
-          </div>
+          {error.includes('Offline') || error.includes('404') ? (
+            <>
+              <Radio size={40} className="text-muted" style={{ opacity: 0.6 }} />
+              <h4 className="error-title">Channel Currently Offline</h4>
+              <p className="error-description">
+                The broadcaster server for <strong>{currentChannel.name}</strong> returned HTTP 404 Not Found.
+                This stream is temporarily down or has been decommissioned by the broadcaster.
+              </p>
+              {autoSkipCountdown !== null && (
+                <p style={{ color: 'var(--color-primary)', fontSize: '0.9rem', marginBottom: '12px' }}>
+                  Auto-skipping to next channel in <strong>{autoSkipCountdown}s</strong>...
+                </p>
+              )}
+              <div className="error-actions">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAutoSkipCountdown(null);
+                    zapNext();
+                  }}
+                  className="tokerian-btn tokerian-btn-primary"
+                >
+                  <SkipForward size={16} /> Skip to Next Channel
+                </button>
+                {autoSkipCountdown !== null && (
+                  <button
+                    type="button"
+                    onClick={() => setAutoSkipCountdown(null)}
+                    className="tokerian-btn"
+                  >
+                    Cancel Auto-Skip
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAutoSkipCountdown(null);
+                    playChannel(currentChannel);
+                  }}
+                  className="tokerian-btn"
+                >
+                  <RotateCcw size={16} /> Retry Feed
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <AlertTriangle size={36} color="#ef4444" />
+              <h4 className="error-title">Stream Playback Issue</h4>
+              <p className="error-description">{error}</p>
+              <div className="error-actions">
+                <button
+                  type="button"
+                  onClick={() => playChannel(currentChannel)}
+                  className="tokerian-btn tokerian-btn-primary"
+                >
+                  <RotateCcw size={16} /> Retry Channel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextMode = !corsProxyEnabled;
+                    updateSettings({ corsProxyEnabled: nextMode });
+                    playChannel(currentChannel, nextMode ? 'proxy' : 'direct');
+                  }}
+                  className="tokerian-btn"
+                >
+                  {corsProxyEnabled ? 'Switch to Direct Connection' : 'Try via CORS Proxy'}
+                </button>
+                <button
+                  type="button"
+                  onClick={zapNext}
+                  className="tokerian-btn"
+                >
+                  <SkipForward size={16} /> Next Channel
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
 

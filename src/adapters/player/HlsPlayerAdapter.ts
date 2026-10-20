@@ -17,6 +17,11 @@ export class HlsPlayerAdapter implements IPlayerPort {
   private error: string | null = null;
   private currentUrl: string | null = null;
   private pendingStreamUrl: string | null = null;
+  private fallbackHandler: ((url: string, is403: boolean) => boolean) | null = null;
+
+  setFallbackHandler(handler: ((url: string, is403: boolean) => boolean) | null): void {
+    this.fallbackHandler = handler;
+  }
 
   getCurrentUrl(): string | null {
     return this.currentUrl;
@@ -111,14 +116,30 @@ export class HlsPlayerAdapter implements IPlayerPort {
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR: {
               networkRetryCount++;
-              const is403 = data.response?.code === 403;
+              const statusCode = data.response?.code;
+              const is403 = statusCode === 403;
+              const is404 = statusCode === 404;
+
+              if (is404) {
+                this.error = 'Channel Offline: This broadcast feed is currently unavailable (HTTP 404 Not Found from broadcaster).';
+                this.isBuffering = false;
+                this.notifyState();
+                this.destroy();
+                break;
+              }
+
+              // Check if auto-fallback routing is possible (e.g. direct -> proxy or proxy -> direct)
+              if (this.fallbackHandler && this.fallbackHandler(url, is403)) {
+                return;
+              }
+
               if (networkRetryCount <= 2 && !is403) {
                 console.warn(`HLS Network Error, attempting recovery (${networkRetryCount}/2)...`);
                 hls.startLoad();
               } else {
                 this.error = is403
                   ? 'HTTP 403 Forbidden: Stream blocked by proxy or CDN. Try switching connection mode.'
-                  : `Network Error: Stream unreachable (${data.details || 'failed to fetch'})`;
+                  : `CORS / Network Error: Stream blocked by browser CORS policy. Try switching connection mode.`;
                 this.isBuffering = false;
                 this.notifyState();
                 this.destroy();
