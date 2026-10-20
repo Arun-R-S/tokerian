@@ -189,12 +189,12 @@
   - Top filter bar with view toggle (**Grid View** vs **Table / List View**).
   - Channel cards with hover play overlay and favorite heart toggle.
 
-### Step 4: Video Player & Full Cinema OSD
-- [ ] Refine `VideoPlayer.tsx` to match IPTVnator OSD:
-  - Top bar with back `✕` button, logo, title, and current program timeline (`18:00 - 19:30`).
-  - Bottom bar with play/pause, seek, volume, audio tracks, subtitles, quality, and external player buttons.
-  - Integrated EPG ribbon along the bottom.
-  - Side slide-in quick zap channel drawer.
+### Step 4: Video Player & Full Cinema OSD (COMPLETED)
+- [x] Refine `VideoPlayer.tsx` to match IPTVnator OSD:
+  - Top bar with close `✕` button (`ESC`), logo, sanitized title, red `• LIVE` badge, and current program timeline interval (`18:00 - 19:30`).
+  - Bottom bar with play/pause (`Space`), 10-second seek forward (`ArrowRight`) and rewind (`ArrowLeft`), volume slider (`M`), audio tracks selector, subtitles/captions menu, stream quality selector (Auto/1080p/720p), and external VLC/MPV player launcher.
+  - Middle floating real-time EPG ribbon.
+  - Side slide-in quick zap channel drawer (`Z` key or top right toggle) with instant live search and channel switching without interrupting playback.
 
 ### Step 5: Multi-Platform Responsive & TV Remote Optimization
 - [ ] **Mobile**: Ensure bottom navigation bar and mobile drawer are pixel-perfect.
