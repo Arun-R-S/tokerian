@@ -6,12 +6,12 @@ import { storageAdapter } from '../adapters/storage/IndexedDbAdapter';
 interface SettingsState extends Settings {
   updateSettings: (newSettings: Partial<Settings>) => Promise<void>;
   loadInitialSettings: () => Promise<void>;
-  resolveStreamUrl: (rawUrl: string) => string;
+  resolveStreamUrl: (rawUrl: string, forceMode?: 'direct' | 'proxy') => string;
 }
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
   m3uUrl: DEFAULT_PLAYLIST_URL,
-  corsProxyEnabled: true,
+  corsProxyEnabled: false,
   corsProxyUrl: DEFAULT_CORS_PROXY,
   bufferLength: 30,
   autoPlayNextOnError: true,
@@ -32,16 +32,23 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     }
   },
 
-  resolveStreamUrl: (rawUrl: string) => {
-    const { corsProxyEnabled, corsProxyUrl } = get();
-    if (!corsProxyEnabled || !rawUrl) return rawUrl;
-    
-    // If URL is already proxied, do not double-proxy
+  resolveStreamUrl: (rawUrl: string, forceMode?: 'direct' | 'proxy') => {
+    if (!rawUrl) return '';
+
+    // If already proxied, do not double proxy
     if (rawUrl.startsWith('http://localhost') || rawUrl.includes('corsproxy.io')) {
       return rawUrl;
     }
 
-    // Direct playback for HTTPS if proxy not strictly needed, but corsproxy.io fixes missing CORS headers
-    return `${corsProxyUrl}${encodeURIComponent(rawUrl)}`;
+    if (forceMode === 'direct') return rawUrl;
+
+    const { corsProxyEnabled, corsProxyUrl } = get();
+    const shouldUseProxy = forceMode === 'proxy' || corsProxyEnabled;
+
+    if (shouldUseProxy) {
+      return `${corsProxyUrl}${encodeURIComponent(rawUrl)}`;
+    }
+
+    return rawUrl;
   },
 }));

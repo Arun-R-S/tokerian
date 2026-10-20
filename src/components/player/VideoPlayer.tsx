@@ -145,12 +145,13 @@ export const VideoPlayer: React.FC = () => {
             <button
               type="button"
               onClick={() => {
-                updateSettings({ corsProxyEnabled: !corsProxyEnabled });
-                playChannel(currentChannel);
+                const nextMode = !corsProxyEnabled;
+                updateSettings({ corsProxyEnabled: nextMode });
+                playChannel(currentChannel, nextMode ? 'proxy' : 'direct');
               }}
-              className="tokerian-btn"
+              className="tokerian-btn tokerian-btn-primary"
             >
-              {corsProxyEnabled ? 'Try Without Proxy' : 'Enable CORS Proxy'}
+              {corsProxyEnabled ? 'Switch to Direct Connection' : 'Try via CORS Proxy'}
             </button>
             <button
               type="button"

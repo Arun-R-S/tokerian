@@ -104,13 +104,27 @@ export class HlsPlayerAdapter implements IPlayerPort {
         this.notifyTracks();
       });
 
+      let networkRetryCount = 0;
+
       hls.on(Hls.Events.ERROR, (_, data) => {
         if (data.fatal) {
           switch (data.type) {
-            case Hls.ErrorTypes.NETWORK_ERROR:
-              console.warn('HLS Fatal Network Error, trying recovery...');
-              hls.startLoad();
+            case Hls.ErrorTypes.NETWORK_ERROR: {
+              networkRetryCount++;
+              const is403 = data.response?.code === 403;
+              if (networkRetryCount <= 2 && !is403) {
+                console.warn(`HLS Network Error, attempting recovery (${networkRetryCount}/2)...`);
+                hls.startLoad();
+              } else {
+                this.error = is403
+                  ? 'HTTP 403 Forbidden: Stream blocked by proxy or CDN. Try switching connection mode.'
+                  : `Network Error: Stream unreachable (${data.details || 'failed to fetch'})`;
+                this.isBuffering = false;
+                this.notifyState();
+                this.destroy();
+              }
               break;
+            }
             case Hls.ErrorTypes.MEDIA_ERROR:
               console.warn('HLS Fatal Media Error, trying recovery...');
               hls.recoverMediaError();

@@ -30,7 +30,7 @@ interface PlayerState {
 
   // Actions
   attachVideoElement: (video: HTMLVideoElement) => void;
-  playChannel: (channel: Channel) => Promise<void>;
+  playChannel: (channel: Channel, forceMode?: 'direct' | 'proxy') => Promise<void>;
   togglePlay: () => Promise<void>;
   setVolume: (volume: number) => void;
   toggleMute: () => void;
@@ -98,14 +98,14 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
       playerAdapter.attachMedia(video);
     },
 
-    playChannel: async (channel: Channel) => {
+    playChannel: async (channel: Channel, forceMode?: 'direct' | 'proxy') => {
       set({ currentChannel: channel, error: null, isBuffering: true });
 
       // Record in watch history
       useUserStore.getState().addToHistory(channel);
 
-      // Resolve stream URL (with proxy if needed on Web)
-      const resolvedUrl = useSettingsStore.getState().resolveStreamUrl(channel.url);
+      // Resolve stream URL (supports direct or proxy routing)
+      const resolvedUrl = useSettingsStore.getState().resolveStreamUrl(channel.url, forceMode);
 
       try {
         await playerAdapter.loadStream(resolvedUrl);
