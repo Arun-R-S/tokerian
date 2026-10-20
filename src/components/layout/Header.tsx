@@ -4,11 +4,15 @@ import { useSettingsStore } from '../../stores/useSettingsStore';
 import { Search, Sliders, Tv, Radio, X, Menu, FolderPlus, Calendar } from 'lucide-react';
 import { useMultiPlaylistStore } from '../../stores/useMultiPlaylistStore';
 
+import type { SidebarTab } from './Sidebar';
+
 interface HeaderProps {
   onOpenSettings: () => void;
   onOpenPlaylists?: () => void;
   onOpenEpgGuide?: () => void;
   onToggleMobileMenu?: () => void;
+  activeTab?: SidebarTab;
+  onTabChange?: (tab: SidebarTab) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -16,6 +20,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenPlaylists,
   onOpenEpgGuide,
   onToggleMobileMenu,
+  activeTab = 'channels',
+  onTabChange,
 }) => {
   const activePlaylistId = useMultiPlaylistStore((s) => s.activePlaylistId);
   const playlists = useMultiPlaylistStore((s) => s.playlists);
@@ -48,9 +54,49 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
         <div className="brand-text-col">
           <h1 className="brand-title">Tokerian</h1>
-          <span className="brand-subtitle">Live Stream Hub</span>
+          <span className="brand-subtitle">Cinema & Live Hub</span>
         </div>
       </div>
+
+      {/* Content Mode Switcher: Live TV | Movies | Series */}
+      {onTabChange && (
+        <div
+          className="header-view-switcher"
+          style={{
+            display: 'flex',
+            gap: '4px',
+            background: 'rgba(255, 255, 255, 0.04)',
+            padding: '3px',
+            borderRadius: 'var(--radius-full)',
+            border: '1px solid var(--border-subtle)',
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => onTabChange('channels')}
+            className={`tokerian-btn ${activeTab === 'channels' ? 'tokerian-btn-primary' : ''}`}
+            style={{ fontSize: '0.78rem', padding: '4px 12px', borderRadius: 'var(--radius-full)', border: 'none' }}
+          >
+            Live TV
+          </button>
+          <button
+            type="button"
+            onClick={() => onTabChange('movies')}
+            className={`tokerian-btn ${activeTab === 'movies' ? 'tokerian-btn-primary' : ''}`}
+            style={{ fontSize: '0.78rem', padding: '4px 12px', borderRadius: 'var(--radius-full)', border: 'none' }}
+          >
+            Movies
+          </button>
+          <button
+            type="button"
+            onClick={() => onTabChange('series')}
+            className={`tokerian-btn ${activeTab === 'series' ? 'tokerian-btn-primary' : ''}`}
+            style={{ fontSize: '0.78rem', padding: '4px 12px', borderRadius: 'var(--radius-full)', border: 'none' }}
+          >
+            Series
+          </button>
+        </div>
+      )}
 
       {/* Instant Search Bar */}
       <div className="header-search-wrapper">

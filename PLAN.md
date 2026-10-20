@@ -123,10 +123,10 @@ f:\Projects\IP-TV\
 - [x] Expose `openVlc` and `openMpv` in `electron/preload.cjs`.
 - [x] Add "Open in VLC" and "Open in MPV" options in the video player OSD and channel menu.
 
-### Phase 4: VOD (Movies) & TV Series Catalog
-- [ ] Add **Live TV**, **Movies**, and **Series** view toggle in header/navigation.
-- [ ] Implement `VodCatalog.tsx` with category filters, poster cards, and sorting (name, rating, date).
-- [ ] Build `VodDetailModal.tsx` with synopsis, episode selector, and "Resume Watching" timestamp tracking.
+### Phase 4: VOD (Movies) & TV Series Catalog (COMPLETED)
+- [x] Add **Live TV**, **Movies**, and **Series** view toggle in header/navigation.
+- [x] Implement `VodCatalog.tsx` with category filters, poster cards, and sorting (name, rating, date).
+- [x] Build `VodDetailModal.tsx` with synopsis, episode selector, and "Resume Watching" timestamp tracking.
 
 ### Phase 5: Extended Settings, Parental Lock & Command Palette (`Ctrl+K`)
 - [ ] Port Parental Lock PIN verification and category hiding (`parentalLock.ts`).

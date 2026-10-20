@@ -9,6 +9,8 @@ import { SettingsModal } from './components/settings/SettingsModal';
 import { AddPlaylistModal } from './components/playlist/AddPlaylistModal';
 import { PlaylistManagerModal } from './components/playlist/PlaylistManagerModal';
 import { EpgGridModal } from './components/epg/EpgGridModal';
+import { VodCatalog } from './components/vod/VodCatalog';
+import { VodDetailModal } from './components/vod/VodDetailModal';
 
 import { useChannelStore } from './stores/useChannelStore';
 import { useSettingsStore } from './stores/useSettingsStore';
@@ -16,6 +18,7 @@ import { useUserStore } from './stores/useUserStore';
 import { usePlayerStore } from './stores/usePlayerStore';
 import { useMultiPlaylistStore } from './stores/useMultiPlaylistStore';
 import { useEpgStore } from './stores/useEpgStore';
+import { useVodStore } from './stores/useVodStore';
 import { dpadNavigation } from './adapters/input/DpadNavigationAdapter';
 
 import './styles/index.css';
@@ -38,6 +41,7 @@ export function App() {
   const initPlaylists = useMultiPlaylistStore((s) => s.initPlaylists);
   const playlists = useMultiPlaylistStore((s) => s.playlists);
   const activePlaylistId = useMultiPlaylistStore((s) => s.activePlaylistId);
+  const channels = useChannelStore((s) => s.channels);
   const currentChannel = usePlayerStore((s) => s.currentChannel);
   const togglePlay = usePlayerStore((s) => s.togglePlay);
   const toggleMute = usePlayerStore((s) => s.toggleMute);
@@ -86,6 +90,14 @@ export function App() {
     }
   }, [currentChannel, activePlaylistId, playlists]);
 
+  // Auto-load VOD Movies & Series Catalog when active playlist or channels change
+  useEffect(() => {
+    const active = playlists.find((p) => p.id === activePlaylistId);
+    if (active) {
+      useVodStore.getState().loadCatalog(active, channels);
+    }
+  }, [activePlaylistId, playlists, channels]);
+
   // Setup Global Keyboard & TV Remote Navigation
   useEffect(() => {
     dpadNavigation.start();
@@ -97,7 +109,9 @@ export function App() {
       onChannelNext: () => zapNext(),
       onChannelPrev: () => zapPrev(),
       onBack: () => {
-        if (isEpgGridOpen) {
+        if (useVodStore.getState().activeItem) {
+          useVodStore.getState().closeDetail();
+        } else if (isEpgGridOpen) {
           setIsEpgGridOpen(false);
         } else if (isSettingsOpen) {
           setIsSettingsOpen(false);
@@ -149,6 +163,8 @@ export function App() {
     <div className={`tokerian-shell ${tvMode ? 'tv-mode-active' : ''}`}>
       {/* Top Application Header */}
       <Header
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenPlaylists={() => setIsPlaylistManagerOpen(true)}
         onOpenEpgGuide={() => setIsEpgGridOpen(true)}
@@ -171,11 +187,24 @@ export function App() {
           {/* Top Video Player (if a channel is currently loaded) */}
           {currentChannel && <VideoPlayer onOpenEpgGuide={() => setIsEpgGridOpen(true)} />}
 
-          {/* Category Quick Filter Pills (visible in channels tab) */}
-          {activeTab === 'channels' && <CategoryPills />}
+          {/* Live Channels View */}
+          {activeTab === 'channels' && (
+            <>
+              <CategoryPills />
+              <ChannelGrid activeTab="channels" />
+            </>
+          )}
 
-          {/* Virtualized Channel Cards Grid */}
-          <ChannelGrid activeTab={activeTab} />
+          {/* Movies (VOD) View */}
+          {activeTab === 'movies' && <VodCatalog type="movies" />}
+
+          {/* TV Series View */}
+          {activeTab === 'series' && <VodCatalog type="series" />}
+
+          {/* Favorites & History Views */}
+          {(activeTab === 'favorites' || activeTab === 'history') && (
+            <ChannelGrid activeTab={activeTab} />
+          )}
         </main>
       </div>
 
@@ -211,6 +240,9 @@ export function App() {
         isOpen={isEpgGridOpen}
         onClose={() => setIsEpgGridOpen(false)}
       />
+
+      {/* VOD & TV Series Detail Modal */}
+      <VodDetailModal />
     </div>
   );
 }
