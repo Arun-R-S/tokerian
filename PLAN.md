@@ -156,17 +156,17 @@
 
 ## 4. Step-by-Step Implementation Roadmap
 
-### Step 1: IPTVnator Navigation Shell (Icon Rail + Header)
-- [ ] Build the slim left navigation rail (`56px` width):
+### Step 1: IPTVnator Navigation Shell (Icon Rail + Header) (COMPLETED)
+- [x] Build the slim left navigation rail (`56px` width):
   - Icons: Home (`⊞`), Channels (`☰`), Search (`🔍`), Favorites (`♥`), History (`🕒`), Live TV (`📺`), Playlists (`📁`), and Settings (`⚙` at bottom).
   - Active indicator pill with light-blue accent.
-- [ ] Build the IPTVnator top header bar:
+- [x] Build the IPTVnator top header bar:
   - Left: Playlist selector dropdown pill (Folder icon, title `IPTV`, channel count `11374 channels`, refresh icon, down arrow).
   - Center: Pill-shaped `Search in this playlist...` with `Ctrl+K` shortcut badge.
   - Right: Quick Action icons: Virtual keyboard cheatsheet (`⌨`), Add source (`+`), Export (`⤓`), Window controls (Electron).
 
-### Step 2: IPTVnator Home / Dashboard View (Current Screenshot Clone)
-- [ ] Create `src/components/home/HomeDashboard.tsx`:
+### Step 2: IPTVnator Home / Dashboard View (Current Screenshot Clone) (COMPLETED)
+- [x] Create `src/components/home/HomeDashboard.tsx`:
   - **Spotlight Hero Card**:
     - Dark crimson radial glow background.
     - Large channel poster card with logo.

@@ -13,6 +13,7 @@ import { VodCatalog } from './components/vod/VodCatalog';
 import { VodDetailModal } from './components/vod/VodDetailModal';
 import { CommandPalette } from './components/command/CommandPalette';
 import { KeyboardShortcutsModal } from './components/layout/KeyboardShortcutsModal';
+import { HomeDashboard } from './components/home/HomeDashboard';
 import { Tv } from 'lucide-react';
 
 import { useChannelStore } from './stores/useChannelStore';
@@ -28,7 +29,7 @@ import './styles/index.css';
 import './styles/components.css';
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<SidebarTab>('channels');
+  const [activeTab, setActiveTab] = useState<SidebarTab>('home');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isAddPlaylistOpen, setIsAddPlaylistOpen] = useState(false);
@@ -211,6 +212,15 @@ export function App() {
         <main className="tokerian-main">
           {/* Top Video Player (if a channel is currently loaded) */}
           {currentChannel && <VideoPlayer onOpenEpgGuide={() => setIsEpgGridOpen(true)} />}
+
+          {/* Home / Dashboard View (IPTVnator 1:1 Clone) */}
+          {activeTab === 'home' && (
+            <HomeDashboard
+              onTabChange={setActiveTab}
+              onOpenPlaylists={() => setIsPlaylistManagerOpen(true)}
+              onOpenAddPlaylist={() => setIsAddPlaylistOpen(true)}
+            />
+          )}
 
           {/* Live Channels View */}
           {activeTab === 'channels' && (

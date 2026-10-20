@@ -2435,5 +2435,441 @@ input:checked + .toggle-slider:before {
   }
 }
 
+/* ==========================================================================
+   IPTVNATOR HOME DASHBOARD & HERO SPOTLIGHT BANNER
+   ========================================================================== */
+
+.iptvnator-home-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  width: 100%;
+  max-width: 1400px;
+  padding: 4px 0 32px;
+  user-select: none;
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* --- HERO SPOTLIGHT BANNER --- */
+.iptvnator-hero-card {
+  position: relative;
+  border-radius: 18px;
+  background: #0d121c;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  padding: 28px 32px;
+  min-height: 230px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55);
+}
+
+.hero-radial-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 55% 45%,
+    rgba(185, 28, 28, 0.45) 0%,
+    rgba(120, 18, 18, 0.2) 42%,
+    transparent 72%
+  );
+  opacity: 0.95;
+}
+
+.hero-content-row {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  width: 100%;
+}
+
+.hero-poster-box {
+  width: 125px;
+  height: 160px;
+  border-radius: 14px;
+  background: rgba(14, 18, 30, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  padding: 12px;
+}
+
+.hero-poster-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.hero-meta-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+}
+
+.hero-channel-title {
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.hero-playlist-subtitle {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 18px;
+  font-weight: 500;
+}
+
+/* Light blue pill button matching screenshot */
+.hero-continue-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #60a5fa;
+  color: #0b1329;
+  font-weight: 700;
+  font-size: 0.88rem;
+  padding: 10px 24px;
+  border-radius: 9999px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 4px 18px rgba(96, 165, 250, 0.4);
+}
+
+.hero-continue-btn:hover {
+  background: #93c5fd;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 22px rgba(96, 165, 250, 0.55);
+}
+
+/* --- DASHBOARD SECTIONS --- */
+.iptvnator-dashboard-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dashboard-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.section-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dashboard-section-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.dashboard-count-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 8px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.dashboard-see-all-btn {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: color 0.15s ease;
+  font-weight: 500;
+}
+
+.dashboard-see-all-btn:hover {
+  color: #ffffff;
+}
+
+.dashboard-empty-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 24px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.dashboard-horizontal-scroll {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scrollbar-width: thin;
+}
+
+.dashboard-horizontal-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.dashboard-horizontal-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.dashboard-horizontal-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+}
+
+/* --- COMPACT LIVE CHANNEL CARDS (Favorites & History) --- */
+.iptvnator-compact-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  padding: 10px 14px;
+  width: 270px;
+  min-width: 270px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.iptvnator-compact-card:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.18);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.compact-card-logo-box {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  padding: 4px;
+}
+
+.compact-card-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.compact-card-info-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.compact-card-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.compact-card-live-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.compact-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #ef4444;
+  letter-spacing: 0.04em;
+}
+
+.compact-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 8px #ef4444;
+}
+
+.compact-progress-track {
+  width: 100%;
+  height: 3px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.09);
+  overflow: hidden;
+  margin-top: 3px;
+}
+
+.compact-progress-fill {
+  height: 100%;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 9999px;
+}
+
+/* --- RECENTLY USED SOURCES CARDS --- */
+.iptvnator-source-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 175px;
+  min-width: 175px;
+  height: 115px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  padding: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.iptvnator-source-card:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.18);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.source-card-active {
+  border-color: rgba(99, 102, 241, 0.5) !important;
+  background: rgba(99, 102, 241, 0.08) !important;
+}
+
+.source-card-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.source-card-icon-wrap {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.source-card-dots-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.source-card-dots-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.source-card-bottom-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.source-card-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.source-card-count {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+.add-source-card {
+  border-style: dashed;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+}
+
+.add-source-icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(99, 102, 241, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Mobile & Tablet Adjustments */
+@media (max-width: 768px) {
+  .hero-content-row {
+    flex-direction: column;
+    text-align: center;
+    gap: 16px;
+  }
+
+  .hero-meta-col {
+    align-items: center;
+  }
+
+  .iptvnator-hero-card {
+    padding: 20px 16px;
+  }
+
+  .hero-channel-title {
+    font-size: 1.3rem;
+  }
+
+  .iptvnator-compact-card {
+    width: 240px;
+    min-width: 240px;
+  }
+}
+
+
 
 
