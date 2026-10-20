@@ -1,5 +1,5 @@
-import React from 'react';
-import { X, Keyboard, Command } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { X, Keyboard, MonitorPlay } from 'lucide-react';
 
 interface KeyboardShortcutsModalProps {
   isOpen: boolean;
@@ -13,55 +13,66 @@ interface ShortcutEntry {
 }
 
 const SHORTCUTS: ShortcutEntry[] = [
-  { key: 'Ctrl + K / ⌘K', description: 'Open Command Palette & Global Search', category: 'General' },
-  { key: 'G or E', description: 'Open TV Guide (EPG Timeline Matrix)', category: 'General' },
-  { key: 'Space', description: 'Play / Pause active stream', category: 'Player' },
-  { key: 'F', description: 'Toggle Fullscreen', category: 'Player' },
-  { key: 'M', description: 'Toggle Mute Audio', category: 'Player' },
-  { key: 'Arrow Left / Right', description: 'Seek Backward / Forward 10s', category: 'Player' },
-  { key: 'Arrow Up / Down', description: 'Increase / Decrease Volume or Channel Nav', category: 'Navigation' },
-  { key: 'Enter / Return', description: 'Select item or play focused channel', category: 'Navigation' },
-  { key: 'ESC / Back', description: 'Close active modal, drawer or back to channels', category: 'General' },
+  // General & Navigation
+  { key: 'Ctrl + K / ⌘K', description: 'Open Find / Command Palette & Search', category: 'General' },
+  { key: 'G or E', description: 'Open TV Guide & Schedule (EPG Matrix)', category: 'General' },
+  { key: '?', description: 'Show this Keyboard Shortcuts cheatsheet', category: 'General' },
+  { key: 'ESC / Back', description: 'Close modal, drawer, or exit search', category: 'General' },
+
+  // Player & Cinema Controls
+  { key: 'Space', description: 'Play / Pause active video stream', category: 'Player' },
+  { key: 'F', description: 'Toggle Fullscreen Player mode', category: 'Player' },
+  { key: 'M', description: 'Toggle Mute / Unmute audio', category: 'Player' },
+  { key: 'Arrow Left / Right', description: 'Seek backward / forward 10s', category: 'Player' },
+  { key: 'Arrow Up / Down', description: 'Increase / Decrease volume', category: 'Player' },
+
+  // D-Pad & TV Navigation
+  { key: 'D-Pad / Arrow Keys', description: 'Navigate channels, categories & grid cards', category: 'Navigation & TV' },
+  { key: 'Enter / OK', description: 'Select item or play highlighted channel', category: 'Navigation & TV' },
+  { key: 'Page Up / Page Down', description: 'Zap previous / next channel in playlist', category: 'Navigation & TV' },
 ];
 
 export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
   isOpen,
   onClose,
 }) => {
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const categories = Array.from(new Set(SHORTCUTS.map((s) => s.category)));
 
   return (
-    <div className="tokerian-modal-backdrop" onClick={onClose} style={{ zIndex: 9999 }}>
+    <div className="shortcuts-overlay" onClick={onClose}>
       <div
-        className="tokerian-modal glass-panel"
-        style={{ maxWidth: '520px', width: '92vw' }}
+        className="shortcuts-dialog"
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="shortcuts-dialog-title"
       >
         {/* Header */}
-        <div className="tokerian-modal-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div
-              style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: 'var(--radius-sm)',
-                background: 'rgba(99, 102, 241, 0.15)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'var(--accent-primary)',
-              }}
-            >
-              <Keyboard size={18} />
+        <div className="shortcuts-header">
+          <div className="shortcuts-header-title">
+            <div className="shortcuts-icon-pill">
+              <Keyboard size={20} />
             </div>
             <div>
-              <h2 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: '#fff' }}>
+              <h2 id="shortcuts-dialog-title" className="shortcuts-title-text">
                 Keyboard Shortcuts
               </h2>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                IPTVnator hotkeys and navigation controls
+              <span className="shortcuts-subtitle-text">
+                Hotkeys and remote navigation controls
               </span>
             </div>
           </div>
@@ -69,60 +80,27 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="tokerian-btn-icon"
-            style={{ padding: '6px' }}
+            className="shortcuts-close-btn"
+            title="Close (ESC)"
+            aria-label="Close"
           >
             <X size={18} />
           </button>
         </div>
 
-        {/* Content */}
-        <div className="tokerian-modal-body" style={{ maxHeight: '60vh', overflowY: 'auto', padding: '16px' }}>
+        {/* Scrollable Content Body */}
+        <div className="shortcuts-body">
           {categories.map((cat) => (
-            <div key={cat} style={{ marginBottom: '18px' }}>
-              <div
-                style={{
-                  fontSize: '0.7rem',
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  color: 'var(--text-muted)',
-                  marginBottom: '8px',
-                }}
-              >
+            <div key={cat} className="shortcuts-category-section">
+              <div className="shortcuts-category-header">
                 {cat}
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div className="shortcuts-row-list">
                 {SHORTCUTS.filter((s) => s.category === cat).map((s, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '8px 12px',
-                      borderRadius: 'var(--radius-sm)',
-                      background: 'rgba(255, 255, 255, 0.03)',
-                      border: '1px solid rgba(255, 255, 255, 0.05)',
-                    }}
-                  >
-                    <span style={{ fontSize: '0.85rem', color: '#e2e8f0' }}>{s.description}</span>
-                    <span
-                      style={{
-                        fontSize: '0.72rem',
-                        fontWeight: 700,
-                        padding: '3px 8px',
-                        borderRadius: '4px',
-                        background: 'rgba(255, 255, 255, 0.08)',
-                        border: '1px solid rgba(255, 255, 255, 0.12)',
-                        color: 'var(--accent-primary)',
-                        fontFamily: 'monospace',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {s.key}
-                    </span>
+                  <div key={idx} className="shortcut-item-row">
+                    <span className="shortcut-desc">{s.description}</span>
+                    <span className="shortcut-key-badge">{s.key}</span>
                   </div>
                 ))}
               </div>
@@ -131,20 +109,9 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div
-          style={{
-            padding: '12px 18px',
-            borderTop: '1px solid var(--border-subtle)',
-            background: 'rgba(0, 0, 0, 0.2)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            fontSize: '0.75rem',
-            color: 'var(--text-muted)',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Command size={14} />
+        <div className="shortcuts-footer">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <MonitorPlay size={15} style={{ color: 'var(--accent-primary)', opacity: 0.9 }} />
             <span>Works across Web, Desktop & Android TV</span>
           </div>
 
@@ -152,7 +119,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
             type="button"
             onClick={onClose}
             className="tokerian-btn tokerian-btn-primary"
-            style={{ padding: '5px 14px', fontSize: '0.8rem' }}
+            style={{ padding: '6px 18px', fontSize: '0.82rem', borderRadius: '8px' }}
           >
             Got it
           </button>

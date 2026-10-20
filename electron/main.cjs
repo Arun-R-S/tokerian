@@ -1,5 +1,6 @@
 const { app, BrowserWindow, session, ipcMain, Menu } = require('electron');
 const path = require('node:path');
+const pkg = require('../package.json');
 
 // Hardware acceleration and video decode flags
 app.commandLine.appendSwitch('enable-gpu-rasterization');
@@ -16,7 +17,9 @@ function createWindow() {
     minWidth: 900,
     minHeight: 560,
     backgroundColor: '#07090e',
-    title: 'Tokerian',
+    title: `Tokerian v${pkg.version || '1.0.0'}`,
+    frame: false,
+    titleBarStyle: 'hidden',
     show: false,
     autoHideMenuBar: true,
     webPreferences: {
@@ -54,6 +57,14 @@ function createWindow() {
     mainWindow.show();
   });
 
+  mainWindow.on('maximize', () => {
+    mainWindow?.webContents.send('window-maximize-changed', true);
+  });
+
+  mainWindow.on('unmaximize', () => {
+    mainWindow?.webContents.send('window-maximize-changed', false);
+  });
+
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
@@ -84,7 +95,11 @@ ipcMain.on('window-toggle-fullscreen', () => {
   }
 });
 
-// External Players Engine (VLC & MPV Spawner ported from IPTVnator)
+ipcMain.handle('window-is-maximized', () => {
+  return mainWindow ? mainWindow.isMaximized() : false;
+});
+
+// External Players Engine (VLC & MPV Spawner ported)
 const fs = require('node:fs');
 const { spawn } = require('node:child_process');
 
@@ -170,7 +185,7 @@ ipcMain.handle('open-external-player', async (_event, options) => {
     if (referer) args.push(`:http-referrer=${referer}`);
     args.push(url);
   } else {
-    // MPV args ported from IPTVnator
+    // MPV args ported
     args.push('--ytdl=no');
     if (title) args.push(`--force-media-title=${title}`);
     if (userAgent) args.push(`--user-agent=${userAgent}`);

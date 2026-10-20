@@ -1,4 +1,4 @@
-// VOD Movies & TV Series Catalog Grid ported and adapted from IPTVnator
+// VOD Movies & TV Series Catalog Grid ported and adapted
 // Features cinema poster cards, category filters, sorting, and Continue Watching resume shelf.
 
 import React, { useMemo } from 'react';
@@ -98,78 +98,45 @@ export const VodCatalog: React.FC<VodCatalogProps> = ({ type }) => {
   };
 
   return (
-    <div style={{ padding: '16px 20px', maxWidth: '1600px', margin: '0 auto', width: '100%' }}>
+    <div className="vod-catalog-container">
       {/* Top Controls: Search, Sort, Category Selector */}
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '12px',
-          marginBottom: '20px',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px', flexWrap: 'wrap' }}>
+      <div className="vod-top-controls">
+        <div className="vod-header-row">
           {/* Header Title with Counter */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div className="vod-title-wrap">
             {isMovies ? (
               <Film size={24} color="var(--accent-primary)" />
             ) : (
               <Sparkles size={24} color="#a855f7" />
             )}
-            <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800, color: '#fff' }}>
+            <h2 className="vod-title-text">
               {isMovies ? 'Movies (VOD)' : 'TV Series Catalog'}
             </h2>
-            <span
-              style={{
-                fontSize: '0.8rem',
-                color: 'var(--text-muted)',
-                background: 'rgba(255, 255, 255, 0.05)',
-                padding: '2px 8px',
-                borderRadius: 'var(--radius-full)',
-              }}
-            >
+            <span className="vod-count-badge">
               {filteredItems.length} titles
             </span>
           </div>
 
           {/* Right Action: Search Bar & Sort Dropdown */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                background: 'rgba(255, 255, 255, 0.04)',
-                border: '1px solid var(--border-subtle)',
-                borderRadius: 'var(--radius-md)',
-                padding: '6px 12px',
-              }}
-            >
+          <div className="vod-actions-row">
+            <div className="vod-search-box">
               <Search size={15} color="var(--text-muted)" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={`Search ${isMovies ? 'movies' : 'series'}...`}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  outline: 'none',
-                  color: '#fff',
-                  fontSize: '0.85rem',
-                  width: '180px',
-                }}
+                className="vod-search-input"
               />
             </div>
 
             {/* Sort Toggle */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div className="vod-sort-wrap">
               <ArrowUpDown size={15} color="var(--text-muted)" />
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as VodSortOption)}
-                className="tokerian-select"
-                style={{ fontSize: '0.8rem', padding: '6px 10px' }}
+                className="tokerian-select vod-sort-select"
               >
                 <option value="recent">Recently Added / Year</option>
                 <option value="rating">Top Rated (★)</option>
@@ -181,15 +148,7 @@ export const VodCatalog: React.FC<VodCatalogProps> = ({ type }) => {
 
         {/* Category Horizontal Filter Pills */}
         {categories.length > 0 && (
-          <div
-            style={{
-              display: 'flex',
-              gap: '8px',
-              overflowX: 'auto',
-              paddingBottom: '4px',
-              scrollbarWidth: 'none',
-            }}
-          >
+          <div className="vod-category-scroll">
             <button
               type="button"
               onClick={() => setSelectedCategory('ALL')}
@@ -236,6 +195,7 @@ export const VodCatalog: React.FC<VodCatalogProps> = ({ type }) => {
               <div
                 key={item.id}
                 onClick={() => handleResumeClick(item)}
+                className="vod-continue-card"
                 style={{
                   minWidth: '220px',
                   width: '220px',
@@ -248,7 +208,7 @@ export const VodCatalog: React.FC<VodCatalogProps> = ({ type }) => {
                   flexShrink: 0,
                 }}
               >
-                <div style={{ position: 'relative', width: '100%', height: '120px', borderRadius: 'var(--radius-sm)', overflow: 'hidden', background: '#0a0d14' }}>
+                <div className="vod-continue-thumb" style={{ position: 'relative', width: '100%', height: '120px', borderRadius: 'var(--radius-sm)', overflow: 'hidden', background: '#0a0d14' }}>
                   {item.poster ? (
                     <img
                       src={item.poster}
@@ -336,18 +296,12 @@ export const VodCatalog: React.FC<VodCatalogProps> = ({ type }) => {
           <h3 style={{ margin: '0 0 6px', color: '#fff' }}>No {isMovies ? 'Movies' : 'TV Series'} Found</h3>
           <p style={{ margin: 0, fontSize: '0.85rem' }}>
             {activePlaylist?.type === 'built-in'
-              ? 'Tokerian Global built-in catalog focuses on Live Television. Switch to an Xtream Codes account or upload an M3U with VOD files in Playlists & Accounts.'
+              ? 'Global built-in catalog focuses on Live Television. Switch to an Xtream Codes account or upload an M3U with VOD files in Playlists & Accounts.'
               : 'No items match your category or search filter.'}
           </p>
         </div>
       ) : (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-            gap: '18px',
-          }}
-        >
+        <div className="vod-posters-grid">
           {filteredItems.map((item) => {
             const poster = isMovies ? (item as any).logo : (item as any).cover;
 
@@ -460,8 +414,9 @@ export const VodCatalog: React.FC<VodCatalogProps> = ({ type }) => {
                 </div>
 
                 {/* Card Title & Category */}
-                <div style={{ padding: '10px 12px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <div className="vod-card-info" style={{ padding: '10px 12px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <h4
+                    className="vod-card-title"
                     style={{
                       margin: 0,
                       fontSize: '0.85rem',
@@ -478,6 +433,7 @@ export const VodCatalog: React.FC<VodCatalogProps> = ({ type }) => {
                     {item.name}
                   </h4>
                   <span
+                    className="vod-card-category"
                     style={{
                       marginTop: '4px',
                       fontSize: '0.72rem',

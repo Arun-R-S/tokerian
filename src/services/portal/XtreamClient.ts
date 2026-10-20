@@ -1,4 +1,4 @@
-// Xtream Codes API Client ported and adapted from IPTVnator
+// Xtream Codes API Client ported and adapted
 // Handles authentication, catalog querying (Live, VOD, Series), and URL construction.
 
 export interface XtreamCredentials {

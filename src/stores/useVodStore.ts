@@ -1,4 +1,4 @@
-// VOD and Series Store ported and adapted from IPTVnator's Xtream & VOD modules
+// VOD and Series Store ported and adapted from Xtream & VOD modules
 // Manages Movies, Series, Categories, Resume State, and Details presentation.
 
 import { create } from 'zustand';

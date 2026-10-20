@@ -1,4 +1,4 @@
-// Parental Lock PIN Utilities ported and adapted from IPTVnator
+// Parental Lock PIN Utilities ported and adapted
 // Implements WebCrypto PBKDF2-SHA256 password hashing and category matching.
 
 export const PARENTAL_LOCK_PIN_MIN_LENGTH = 4;

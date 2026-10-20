@@ -1,42 +1,28 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Search,
-  Sliders,
-  Tv,
   X,
   Menu,
   Folder,
-  Calendar,
-  RotateCw,
-  ChevronDown,
-  Keyboard,
   Plus,
-  Download,
   Check,
   FolderPlus,
-  Minus,
-  Square,
 } from 'lucide-react';
+import { MatIcon } from '../common/MatIcon';
 import { useChannelStore } from '../../stores/useChannelStore';
 import { useSettingsStore } from '../../stores/useSettingsStore';
 import { useMultiPlaylistStore } from '../../stores/useMultiPlaylistStore';
-import { useUserStore } from '../../stores/useUserStore';
-import type { SidebarTab } from './Sidebar';
 
 interface HeaderProps {
-  onOpenSettings: () => void;
   onOpenPlaylists?: () => void;
   onOpenAddPlaylist?: () => void;
   onOpenEpgGuide?: () => void;
   onOpenCommandPalette?: () => void;
   onOpenKeyboardShortcuts?: () => void;
   onToggleMobileMenu?: () => void;
-  activeTab?: SidebarTab;
-  onTabChange?: (tab: SidebarTab) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  onOpenSettings,
   onOpenPlaylists,
   onOpenAddPlaylist,
   onOpenEpgGuide,
@@ -60,7 +46,44 @@ export const Header: React.FC<HeaderProps> = ({
 
   const [isPlaylistDropdownOpen, setIsPlaylistDropdownOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const isElectron =
+    typeof window !== 'undefined' &&
+    Boolean(window.tokerianDesktop?.isElectron || window.electronAPI?.isElectron);
+
+  useEffect(() => {
+    const desktop = window.tokerianDesktop || window.electronAPI;
+    if (!desktop) return;
+
+    desktop.isMaximized?.().then((max) => {
+      setIsMaximized(Boolean(max));
+    }).catch(() => {});
+
+    const unsubscribe = desktop.onMaximizedChange?.((max) => {
+      setIsMaximized(Boolean(max));
+    });
+
+    return () => {
+      unsubscribe?.();
+    };
+  }, []);
+
+  const handleMinimize = () => {
+    const desktop = window.tokerianDesktop || window.electronAPI;
+    desktop?.minimize?.();
+  };
+
+  const handleMaximize = () => {
+    const desktop = window.tokerianDesktop || window.electronAPI;
+    desktop?.maximize?.();
+  };
+
+  const handleClose = () => {
+    const desktop = window.tokerianDesktop || window.electronAPI;
+    desktop?.close?.();
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -91,36 +114,12 @@ export const Header: React.FC<HeaderProps> = ({
     }
   };
 
-  // Handle Export / Download Backup (JSON of playlists + user favorites/history)
-  const handleExportBackup = () => {
-    const backupData = {
-      version: '1.0',
-      exportedAt: new Date().toISOString(),
-      playlists: useMultiPlaylistStore.getState().playlists,
-      activePlaylistId: useMultiPlaylistStore.getState().activePlaylistId,
-      favorites: Array.from(useUserStore.getState().favorites),
-      history: useUserStore.getState().history,
-    };
-
-    const blob = new Blob([JSON.stringify(backupData, null, 2)], {
-      type: 'application/json',
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `tokerian-iptvnator-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
   const channelCountDisplay = isLoading
     ? 'Syncing channels...'
     : `${channels.length.toLocaleString()} channels`;
 
   return (
-    <header className="tokerian-iptvnator-header">
+    <header className={`tokerian-iptvnator-header ${isElectron ? 'is-electron' : ''}`}>
       {/* LEFT SECTION: Mobile Hamburger + Playlist Selector Dropdown Pill */}
       <div className="header-left-col">
         {/* Mobile Hamburger Toggle Button */}
@@ -141,7 +140,7 @@ export const Header: React.FC<HeaderProps> = ({
             title="Switch playlist or view source details"
           >
             <div className="playlist-pill-icon-box">
-              <Folder size={16} />
+              <MatIcon name="folder" size={17} />
             </div>
 
             <div className="playlist-pill-text-col">
@@ -157,12 +156,13 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={handleSyncPlaylist}
               title="Refresh / Sync current playlist"
             >
-              <RotateCw size={13} />
+              <MatIcon name="sync" size={14} />
             </button>
 
             <div className="playlist-pill-chevron">
-              <ChevronDown
-                size={14}
+              <MatIcon
+                name="expand_more"
+                size={16}
                 style={{
                   transform: isPlaylistDropdownOpen ? 'rotate(180deg)' : 'none',
                   transition: 'transform 0.2s ease',
@@ -239,9 +239,16 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           )}
         </div>
+
+        {/* App Version & Stage Badge (Centralized Tracker) */}
+        {/* <AppVersionBadge
+          variant="pill"
+          className="header-version-badge"
+          showStage={true}
+        /> I Commented this!! Dont Uncomment*/}
       </div>
 
-      {/* CENTER SECTION: IPTVnator Centered Pill Search Bar */}
+      {/* CENTER SECTION: Centered Pill Search Bar */}
       <div className="header-center-col">
         <div
           className="iptvnator-search-pill"
@@ -256,7 +263,7 @@ export const Header: React.FC<HeaderProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search in this playlist..."
+            placeholder="Search..."
             className="search-pill-input"
           />
 
@@ -289,84 +296,97 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* RIGHT SECTION: Quick Action Icons & Window Controls */}
       <div className="header-right-col">
-        {/* 1. Keyboard Shortcuts Cheatsheet */}
+        {/* 1. Keyboard Shortcuts Cheatsheet (Desktop Only) */}
         {onOpenKeyboardShortcuts && (
           <button
             type="button"
             onClick={onOpenKeyboardShortcuts}
-            className="header-action-icon-btn"
+            className="header-action-icon-btn desktop-only-action"
             title="Keyboard Shortcuts Cheatsheet"
           >
-            <Keyboard size={18} />
+            <MatIcon name="keyboard" size={18} />
           </button>
         )}
 
-        {/* 2. Add Playlist / Source */}
+        {/* 2. Add Playlist / Source (Desktop Only) */}
         {onOpenAddPlaylist && (
           <button
             type="button"
             onClick={onOpenAddPlaylist}
-            className="header-action-icon-btn"
+            className="header-action-icon-btn desktop-only-action"
             title="Add Playlist / Source (+)"
           >
-            <Plus size={18} />
+            <MatIcon name="add" size={18} />
           </button>
         )}
 
-        {/* 3. Export Backup Data */}
-        <button
-          type="button"
-          onClick={handleExportBackup}
-          className="header-action-icon-btn"
-          title="Export / Download Backup (JSON)"
-        >
-          <Download size={17} />
-        </button>
-
-        {/* 4. TV Guide (EPG Timeline Matrix) */}
+        {/* 3. TV Guide (EPG Timeline Matrix - Desktop Only) */}
         {onOpenEpgGuide && (
           <button
             type="button"
             onClick={onOpenEpgGuide}
-            className="header-action-icon-btn"
+            className="header-action-icon-btn desktop-only-action"
             title="TV Guide & Schedule (Key G)"
           >
-            <Calendar size={17} />
+            <MatIcon name="calendar_month" size={18} />
           </button>
         )}
 
-        {/* 5. TV D-Pad Mode Toggle */}
+        {/* 4. TV D-Pad Mode Toggle (Desktop/TV Only) */}
         <button
           type="button"
           onClick={() => updateSettings({ tvMode: !tvMode })}
-          className={`header-action-icon-btn ${tvMode ? 'action-icon-active' : ''}`}
+          className={`header-action-icon-btn desktop-only-action ${tvMode ? 'action-icon-active' : ''}`}
           title={tvMode ? 'Disable TV D-Pad Mode' : 'Enable 10-Foot TV D-Pad Mode'}
         >
-          <Tv size={17} />
+          <MatIcon name="tv" size={18} />
         </button>
 
-        {/* 6. Settings */}
-        <button
-          type="button"
-          onClick={onOpenSettings}
-          className="header-action-icon-btn"
-          title="App Settings & Parental Lock"
-        >
-          <Sliders size={18} />
-        </button>
-
-        {/* 7. Subtle Desktop Window Controls (Minimize / Maximize / Close) */}
-        <div className="header-window-controls">
-          <button type="button" className="window-control-btn" title="Minimize">
-            <Minus size={13} />
-          </button>
-          <button type="button" className="window-control-btn" title="Maximize">
-            <Square size={11} />
-          </button>
-          <button type="button" className="window-control-btn close-btn" title="Close">
-            <X size={13} />
-          </button>
-        </div>
+        {/* 5. Custom Windows Desktop Controls (Minimize, Maximize/Restore, Close) */}
+        {isElectron && (
+          <div className="header-window-controls">
+            <button
+              type="button"
+              onClick={handleMinimize}
+              className="window-control-btn"
+              title="Minimize"
+              aria-label="Minimize"
+            >
+              <svg width="10" height="10" viewBox="0 0 10 10">
+                <path d="M0 5h10" stroke="currentColor" strokeWidth="1" fill="none" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={handleMaximize}
+              className="window-control-btn"
+              title={isMaximized ? 'Restore' : 'Maximize'}
+              aria-label={isMaximized ? 'Restore' : 'Maximize'}
+            >
+              {isMaximized ? (
+                <svg width="10" height="10" viewBox="0 0 10 10">
+                  <path d="M0.5 2.5h7v7h-7z" fill="none" stroke="currentColor" strokeWidth="1" />
+                  <path d="M2.5 2.5v-2h7v7h-2" fill="none" stroke="currentColor" strokeWidth="1" />
+                </svg>
+              ) : (
+                <svg width="10" height="10" viewBox="0 0 10 10">
+                  <path d="M0.5 0.5h9v9h-9z" fill="none" stroke="currentColor" strokeWidth="1" />
+                </svg>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={handleClose}
+              className="window-control-btn close-btn"
+              title="Close"
+              aria-label="Close"
+            >
+              <svg width="10" height="10" viewBox="0 0 10 10">
+                <path d="M0.5 0.5l9 9m0 -9l-9 9" stroke="currentColor" strokeWidth="1.1" fill="none" />
+              </svg>
+            </button>
+          </div>
+        )}
       </div>
     </header>
   );

@@ -28,9 +28,12 @@ interface PlayerState {
   isPiP: boolean;
   isFullscreen: boolean;
 
+  activeScope: 'all' | 'favorites';
+
   // Actions
   attachVideoElement: (video: HTMLVideoElement) => void;
-  playChannel: (channel: Channel, forceMode?: 'direct' | 'proxy') => Promise<void>;
+  playChannel: (channel: Channel, forceMode?: 'direct' | 'proxy', scope?: 'all' | 'favorites') => Promise<void>;
+  setPlaybackScope: (scope: 'all' | 'favorites') => void;
   togglePlay: () => Promise<void>;
   setVolume: (volume: number) => void;
   toggleMute: () => void;
@@ -121,12 +124,17 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
 
     isPiP: false,
     isFullscreen: false,
+    activeScope: 'all',
 
     attachVideoElement: (video: HTMLVideoElement) => {
       playerAdapter.attachMedia(video);
     },
 
-    playChannel: async (channel: Channel, forceMode?: 'direct' | 'proxy') => {
+    setPlaybackScope: (scope: 'all' | 'favorites') => {
+      set({ activeScope: scope });
+    },
+
+    playChannel: async (channel: Channel, forceMode?: 'direct' | 'proxy', scope?: 'all' | 'favorites') => {
       if (!forceMode) {
         hasAttemptedFallback = false;
         currentRoutingMode = useSettingsStore.getState().corsProxyEnabled ? 'proxy' : 'direct';
@@ -134,7 +142,12 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
         currentRoutingMode = forceMode;
       }
 
-      set({ currentChannel: channel, error: null, isBuffering: true });
+      set({
+        currentChannel: channel,
+        error: null,
+        isBuffering: true,
+        activeScope: scope || get().activeScope,
+      });
 
       // Record in watch history
       useUserStore.getState().addToHistory(channel);
@@ -213,33 +226,59 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
     },
 
     zapNext: () => {
-      const { currentChannel } = get();
-      const filtered = useChannelStore.getState().getFilteredChannels();
-      if (filtered.length === 0) return;
+      const { currentChannel, activeScope } = get();
+
+      let targetList: Channel[] = [];
+      if (activeScope === 'favorites') {
+        const { orderedFavoriteIds } = useUserStore.getState();
+        const all = useChannelStore.getState().channels;
+        const channelMap = new Map<string, Channel>();
+        for (const c of all) channelMap.set(c.id, c);
+        targetList = orderedFavoriteIds
+          .map((id) => channelMap.get(id))
+          .filter((c): c is Channel => !!c);
+      } else {
+        targetList = useChannelStore.getState().getFilteredChannels();
+      }
+
+      if (targetList.length === 0) return;
 
       if (!currentChannel) {
-        get().playChannel(filtered[0]);
+        get().playChannel(targetList[0]);
         return;
       }
 
-      const currentIndex = filtered.findIndex((c) => c.id === currentChannel.id);
-      const nextIndex = (currentIndex + 1) % filtered.length;
-      get().playChannel(filtered[nextIndex]);
+      const currentIndex = targetList.findIndex((c) => c.id === currentChannel.id);
+      const nextIndex = (currentIndex + 1) % targetList.length;
+      get().playChannel(targetList[nextIndex]);
     },
 
     zapPrev: () => {
-      const { currentChannel } = get();
-      const filtered = useChannelStore.getState().getFilteredChannels();
-      if (filtered.length === 0) return;
+      const { currentChannel, activeScope } = get();
+
+      let targetList: Channel[] = [];
+      if (activeScope === 'favorites') {
+        const { orderedFavoriteIds } = useUserStore.getState();
+        const all = useChannelStore.getState().channels;
+        const channelMap = new Map<string, Channel>();
+        for (const c of all) channelMap.set(c.id, c);
+        targetList = orderedFavoriteIds
+          .map((id) => channelMap.get(id))
+          .filter((c): c is Channel => !!c);
+      } else {
+        targetList = useChannelStore.getState().getFilteredChannels();
+      }
+
+      if (targetList.length === 0) return;
 
       if (!currentChannel) {
-        get().playChannel(filtered[0]);
+        get().playChannel(targetList[0]);
         return;
       }
 
-      const currentIndex = filtered.findIndex((c) => c.id === currentChannel.id);
-      const prevIndex = (currentIndex - 1 + filtered.length) % filtered.length;
-      get().playChannel(filtered[prevIndex]);
+      const currentIndex = targetList.findIndex((c) => c.id === currentChannel.id);
+      const prevIndex = (currentIndex - 1 + targetList.length) % targetList.length;
+      get().playChannel(targetList[prevIndex]);
     },
 
     clearError: () => {

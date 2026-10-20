@@ -6,7 +6,6 @@ import { CategoryPills } from './components/channel/CategoryPills';
 import { ChannelGrid } from './components/channel/ChannelGrid';
 import { ChannelExplorer } from './components/channel/ChannelExplorer';
 import { VideoPlayer } from './components/player/VideoPlayer';
-import { SettingsModal } from './components/settings/SettingsModal';
 import { AddPlaylistModal } from './components/playlist/AddPlaylistModal';
 import { PlaylistManagerModal } from './components/playlist/PlaylistManagerModal';
 import { EpgGridModal } from './components/epg/EpgGridModal';
@@ -15,6 +14,8 @@ import { VodDetailModal } from './components/vod/VodDetailModal';
 import { CommandPalette } from './components/command/CommandPalette';
 import { KeyboardShortcutsModal } from './components/layout/KeyboardShortcutsModal';
 import { HomeDashboard } from './components/home/HomeDashboard';
+import { SettingsPage } from './components/settings/SettingsPage';
+import { DownloadsPage } from './components/downloads/DownloadsPage';
 import { Tv } from 'lucide-react';
 
 import { useChannelStore } from './stores/useChannelStore';
@@ -31,7 +32,6 @@ import './styles/components.css';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<SidebarTab>('home');
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isAddPlaylistOpen, setIsAddPlaylistOpen] = useState(false);
   const [isPlaylistManagerOpen, setIsPlaylistManagerOpen] = useState(false);
@@ -124,14 +124,14 @@ export function App() {
           useVodStore.getState().closeDetail();
         } else if (isEpgGridOpen) {
           setIsEpgGridOpen(false);
-        } else if (isSettingsOpen) {
-          setIsSettingsOpen(false);
         } else if (isPlaylistManagerOpen) {
           setIsPlaylistManagerOpen(false);
         } else if (isAddPlaylistOpen) {
           setIsAddPlaylistOpen(false);
         } else if (isMobileSidebarOpen) {
           setIsMobileSidebarOpen(false);
+        } else if (activeTab === 'settings') {
+          setActiveTab('home');
         }
       },
     });
@@ -170,10 +170,10 @@ export function App() {
     isShortcutsOpen,
     isCommandPaletteOpen,
     isEpgGridOpen,
-    isSettingsOpen,
     isPlaylistManagerOpen,
     isAddPlaylistOpen,
     isMobileSidebarOpen,
+    activeTab,
     togglePlay,
     toggleMute,
     toggleFullscreen,
@@ -185,9 +185,6 @@ export function App() {
     <div className={`tokerian-shell ${tvMode ? 'tv-mode-active' : ''}`}>
       {/* Top Application Header */}
       <Header
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenPlaylists={() => setIsPlaylistManagerOpen(true)}
         onOpenAddPlaylist={() => setIsAddPlaylistOpen(true)}
         onOpenEpgGuide={() => setIsEpgGridOpen(true)}
@@ -202,7 +199,6 @@ export function App() {
           activeTab={activeTab}
           onTabChange={setActiveTab}
           onOpenPlaylists={() => setIsPlaylistManagerOpen(true)}
-          onOpenSettings={() => setIsSettingsOpen(true)}
           onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
           onOpenEpgGuide={() => setIsEpgGridOpen(true)}
           isMobileOpen={isMobileSidebarOpen}
@@ -210,11 +206,17 @@ export function App() {
         />
 
         {/* Center Main Browsing Area */}
-        <main className="tokerian-main">
+        <main
+          className={`tokerian-main ${activeTab === 'settings' ? 'tokerian-main-settings' : ''} ${
+            activeTab === 'channels' || activeTab === 'favorites' || activeTab === 'history'
+              ? 'tokerian-main-explorer'
+              : ''
+          }`}
+        >
           {/* Top Video Player (if a channel is currently loaded) */}
           {currentChannel && <VideoPlayer onOpenEpgGuide={() => setIsEpgGridOpen(true)} />}
 
-          {/* Home / Dashboard View (IPTVnator 1:1 Clone) */}
+          {/* Home / Dashboard View (1:1 Clone) */}
           {activeTab === 'home' && (
             <HomeDashboard
               onTabChange={setActiveTab}
@@ -223,7 +225,7 @@ export function App() {
             />
           )}
 
-          {/* Live Channels View (IPTVnator 2-Pane Explorer) */}
+          {/* Live Channels View (2-Pane Explorer) */}
           {activeTab === 'channels' && <ChannelExplorer activeTab="channels" />}
 
           {/* Movies (VOD) View */}
@@ -232,7 +234,7 @@ export function App() {
           {/* TV Series View */}
           {activeTab === 'series' && <VodCatalog type="series" />}
 
-          {/* Favorites & History Views (IPTVnator Explorer) */}
+          {/* Favorites & History Views (Explorer) */}
           {(activeTab === 'favorites' || activeTab === 'history') && (
             <ChannelExplorer activeTab={activeTab} />
           )}
@@ -268,6 +270,12 @@ export function App() {
               <ChannelGrid activeTab="channels" />
             </div>
           )}
+
+          {/* Downloads & DVR Recordings View */}
+          {activeTab === 'downloads' && <DownloadsPage onTabChange={setActiveTab} />}
+
+          {/* Dedicated Full-Page Settings View */}
+          {activeTab === 'settings' && <SettingsPage onBack={() => setActiveTab('home')} />}
         </main>
       </div>
 
@@ -276,13 +284,6 @@ export function App() {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         onOpenGenres={() => setIsMobileSidebarOpen(true)}
-        onOpenSettings={() => setIsSettingsOpen(true)}
-      />
-
-      {/* Settings Modal (changeable M3U URL, presets, CORS proxy) */}
-      <SettingsModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
       />
 
       {/* Playlists & Accounts Manager Modal */}
@@ -311,7 +312,7 @@ export function App() {
       <CommandPalette
         isOpen={isCommandPaletteOpen}
         onClose={() => setIsCommandPaletteOpen(false)}
-        onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenSettings={() => setActiveTab('settings')}
         onOpenPlaylists={() => setIsPlaylistManagerOpen(true)}
         onOpenEpgGuide={() => setIsEpgGridOpen(true)}
         onTabChange={setActiveTab}

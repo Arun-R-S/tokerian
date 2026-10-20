@@ -1,4 +1,4 @@
-// Electronic Program Guide (EPG) Service ported and adapted from IPTVnator
+// Electronic Program Guide (EPG) Service ported and adapted
 // Parses XMLTV (.xml, .xml.gz) data, normalizes timestamps, caches in IndexedDB,
 // and resolves "Now Playing" and "Next Up" schedules with real-time progress.
 

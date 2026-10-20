@@ -18,6 +18,7 @@ import {
   AlertCircle,
   RefreshCw,
   Folder,
+  GripVertical,
 } from 'lucide-react';
 import type { Channel } from '../../core/domain/types';
 import type { SidebarTab } from '../layout/Sidebar';
@@ -73,9 +74,40 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({ activeTab = 'c
   const [visibleCount, setVisibleCount] = useState<number>(pageSize);
   const [activeMenuChannelId, setActiveMenuChannelId] = useState<string | null>(null);
   const [copiedChannelId, setCopiedChannelId] = useState<string | null>(null);
+  const [draggedChannelId, setDraggedChannelId] = useState<string | null>(null);
 
-  const sentinelRef = useRef<HTMLDivElement>(null);
+  const reorderFavorites = useUserStore((s) => s.reorderFavorites);
+  const orderedFavoriteIds = useUserStore((s) => s.orderedFavoriteIds);
+
+  const gridSentinelRef = useRef<HTMLDivElement>(null);
+  const tableSentinelRef = useRef<HTMLDivElement>(null);
+  const channelsPaneRef = useRef<HTMLDivElement>(null);
+  const tableWrapRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    e.dataTransfer.setData('text/plain', id);
+    setDraggedChannelId(id);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDropOnChannel = (targetId: string) => {
+    if (!draggedChannelId || draggedChannelId === targetId) return;
+
+    const currentOrder = [...orderedFavoriteIds];
+    const fromIdx = currentOrder.indexOf(draggedChannelId);
+    const toIdx = currentOrder.indexOf(targetId);
+
+    if (fromIdx !== -1 && toIdx !== -1) {
+      currentOrder.splice(fromIdx, 1);
+      currentOrder.splice(toIdx, 0, draggedChannelId);
+      reorderFavorites(currentOrder);
+    }
+    setDraggedChannelId(null);
+  };
 
   // Close context menu when clicking outside
   useEffect(() => {
@@ -135,7 +167,12 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({ activeTab = 'c
     let sourceList: Channel[] = [];
 
     if (activeTab === 'favorites') {
-      sourceList = channels.filter((c) => favorites.has(c.id || c.url));
+      const channelMap = new Map<string, Channel>();
+      for (const c of channels) channelMap.set(c.id || c.url, c);
+      const ordered = useUserStore.getState().orderedFavoriteIds;
+      sourceList = ordered
+        .map((id) => channelMap.get(id))
+        .filter((c): c is Channel => !!c);
     } else if (activeTab === 'history') {
       const historyMap = new Map(history.map((h) => [h.channelId, h.timestamp]));
       sourceList = channels
@@ -193,10 +230,46 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({ activeTab = 'c
 
   const hasMore = visibleCount < displayedChannels.length;
 
-  // Infinite Scroll Trigger
+  // Direct onScroll handler for Table scroll container
+  const handleTableScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    if (scrollHeight - scrollTop - clientHeight < 350 && hasMore) {
+      setVisibleCount((prev) => Math.min(prev + pageSize, displayedChannels.length));
+    }
+  };
+
+  // Direct onScroll handler for Grid channels pane
+  const handlePaneScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (viewMode !== 'grid') return;
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    if (scrollHeight - scrollTop - clientHeight < 350 && hasMore) {
+      setVisibleCount((prev) => Math.min(prev + pageSize, displayedChannels.length));
+    }
+  };
+
+  // Auto-fill scroll viewport if initial count doesn't fill the container
   useEffect(() => {
-    const sentinel = sentinelRef.current;
+    if (!hasMore) return;
+    const isTable = viewMode === 'table';
+    const container = isTable ? tableWrapRef.current : channelsPaneRef.current;
+    if (!container) return;
+
+    const timer = setTimeout(() => {
+      if (container.scrollHeight <= container.clientHeight + 80) {
+        setVisibleCount((prev) => Math.min(prev + pageSize, displayedChannels.length));
+      }
+    }, 120);
+
+    return () => clearTimeout(timer);
+  }, [viewMode, visibleCount, hasMore, displayedChannels.length, pageSize]);
+
+  // Infinite Scroll Observer Trigger
+  useEffect(() => {
+    const isTable = viewMode === 'table';
+    const sentinel = isTable ? tableSentinelRef.current : gridSentinelRef.current;
     if (!sentinel || !hasMore) return;
+
+    const rootEl = isTable ? tableWrapRef.current : channelsPaneRef.current;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -204,12 +277,12 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({ activeTab = 'c
           setVisibleCount((prev) => Math.min(prev + pageSize, displayedChannels.length));
         }
       },
-      { rootMargin: '300px' }
+      { root: rootEl || null, rootMargin: '350px' }
     );
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [hasMore, pageSize, displayedChannels.length]);
+  }, [hasMore, pageSize, displayedChannels.length, viewMode, visibleCount]);
 
   const handleCopyUrl = (ch: Channel) => {
     if (ch.url) {
@@ -357,7 +430,11 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({ activeTab = 'c
       {/* =========================================================================
           RIGHT PANE: Channels Control Toolbar & Main Display Matrix
           ========================================================================= */}
-      <div className="explorer-channels-pane">
+      <div
+        className={`explorer-channels-pane ${viewMode === 'table' ? 'explorer-pane-table-mode' : ''}`}
+        ref={channelsPaneRef}
+        onScroll={handlePaneScroll}
+      >
         {/* Explorer Control Toolbar */}
         <div className="explorer-toolbar">
           <div className="toolbar-left-col">
@@ -424,6 +501,37 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({ activeTab = 'c
           </div>
         </div>
 
+        {/* Mobile Horizontal Category Filter Bar (Visible on mobile/tablet when on Channels tab) */}
+        {activeTab === 'channels' && (
+          <div className="mobile-categories-strip">
+            <button
+              type="button"
+              onClick={() => setActiveCategory('All')}
+              className={`mobile-category-pill ${activeCategory === 'All' ? 'mobile-category-pill-active' : ''}`}
+            >
+              <span>All</span>
+              <span className="mobile-pill-badge">{(categoryCounts.get('All') || 0).toLocaleString()}</span>
+            </button>
+
+            {filteredCategories.map((group) => {
+              if (group === 'All') return null;
+              const isActive = activeCategory === group;
+              const count = categoryCounts.get(group) || 0;
+              return (
+                <button
+                  key={group}
+                  type="button"
+                  onClick={() => setActiveCategory(group)}
+                  className={`mobile-category-pill ${isActive ? 'mobile-category-pill-active' : ''}`}
+                >
+                  <span>{group}</span>
+                  <span className="mobile-pill-badge">{count.toLocaleString()}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {/* Channels Content: Empty States or Channels Grid / Table */}
         {displayedChannels.length === 0 ? (
           <div className="grid-empty-state" style={{ marginTop: '30px' }}>
@@ -441,23 +549,31 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({ activeTab = 'c
              ========================================================================= */
           <div className="explorer-channels-grid">
             {visibleChannels.map((channel) => (
-              <ChannelCard key={channel.id || channel.url} channel={channel} />
+              <ChannelCard
+                key={channel.id || channel.url}
+                channel={channel}
+                scope={activeTab === 'favorites' ? 'favorites' : 'all'}
+              />
             ))}
           </div>
         ) : (
           /* =========================================================================
-             MODE B: IPTVnator Table / List View
+             MODE B: Table / List View
              ========================================================================= */
-          <div className="explorer-channels-table-wrap">
+          <div
+            className="explorer-channels-table-wrap"
+            ref={tableWrapRef}
+            onScroll={handleTableScroll}
+          >
             <table className="iptvnator-channel-table">
               <thead>
                 <tr>
-                  <th style={{ width: '48px', textAlign: 'center' }}>#</th>
-                  <th style={{ width: '56px' }}>Logo</th>
+                  <th style={{ width: '40px', textAlign: 'center' }}>#</th>
+                  <th style={{ width: '48px' }}>Logo</th>
                   <th>Channel Name</th>
-                  <th>Group</th>
-                  <th style={{ width: '90px' }}>Quality</th>
-                  <th style={{ width: '120px', textAlign: 'right' }}>Actions</th>
+                  <th className="table-col-group">Group</th>
+                  <th className="table-col-quality" style={{ width: '80px' }}>Quality</th>
+                  <th style={{ width: '100px', textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -470,18 +586,29 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({ activeTab = 'c
                   return (
                     <tr
                       key={chId}
-                      className={`table-channel-row ${isPlaying ? 'table-row-playing' : ''}`}
+                      className={`table-channel-row ${isPlaying ? 'table-row-playing' : ''} ${draggedChannelId === chId ? 'table-row-dragging' : ''}`}
                       tabIndex={0}
-                      onClick={() => playChannel(channel)}
+                      draggable={activeTab === 'favorites'}
+                      onDragStart={(e) => handleDragStart(e, chId)}
+                      onDragOver={handleDragOver}
+                      onDrop={() => handleDropOnChannel(chId)}
+                      onClick={() => playChannel(channel, undefined, activeTab === 'favorites' ? 'favorites' : 'all')}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === 'Select') {
                           e.preventDefault();
-                          playChannel(channel);
+                          playChannel(channel, undefined, activeTab === 'favorites' ? 'favorites' : 'all');
                         }
                       }}
                     >
                       <td style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.78rem' }}>
-                        {idx + 1}
+                        {activeTab === 'favorites' ? (
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px', cursor: 'grab' }}>
+                            <GripVertical size={13} style={{ opacity: 0.5 }} />
+                            <span>{idx + 1}</span>
+                          </div>
+                        ) : (
+                          idx + 1
+                        )}
                       </td>
 
                       <td>
@@ -514,13 +641,13 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({ activeTab = 'c
                         </div>
                       </td>
 
-                      <td>
+                      <td className="table-col-group">
                         <span className="table-group-badge">
                           {channel.group || 'General'}
                         </span>
                       </td>
 
-                      <td>
+                      <td className="table-col-quality">
                         {channel.resolution ? (
                           <span className="channel-badge badge-resolution">
                             {channel.resolution}
@@ -618,12 +745,26 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({ activeTab = 'c
                 })}
               </tbody>
             </table>
+
+            {/* Table Infinite Scroll Sentinel inside scroll viewport */}
+            {hasMore && (
+              <div ref={tableSentinelRef} className="load-more-section">
+                <button
+                  type="button"
+                  onClick={() => setVisibleCount((prev) => Math.min(prev + pageSize, displayedChannels.length))}
+                  className="tokerian-btn tokerian-btn-primary load-more-btn"
+                >
+                  <span>Load Next {Math.min(pageSize, displayedChannels.length - visibleCount)} Channels</span>
+                </button>
+                <span className="load-more-hint">Scroll down to load automatically</span>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Infinite Scroll Sentinel */}
-        {hasMore && (
-          <div ref={sentinelRef} className="load-more-section">
+        {/* Grid Infinite Scroll Sentinel */}
+        {viewMode === 'grid' && hasMore && (
+          <div ref={gridSentinelRef} className="load-more-section">
             <button
               type="button"
               onClick={() => setVisibleCount((prev) => Math.min(prev + pageSize, displayedChannels.length))}

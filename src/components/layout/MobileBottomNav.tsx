@@ -1,19 +1,18 @@
 import React from 'react';
 import type { SidebarTab } from './Sidebar';
 import { useUserStore } from '../../stores/useUserStore';
-import { LayoutGrid, Tv, Film, Sparkles, Star, Sliders } from 'lucide-react';
+import { MatIcon } from '../common/MatIcon';
 
 interface MobileBottomNavProps {
   activeTab: SidebarTab;
   onTabChange: (tab: SidebarTab) => void;
   onOpenGenres?: () => void;
-  onOpenSettings: () => void;
+  onOpenSettings?: () => void;
 }
 
 export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   activeTab,
   onTabChange,
-  onOpenSettings,
 }) => {
   const favoritesCount = useUserStore((s) => s.favorites.size);
 
@@ -25,7 +24,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         className={`bottom-nav-item ${activeTab === 'home' ? 'bottom-item-active' : ''}`}
         title="Home"
       >
-        <LayoutGrid size={19} />
+        <MatIcon name="dashboard" size={20} />
         <span>Home</span>
       </button>
 
@@ -35,7 +34,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         className={`bottom-nav-item ${activeTab === 'channels' ? 'bottom-item-active' : ''}`}
         title="Channels"
       >
-        <Tv size={19} />
+        <MatIcon name="playlist_play" size={22} />
         <span>Channels</span>
       </button>
 
@@ -45,7 +44,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         className={`bottom-nav-item ${activeTab === 'movies' ? 'bottom-item-active' : ''}`}
         title="Movies"
       >
-        <Film size={19} />
+        <MatIcon name="movie" size={20} />
         <span>Movies</span>
       </button>
 
@@ -55,7 +54,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         className={`bottom-nav-item ${activeTab === 'series' ? 'bottom-item-active' : ''}`}
         title="Series"
       >
-        <Sparkles size={19} />
+        <MatIcon name="tv" size={20} />
         <span>Series</span>
       </button>
 
@@ -66,7 +65,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         title="Favorites"
       >
         <div className="bottom-nav-icon-wrapper">
-          <Star size={19} />
+          <MatIcon name="favorite" size={20} />
           {favoritesCount > 0 && <span className="bottom-nav-badge">{favoritesCount}</span>}
         </div>
         <span>Favorites</span>
@@ -74,11 +73,11 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 
       <button
         type="button"
-        onClick={onOpenSettings}
-        className="bottom-nav-item"
+        onClick={() => onTabChange('settings')}
+        className={`bottom-nav-item ${activeTab === 'settings' ? 'bottom-item-active' : ''}`}
         title="Settings"
       >
-        <Sliders size={19} />
+        <MatIcon name="settings" size={20} />
         <span>Settings</span>
       </button>
     </nav>

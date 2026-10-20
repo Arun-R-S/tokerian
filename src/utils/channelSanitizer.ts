@@ -1,4 +1,4 @@
-// Channel Name Sanitizer ported and adapted from IPTVnator's title-normalization.util
+// Channel Name Sanitizer ported and adapted from title-normalization.util
 // Strips provider country/language tags (e.g. "US - ", "UK | ", "IN: ") and quality suffixes.
 
 const PROVIDER_SEPARATORS = '[|\\-:]';

@@ -535,18 +535,13 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
   return (
     <div
-      className="tokerian-modal-backdrop palette-backdrop"
+      className="palette-backdrop"
       onClick={onClose}
-      style={{
-        zIndex: 9999,
-        display: 'flex',
-        alignItems: 'flex-start',
-        justifyContent: 'center',
-        paddingTop: '10vh',
-      }}
+      role="dialog"
+      aria-modal="true"
     >
       <div
-        className="tokerian-command-palette glass-panel"
+        className="tokerian-command-palette"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >

@@ -212,11 +212,11 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                   key={ch.id || ch.url}
                   className="iptvnator-compact-card"
                   tabIndex={0}
-                  onClick={() => playChannel(ch)}
+                  onClick={() => playChannel(ch, undefined, 'favorites')}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === 'Select') {
                       e.preventDefault();
-                      playChannel(ch);
+                      playChannel(ch, undefined, 'favorites');
                     }
                   }}
                   title={`Play ${ch.name}`}
@@ -412,7 +412,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                 <div className="source-card-bottom-row">
                   <span className="source-card-title">{p.title}</span>
                   <span className="source-card-count">
-                    {p.count ? `${p.count.toLocaleString()} channels` : p.type.toUpperCase()}
+                    {(() => {
+                      const exactCount = p.id === activePlaylistId && channels.length > 0 ? channels.length : p.count;
+                      return exactCount > 0 ? `${exactCount.toLocaleString()} channels` : p.type.toUpperCase();
+                    })()}
                   </span>
                 </div>
               </div>

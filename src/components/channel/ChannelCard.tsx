@@ -4,17 +4,18 @@ import { useUserStore } from '../../stores/useUserStore';
 import { usePlayerStore } from '../../stores/usePlayerStore';
 import { useSettingsStore } from '../../stores/useSettingsStore';
 import { ChannelSanitizer } from '../../utils/channelSanitizer';
-import { Tv, Star } from 'lucide-react';
+import { MatIcon } from '../common/MatIcon';
 
 interface ChannelCardProps {
   channel: Channel;
+  scope?: 'all' | 'favorites';
 }
 
 /**
  * High-performance memoized ChannelCard.
  * Adheres to Vercel React Best Practices (rerender-memo, rerender-derived-state, list-performance-item-memo).
  */
-export const ChannelCard: React.FC<ChannelCardProps> = memo(({ channel }) => {
+export const ChannelCard: React.FC<ChannelCardProps> = memo(({ channel, scope }) => {
   const [imageError, setImageError] = useState(false);
 
   // Atomic state subscriptions
@@ -28,7 +29,7 @@ export const ChannelCard: React.FC<ChannelCardProps> = memo(({ channel }) => {
   const toggleFavorite = useUserStore((s) => s.toggleFavorite);
 
   const handleCardClick = () => {
-    playChannel(channel);
+    playChannel(channel, undefined, scope);
   };
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
@@ -61,7 +62,7 @@ export const ChannelCard: React.FC<ChannelCardProps> = memo(({ channel }) => {
             />
           ) : (
             <div className="channel-logo-placeholder">
-              <Tv size={22} className="text-muted" />
+              <MatIcon name="tv" size={24} style={{ color: 'var(--text-muted)' }} />
             </div>
           )}
         </div>
@@ -72,7 +73,11 @@ export const ChannelCard: React.FC<ChannelCardProps> = memo(({ channel }) => {
           className={`favorite-btn ${isFav ? 'favorite-btn-active' : ''}`}
           title={isFav ? 'Remove from favorites' : 'Add to favorites'}
         >
-          <Star size={16} fill={isFav ? '#eab308' : 'none'} color={isFav ? '#eab308' : 'currentColor'} />
+          <MatIcon
+            name={isFav ? 'favorite' : 'favorite_border'}
+            size={18}
+            style={{ color: isFav ? '#ef4444' : 'rgba(255, 255, 255, 0.55)' }}
+          />
         </button>
       </div>
 

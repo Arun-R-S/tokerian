@@ -13,4 +13,5 @@ export interface IStoragePort {
 
   saveSettings(settings: Partial<Settings>): Promise<void>;
   getSettings(): Promise<Settings | null>;
+  clearAll?(): Promise<void>;
 }

@@ -201,6 +201,86 @@
 - [x] **Tablet**: Responsive 2-pane category explorer (`220px` width) with responsive 3-column grid and touch carousel snap.
 - [x] **Android TV**: Upgraded `DpadNavigationAdapter.ts` with 2D geometric Euclidean spatial navigation algorithm. Added `tabIndex={0}`, Enter key trigger, and high-contrast cyan/blue glowing halos (`box-shadow: 0 0 0 3px #38bdf8`) on all interactive cards, categories, table rows, and player controls for 10-foot remote operability.
 
+### Step 6: UI Refinement, Dedicated Settings, Downloads Page & Cinema Timeline (COMPLETED)
+- [x] **1. Hide Horizontal Scrollbars**:
+  - Eliminated visible X-axis scrollbar tracks on `.dashboard-horizontal-scroll` across Chromium, Firefox, and WebKit while preserving smooth horizontal mouse-drag and touch swiping.
+- [x] **2. Platform-Specific Window Controls**:
+  - Restrict Close, Maximize, and Minimize titlebar buttons in `Header.tsx` strictly to Electron Desktop builds (`(window as any).electronAPI`).
+  - Automatically hidden on Web browsers, Mobile (Capacitor), and Tablet viewports.
+- [x] **3. Reorderable Favorites & Loop-Bound Zapping**:
+  - Upgraded `useUserStore` to persist ordered favorite IDs (`orderedFavoriteIds: string[]`) and added `reorderFavorites`.
+  - Added HTML5 Drag-and-Drop (`draggable`, `onDragStart`, `onDragOver`, `onDrop`) with `GripVertical` handle in Favorites table view.
+  - Bound `zapNext()` and `zapPrev()` in `usePlayerStore` to loop within `orderedFavoriteIds` when played with `scope="favorites"`.
+- [x] **4. Dedicated Full-Page Settings View**:
+  - Built full-page `SettingsPage.tsx` (`activeTab === 'settings'`) with 7 IPTVnator sections:
+    - *General & Presets*, *Playback & Stream Engine*, *Recording & Storage*, *External Players (VLC/MPV)*, *Title Sanitizer*, *Parental Lock PIN*, *Backup & Factory Reset*.
+- [x] **5. Dedicated Downloads & Recordings View**:
+  - Added `activeTab === 'downloads'` into main navigation rail with segmented filter pills:
+    - *All*, *Movies*, *Series*, *In Progress*, *Recordings*.
+  - Added destination storage folder picker and live byte tracking metric.
+- [x] **6. Relocate Session Backup Export to Settings**:
+  - Removed JSON export icon from top header toolbar.
+  - Placed JSON Backup Export, Backup Import with validation, and Factory Reset inside **Settings → Backup & Reset**.
+- [x] **7. Interactive Player Timeline & Seek Progress Bar**:
+  - Ported IPTVnator's cinema scrub timeline (`player-timeline-wrapper`) into `VideoPlayer.tsx`:
+    - Current playback timestamp (`HH:mm:ss` / `mm:ss`) and duration / remaining time.
+    - Custom range slider with live gradient track fill (`--seek-progress`).
+    - Glowing animated `• LIVE` badge for live broadcast streams without finite duration.
+
+### Step 7: Mobile Screen Responsiveness Across All Core Views (COMPLETED)
+- [x] **1. Channels Page Mobile Responsiveness**:
+  - 2-column mobile channel card grid (`repeat(2, 1fr)`) with compact logos (40x40px) and clean ellipsis typography.
+  - Added swipeable horizontal category filter pill bar (`.mobile-categories-strip`) replacing the desktop left sidebar on phone screens with real-time channel counts.
+  - Responsive explorer toolbar with stacked full-width title/counter row and sort dropdown.
+  - Table mode hides secondary columns (`Group`, `Quality`) on small screens, keeping `#`, `Logo`, `Channel Name`, and `Play/Star Actions` legible.
+- [x] **2. Favorites Page Mobile Responsiveness**:
+  - Renders 2-column cards grid with instant star favorite toggle, channel count badge, and seamless playback scope loop.
+  - Clean responsive empty state with guide prompt when favorites list is empty.
+- [x] **3. Movies (VOD) Page Mobile Responsiveness**:
+  - 2-column responsive cinema poster grid (`repeat(2, 1fr)`) with 2:3 aspect ratio poster frames.
+  - Touch-friendly horizontal category filter pill scroll bar and resume shelf for partially watched movies.
+  - Search input and sort dropdown wrapped into full-width stacked rows.
+- [x] **4. TV Series Page Mobile Responsiveness**:
+  - 2-column posters grid for TV Series catalog with floating IMDb rating pills and release years.
+  - Responsive `VodDetailModal` with single-column layout on mobile, touch episode lists, and clean season pill selectors.
+- [x] **5. Mobile Bottom Navigation**:
+  - Top-left and top-right curved borders (`border-radius: 20px 20px 0 0`) with flat bottom edges adhering to native Android & iOS ergonomics.
+
+### Step 8: IPTVnator 1:1 Filled Material Icons & DM Sans Bold Typography (COMPLETED)
+- [x] **1. Material Design Icons Font Integration**:
+  - Installed `material-design-icons-iconfont` and `@fontsource/dm-sans` offline font packages.
+  - Imported in `index.css` for zero-network font bundling on Web, Mobile (Capacitor), and Electron desktop.
+  - Created reusable, memoized `<MatIcon />` component in `src/components/common/MatIcon.tsx`.
+- [x] **2. Left Sidebar Rail Filled Icons**:
+  - Replaced outline icons with filled Google Material Design ligatures matching IPTVnator:
+    - *Home*: `dashboard` (4 solid squares)
+    - *Channels*: `playlist_play` (3 bars with play arrow)
+    - *Search*: `search`
+    - *Favorites*: `favorite` (solid filled heart)
+    - *History*: `history`
+    - *Live TV*: `live_tv` (with IPTVnator active top amber/gold border accent)
+    - *Movies*: `movie`
+    - *Series*: `tv`
+    - *Sources*: `folder` (solid filled folder)
+    - *Downloads*: `download`
+    - *Settings*: `settings`
+- [x] **3. Settings Sub-Navigation & Bold Typography**:
+  - Styled `.settings-nav-item` with bold weight (`font-weight: 600`), DM Sans font family, and rounded pill active state (`border: 1px solid rgba(59, 130, 246, 0.55); background: rgba(59, 130, 246, 0.18)`).
+  - Filled icons in Settings menu matching IPTVnator 1:1:
+    - *General*: `tune`
+    - *Playback*: `play_circle`
+    - *EPG*: `calendar_month`
+    - *Dashboard*: `dashboard`
+    - *Remote*: `smartphone`
+    - *Metadata*: `movie`
+    - *Parental*: `family_restroom`
+    - *Backup*: `backup`
+    - *Reset*: `delete`
+    - *About*: `info`
+- [x] **4. Mobile Bottom Navigation & Channel Cards**:
+  - Replaced icons in `MobileBottomNav.tsx` with filled Material Icons (`dashboard`, `playlist_play`, `movie`, `tv`, `favorite`, `settings`).
+  - Channel cards now use filled `favorite` heart icon on save.
+
 ---
 
 ## 5. Verification Standards
@@ -208,3 +288,4 @@
 2. **Capacitor Android Sync**: `npx cap sync android` after web builds.
 3. **Electron Desktop**: Runs seamlessly with external VLC/MPV spawning and native shortcuts.
 4. **Android TV**: Tested with D-pad remote inputs (Up, Down, Left, Right, Select, Back).
+

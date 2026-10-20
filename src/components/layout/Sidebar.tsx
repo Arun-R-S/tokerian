@@ -1,18 +1,9 @@
-import React from 'react';
 import {
-  LayoutGrid,
-  Menu,
-  Search,
-  Heart,
-  Clock,
-  Tv,
-  Folder,
-  Sliders,
   X,
   Radio,
-  Film,
-  Layers,
 } from 'lucide-react';
+import { MatIcon } from '../common/MatIcon';
+import { AppVersionBadge } from '../common/AppVersionBadge';
 import { useUserStore } from '../../stores/useUserStore';
 import { usePlayerStore } from '../../stores/usePlayerStore';
 
@@ -25,13 +16,14 @@ export type SidebarTab =
   | 'favorites'
   | 'history'
   | 'livetv'
-  | 'playlists';
+  | 'playlists'
+  | 'downloads'
+  | 'settings';
 
 interface SidebarProps {
   activeTab: SidebarTab;
   onTabChange: (tab: SidebarTab) => void;
   onOpenPlaylists?: () => void;
-  onOpenSettings?: () => void;
   onOpenCommandPalette?: () => void;
   onOpenEpgGuide?: () => void;
   isMobileOpen?: boolean;
@@ -42,7 +34,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   onTabChange,
   onOpenPlaylists,
-  onOpenSettings,
   onOpenCommandPalette,
   isMobileOpen = false,
   onCloseMobile,
@@ -78,6 +69,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <Radio size={16} />
             </div>
             <span className="brand-title" style={{ fontSize: '1rem' }}>Tokerian</span>
+            <AppVersionBadge variant="chip" />
           </div>
           <button
             type="button"
@@ -98,7 +90,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className={`rail-icon-btn ${activeTab === 'home' ? 'rail-icon-active' : ''}`}
             title="Home Dashboard"
           >
-            <LayoutGrid size={20} />
+            <MatIcon name="dashboard" size={20} />
             <span className="rail-mobile-label">Home</span>
           </button>
 
@@ -109,7 +101,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className={`rail-icon-btn ${activeTab === 'channels' ? 'rail-icon-active' : ''}`}
             title="All Channels & Groups"
           >
-            <Menu size={20} />
+            <MatIcon name="playlist_play" size={22} />
             <span className="rail-mobile-label">Channels</span>
           </button>
 
@@ -120,7 +112,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className={`rail-icon-btn ${activeTab === 'search' ? 'rail-icon-active' : ''}`}
             title="Search (Ctrl+K)"
           >
-            <Search size={20} />
+            <MatIcon name="search" size={20} />
             <span className="rail-mobile-label">Search</span>
           </button>
 
@@ -131,7 +123,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className={`rail-icon-btn ${activeTab === 'favorites' ? 'rail-icon-active' : ''}`}
             title={`Favorites (${favoritesCount})`}
           >
-            <Heart size={20} />
+            <MatIcon name="favorite" size={20} />
             {favoritesCount > 0 && <span className="rail-badge-dot" />}
             <span className="rail-mobile-label">Favorites ({favoritesCount})</span>
           </button>
@@ -143,7 +135,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className={`rail-icon-btn ${activeTab === 'history' ? 'rail-icon-active' : ''}`}
             title={`Watch History (${historyCount})`}
           >
-            <Clock size={20} />
+            <MatIcon name="history" size={20} />
             <span className="rail-mobile-label">History ({historyCount})</span>
           </button>
 
@@ -154,7 +146,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className={`rail-icon-btn ${activeTab === 'livetv' ? 'rail-icon-active' : ''}`}
             title={currentChannel ? `Now Playing: ${currentChannel.name}` : 'Live TV Player'}
           >
-            <Tv size={20} />
+            <MatIcon name="live_tv" size={20} />
             <span className="rail-mobile-label">Live Player</span>
           </button>
 
@@ -165,7 +157,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className={`rail-icon-btn ${activeTab === 'movies' ? 'rail-icon-active' : ''}`}
             title="Movies (VOD)"
           >
-            <Film size={20} />
+            <MatIcon name="movie" size={20} />
             <span className="rail-mobile-label">Movies</span>
           </button>
 
@@ -176,7 +168,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className={`rail-icon-btn ${activeTab === 'series' ? 'rail-icon-active' : ''}`}
             title="TV Series Catalog"
           >
-            <Layers size={20} />
+            <MatIcon name="tv" size={20} />
             <span className="rail-mobile-label">Series</span>
           </button>
 
@@ -187,8 +179,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className={`rail-icon-btn ${activeTab === 'playlists' ? 'rail-icon-active' : ''}`}
             title="Playlists & Sources"
           >
-            <Folder size={20} />
+            <MatIcon name="folder" size={20} />
             <span className="rail-mobile-label">Sources</span>
+          </button>
+
+          {/* 10. Downloads & Recordings */}
+          <button
+            type="button"
+            onClick={() => handleTabSelect('downloads')}
+            className={`rail-icon-btn ${activeTab === 'downloads' ? 'rail-icon-active' : ''}`}
+            title="Downloads & Recordings"
+          >
+            <MatIcon name="download" size={20} />
+            <span className="rail-mobile-label">Downloads</span>
           </button>
         </div>
 
@@ -197,15 +200,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             type="button"
             onClick={() => {
-              if (onOpenSettings) onOpenSettings();
+              onTabChange('settings');
               onCloseMobile?.();
             }}
-            className="rail-icon-btn"
+            className={`rail-icon-btn ${activeTab === 'settings' ? 'rail-icon-active' : ''}`}
             title="Settings & Preferences"
           >
-            <Sliders size={20} />
+            <MatIcon name="settings" size={20} />
             <span className="rail-mobile-label">Settings</span>
           </button>
+          <AppVersionBadge
+            variant="compact"
+            onClick={() => {
+              onTabChange('settings');
+              onCloseMobile?.();
+            }}
+          />
         </div>
       </aside>
     </>

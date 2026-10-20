@@ -4,10 +4,12 @@ import { storageAdapter } from '../adapters/storage/IndexedDbAdapter';
 
 interface UserState {
   favorites: Set<string>;
+  orderedFavoriteIds: string[];
   history: HistoryItem[];
   isLoaded: boolean;
   loadUserData: () => Promise<void>;
   toggleFavorite: (channelId: string) => Promise<void>;
+  reorderFavorites: (newOrder: string[]) => Promise<void>;
   isFavorite: (channelId: string) => boolean;
   addToHistory: (channel: Channel) => Promise<void>;
   clearHistory: () => Promise<void>;
@@ -15,6 +17,7 @@ interface UserState {
 
 export const useUserStore = create<UserState>((set, get) => ({
   favorites: new Set<string>(),
+  orderedFavoriteIds: [],
   history: [],
   isLoaded: false,
 
@@ -26,23 +29,34 @@ export const useUserStore = create<UserState>((set, get) => ({
 
     set({
       favorites: new Set(savedFavorites),
+      orderedFavoriteIds: savedFavorites,
       history: savedHistory,
       isLoaded: true,
     });
   },
 
   toggleFavorite: async (channelId: string) => {
-    const { favorites } = get();
+    const { favorites, orderedFavoriteIds } = get();
     const nextFavorites = new Set(favorites);
+    let nextOrder = [...orderedFavoriteIds];
 
     if (nextFavorites.has(channelId)) {
       nextFavorites.delete(channelId);
+      nextOrder = nextOrder.filter((id) => id !== channelId);
     } else {
       nextFavorites.add(channelId);
+      if (!nextOrder.includes(channelId)) {
+        nextOrder.push(channelId);
+      }
     }
 
-    set({ favorites: nextFavorites });
-    await storageAdapter.saveFavorites(Array.from(nextFavorites));
+    set({ favorites: nextFavorites, orderedFavoriteIds: nextOrder });
+    await storageAdapter.saveFavorites(nextOrder);
+  },
+
+  reorderFavorites: async (newOrder: string[]) => {
+    set({ orderedFavoriteIds: newOrder, favorites: new Set(newOrder) });
+    await storageAdapter.saveFavorites(newOrder);
   },
 
   isFavorite: (channelId: string) => {

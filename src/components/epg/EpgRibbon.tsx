@@ -1,4 +1,4 @@
-// EPG Live Timeline Ribbon ported and adapted from IPTVnator
+// EPG Live Timeline Ribbon ported and adapted
 // Displays "Now Playing", remaining minutes, progress bar, and "Next Up" preview.
 
 import React from 'react';
