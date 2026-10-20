@@ -29,6 +29,9 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   theme: 'dark',
   tvMode: false,
   pageSize: 100,
+  defaultExternalPlayer: 'vlc',
+  customVlcPath: '',
+  customMpvPath: '',
 
   updateSettings: async (newSettings) => {
     set(newSettings);

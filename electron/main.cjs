@@ -84,6 +84,133 @@ ipcMain.on('window-toggle-fullscreen', () => {
   }
 });
 
+// External Players Engine (VLC & MPV Spawner ported from IPTVnator)
+const fs = require('node:fs');
+const { spawn } = require('node:child_process');
+
+function getDefaultVlcPaths() {
+  if (process.platform === 'win32') {
+    return [
+      path.join('C:', 'Program Files', 'VideoLAN', 'VLC', 'vlc.exe'),
+      path.join('C:', 'Program Files (x86)', 'VideoLAN', 'VLC', 'vlc.exe'),
+      path.join(process.env.LOCALAPPDATA || '', 'Programs', 'VLC', 'vlc.exe'),
+    ];
+  } else if (process.platform === 'darwin') {
+    return [
+      '/Applications/VLC.app/Contents/MacOS/VLC',
+      path.join(process.env.HOME || '', 'Applications/VLC.app/Contents/MacOS/VLC'),
+    ];
+  } else {
+    return ['/usr/bin/vlc', '/usr/local/bin/vlc', '/snap/bin/vlc', 'vlc'];
+  }
+}
+
+function getDefaultMpvPaths() {
+  if (process.platform === 'win32') {
+    return [
+      path.join('C:', 'Program Files', 'mpv', 'mpv.exe'),
+      path.join('C:', 'Program Files (x86)', 'mpv', 'mpv.exe'),
+      path.join('C:', 'ProgramData', 'chocolatey', 'bin', 'mpv.exe'),
+      path.join(process.env.LOCALAPPDATA || '', 'Programs', 'mpv', 'mpv.exe'),
+    ];
+  } else if (process.platform === 'darwin') {
+    return [
+      '/Applications/mpv.app/Contents/MacOS/mpv',
+      '/opt/homebrew/bin/mpv',
+      '/usr/local/bin/mpv',
+    ];
+  } else {
+    return ['/usr/bin/mpv', '/usr/local/bin/mpv', '/snap/bin/mpv', 'mpv'];
+  }
+}
+
+function resolvePlayerExecutable(player, customPath) {
+  if (customPath && customPath.trim()) {
+    const trimmed = customPath.trim();
+    if (fs.existsSync(trimmed)) return trimmed;
+  }
+
+  const defaultList = player === 'vlc' ? getDefaultVlcPaths() : getDefaultMpvPaths();
+  for (const p of defaultList) {
+    if (fs.existsSync(p)) return p;
+  }
+
+  // Fallback to system PATH binary name
+  return player === 'vlc' ? 'vlc' : 'mpv';
+}
+
+ipcMain.handle('check-external-players', async (_event, customPaths = {}) => {
+  const vlcPath = resolvePlayerExecutable('vlc', customPaths.vlc);
+  const mpvPath = resolvePlayerExecutable('mpv', customPaths.mpv);
+
+  return {
+    vlc: fs.existsSync(vlcPath),
+    mpv: fs.existsSync(mpvPath),
+    vlcPath,
+    mpvPath,
+    platform: process.platform,
+  };
+});
+
+const activeExternalProcesses = new Map();
+
+ipcMain.handle('open-external-player', async (_event, options) => {
+  const { player = 'vlc', url, title, userAgent, referer, customPath } = options || {};
+
+  if (!url) {
+    return { success: false, error: 'No stream URL provided' };
+  }
+
+  const executable = resolvePlayerExecutable(player, customPath);
+  const args = [];
+
+  if (player === 'vlc') {
+    if (title) args.push(`:meta-title=${title}`);
+    if (userAgent) args.push(`:http-user-agent=${userAgent}`);
+    if (referer) args.push(`:http-referrer=${referer}`);
+    args.push(url);
+  } else {
+    // MPV args ported from IPTVnator
+    args.push('--ytdl=no');
+    if (title) args.push(`--force-media-title=${title}`);
+    if (userAgent) args.push(`--user-agent=${userAgent}`);
+    if (referer) args.push(`--referrer=${referer}`);
+    args.push(url);
+  }
+
+  try {
+    const proc = spawn(executable, args, {
+      detached: true,
+      stdio: 'ignore',
+      shell: false,
+    });
+
+    proc.unref();
+
+    const pid = proc.pid;
+    activeExternalProcesses.set(pid, { player, title, url, startTime: Date.now() });
+
+    proc.on('close', () => {
+      activeExternalProcesses.delete(pid);
+    });
+
+    return {
+      success: true,
+      player,
+      executable,
+      pid,
+    };
+  } catch (err) {
+    console.error(`[External Player] Failed to launch ${player}:`, err);
+    return {
+      success: false,
+      player,
+      executable,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+});
+
 app.whenReady().then(() => {
   Menu.setApplicationMenu(null);
   createWindow();

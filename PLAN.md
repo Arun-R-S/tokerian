@@ -117,11 +117,11 @@ f:\Projects\IP-TV\
 - [x] Build `EpgRibbon.tsx` displaying "Now Playing" and "Next Up" with a live progress percentage bar.
 - [x] Build `EpgGridModal.tsx` multi-channel timeline schedule matrix.
 
-### Phase 3: Desktop External Players (VLC & MPV via Electron)
-- [ ] Port `external-player-process.ts` logic into `electron/main.cjs`.
-- [ ] Auto-detect standard Windows paths for `vlc.exe` and `mpv.exe`.
-- [ ] Expose `openVlc` and `openMpv` in `electron/preload.cjs`.
-- [ ] Add "Open in VLC" and "Open in MPV" options in the video player OSD and channel menu.
+### Phase 3: Desktop External Players (VLC & MPV via Electron) (COMPLETED)
+- [x] Port `external-player-process.ts` logic into `electron/main.cjs`.
+- [x] Auto-detect standard Windows paths for `vlc.exe` and `mpv.exe`.
+- [x] Expose `openVlc` and `openMpv` in `electron/preload.cjs`.
+- [x] Add "Open in VLC" and "Open in MPV" options in the video player OSD and channel menu.
 
 ### Phase 4: VOD (Movies) & TV Series Catalog
 - [ ] Add **Live TV**, **Movies**, and **Series** view toggle in header/navigation.

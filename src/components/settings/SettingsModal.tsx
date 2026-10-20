@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSettingsStore } from '../../stores/useSettingsStore';
 import { useChannelStore } from '../../stores/useChannelStore';
 import { IPTV_PRESETS } from '../../core/presets/iptvPresets';
 import { storageAdapter } from '../../adapters/storage/IndexedDbAdapter';
+import { ExternalPlayerService } from '../../services/player/ExternalPlayerService';
 import {
   X,
   Link,
@@ -13,6 +14,8 @@ import {
   Sliders,
   Globe,
   Layers,
+  MonitorPlay,
+  RotateCcw,
 } from 'lucide-react';
 
 interface SettingsModalProps {
@@ -26,6 +29,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   const corsProxyUrl = useSettingsStore((s) => s.corsProxyUrl);
   const tvMode = useSettingsStore((s) => s.tvMode);
   const pageSize = useSettingsStore((s) => s.pageSize) || 100;
+  const defaultExternalPlayer = useSettingsStore((s) => s.defaultExternalPlayer) || 'vlc';
+  const customVlcPath = useSettingsStore((s) => s.customVlcPath) || '';
+  const customMpvPath = useSettingsStore((s) => s.customMpvPath) || '';
   const updateSettings = useSettingsStore((s) => s.updateSettings);
 
   const loadPlaylist = useChannelStore((s) => s.loadPlaylist);
@@ -33,7 +39,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
 
   const [inputUrl, setInputUrl] = useState(m3uUrl);
   const [proxyUrl, setProxyUrl] = useState(corsProxyUrl);
+  const [vlcPathInput, setVlcPathInput] = useState(customVlcPath);
+  const [mpvPathInput, setMpvPathInput] = useState(customMpvPath);
+  const [detectedPlayers, setDetectedPlayers] = useState<{ vlc: boolean; mpv: boolean; platform?: string }>({
+    vlc: false,
+    mpv: false,
+  });
   const [isSaved, setIsSaved] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setInputUrl(m3uUrl);
+      setProxyUrl(corsProxyUrl);
+      setVlcPathInput(customVlcPath);
+      setMpvPathInput(customMpvPath);
+
+      ExternalPlayerService.checkInstalled({ vlc: customVlcPath, mpv: customMpvPath }).then((res) => {
+        setDetectedPlayers(res);
+      });
+    }
+  }, [isOpen, m3uUrl, corsProxyUrl, customVlcPath, customMpvPath]);
 
   if (!isOpen) return null;
 
@@ -185,7 +210,121 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             </div>
           </div>
 
-          {/* Section 5: TV 10-Foot Mode & Cache Management */}
+          {/* Section 5: Desktop External Players (VLC & MPV) */}
+          <div className="settings-section">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+              <label className="settings-label" style={{ margin: 0 }}>
+                <MonitorPlay size={16} /> Desktop External Players (VLC & MPV)
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  ExternalPlayerService.checkInstalled({ vlc: vlcPathInput, mpv: mpvPathInput }).then((res) => {
+                    setDetectedPlayers(res);
+                  });
+                }}
+                className="tokerian-btn"
+                style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+                title="Re-check installed players"
+              >
+                <RotateCcw size={13} /> Re-scan
+              </button>
+            </div>
+            <p className="settings-hint">
+              Launch media directly in VLC or MPV for zero-copy hardware decoding, AC3/EAC3 audio codecs, and full MPEG-TS support.
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '10px' }}>
+              <div
+                style={{
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: `1px solid ${detectedPlayers.vlc ? 'rgba(34, 197, 94, 0.3)' : 'var(--border-subtle)'}`,
+                  borderRadius: 'var(--radius-md)',
+                  padding: '12px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontWeight: 600, fontSize: '0.9rem', color: '#fff' }}>VLC Media Player</span>
+                  <span
+                    style={{
+                      fontSize: '0.72rem',
+                      padding: '2px 8px',
+                      borderRadius: 'var(--radius-full)',
+                      background: detectedPlayers.vlc ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                      color: detectedPlayers.vlc ? '#4ade80' : '#f87171',
+                    }}
+                  >
+                    {detectedPlayers.vlc ? 'Detected' : 'Not Found'}
+                  </span>
+                </div>
+                <input
+                  type="text"
+                  value={vlcPathInput}
+                  onChange={(e) => {
+                    setVlcPathInput(e.target.value);
+                    updateSettings({ customVlcPath: e.target.value });
+                  }}
+                  placeholder="Custom VLC path (e.g. C:\...\vlc.exe)"
+                  className="tokerian-input"
+                  style={{ marginTop: '8px', fontSize: '0.78rem', padding: '6px 10px' }}
+                />
+              </div>
+
+              <div
+                style={{
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: `1px solid ${detectedPlayers.mpv ? 'rgba(34, 197, 94, 0.3)' : 'var(--border-subtle)'}`,
+                  borderRadius: 'var(--radius-md)',
+                  padding: '12px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontWeight: 600, fontSize: '0.9rem', color: '#fff' }}>MPV Player</span>
+                  <span
+                    style={{
+                      fontSize: '0.72rem',
+                      padding: '2px 8px',
+                      borderRadius: 'var(--radius-full)',
+                      background: detectedPlayers.mpv ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                      color: detectedPlayers.mpv ? '#4ade80' : '#f87171',
+                    }}
+                  >
+                    {detectedPlayers.mpv ? 'Detected' : 'Not Found'}
+                  </span>
+                </div>
+                <input
+                  type="text"
+                  value={mpvPathInput}
+                  onChange={(e) => {
+                    setMpvPathInput(e.target.value);
+                    updateSettings({ customMpvPath: e.target.value });
+                  }}
+                  placeholder="Custom MPV path (e.g. C:\...\mpv.exe)"
+                  className="tokerian-input"
+                  style={{ marginTop: '8px', fontSize: '0.78rem', padding: '6px 10px' }}
+                />
+              </div>
+            </div>
+
+            <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Default external player:</span>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                {(['vlc', 'mpv'] as const).map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => updateSettings({ defaultExternalPlayer: p })}
+                    className={`tokerian-btn ${defaultExternalPlayer === p ? 'tokerian-btn-primary' : ''}`}
+                    style={{ fontSize: '0.78rem', padding: '4px 12px', textTransform: 'uppercase' }}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Section 6: TV 10-Foot Mode & Cache Management */}
           <div className="settings-section settings-row-split">
             <div>
               <label className="settings-label">
