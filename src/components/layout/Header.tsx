@@ -1,20 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Search,
-  Tv,
   X,
   Menu,
   Folder,
-  Calendar,
-  RotateCw,
-  ChevronDown,
-  Keyboard,
   Plus,
   Check,
   FolderPlus,
   Minus,
   Square,
 } from 'lucide-react';
+import { MatIcon } from '../common/MatIcon';
 import { useChannelStore } from '../../stores/useChannelStore';
 import { useSettingsStore } from '../../stores/useSettingsStore';
 import { useMultiPlaylistStore } from '../../stores/useMultiPlaylistStore';
@@ -109,7 +105,7 @@ export const Header: React.FC<HeaderProps> = ({
             title="Switch playlist or view source details"
           >
             <div className="playlist-pill-icon-box">
-              <Folder size={16} />
+              <MatIcon name="folder" size={17} />
             </div>
 
             <div className="playlist-pill-text-col">
@@ -125,12 +121,13 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={handleSyncPlaylist}
               title="Refresh / Sync current playlist"
             >
-              <RotateCw size={13} />
+              <MatIcon name="sync" size={14} />
             </button>
 
             <div className="playlist-pill-chevron">
-              <ChevronDown
-                size={14}
+              <MatIcon
+                name="expand_more"
+                size={16}
                 style={{
                   transform: isPlaylistDropdownOpen ? 'rotate(180deg)' : 'none',
                   transition: 'transform 0.2s ease',
@@ -265,7 +262,7 @@ export const Header: React.FC<HeaderProps> = ({
             className="header-action-icon-btn desktop-only-action"
             title="Keyboard Shortcuts Cheatsheet"
           >
-            <Keyboard size={18} />
+            <MatIcon name="keyboard" size={18} />
           </button>
         )}
 
@@ -277,7 +274,7 @@ export const Header: React.FC<HeaderProps> = ({
             className="header-action-icon-btn desktop-only-action"
             title="Add Playlist / Source (+)"
           >
-            <Plus size={18} />
+            <MatIcon name="add" size={18} />
           </button>
         )}
 
@@ -289,7 +286,7 @@ export const Header: React.FC<HeaderProps> = ({
             className="header-action-icon-btn desktop-only-action"
             title="TV Guide & Schedule (Key G)"
           >
-            <Calendar size={17} />
+            <MatIcon name="calendar_month" size={18} />
           </button>
         )}
 
@@ -300,7 +297,7 @@ export const Header: React.FC<HeaderProps> = ({
           className={`header-action-icon-btn desktop-only-action ${tvMode ? 'action-icon-active' : ''}`}
           title={tvMode ? 'Disable TV D-Pad Mode' : 'Enable 10-Foot TV D-Pad Mode'}
         >
-          <Tv size={17} />
+          <MatIcon name="tv" size={18} />
         </button>
 
         {/* 6. Subtle Desktop Window Controls (Visible ONLY in Desktop Electron App) */}

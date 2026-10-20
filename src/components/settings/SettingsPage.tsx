@@ -12,15 +12,9 @@ import { storageAdapter } from '../../adapters/storage/IndexedDbAdapter';
 import { ExternalPlayerService } from '../../services/player/ExternalPlayerService';
 import {
   Globe,
-  Radio,
-  Calendar,
-  LayoutDashboard,
   Tv,
-  Film,
-  Shield,
   Download,
   Trash2,
-  Info,
   ArrowLeft,
   Check,
   Upload,
@@ -28,6 +22,7 @@ import {
   Moon,
   Monitor,
 } from 'lucide-react';
+import { MatIcon } from '../common/MatIcon';
 
 export type SettingsSection =
   | 'general'
@@ -248,13 +243,15 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
       {/* 2-Column Settings Layout (Sidebar Navigation + Content Area) */}
       <div className="settings-page-layout">
         {/* Left Sub-Navigation (Exact Menu List) */}
-        <nav className="settings-nav-sidebar glass-panel">
+        <nav className="settings-nav-sidebar">
+          <h2 className="settings-nav-title">Settings</h2>
+
           <button
             type="button"
             onClick={() => setActiveSection('general')}
             className={`settings-nav-item ${activeSection === 'general' ? 'nav-item-active' : ''}`}
           >
-            <Globe size={18} />
+            <MatIcon name="tune" size={19} />
             <span>General</span>
           </button>
 
@@ -263,7 +260,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
             onClick={() => setActiveSection('playback')}
             className={`settings-nav-item ${activeSection === 'playback' ? 'nav-item-active' : ''}`}
           >
-            <Radio size={18} />
+            <MatIcon name="play_circle" size={19} />
             <span>Playback</span>
           </button>
 
@@ -272,7 +269,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
             onClick={() => setActiveSection('epg')}
             className={`settings-nav-item ${activeSection === 'epg' ? 'nav-item-active' : ''}`}
           >
-            <Calendar size={18} />
+            <MatIcon name="calendar_month" size={19} />
             <span>EPG</span>
           </button>
 
@@ -281,7 +278,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
             onClick={() => setActiveSection('dashboard')}
             className={`settings-nav-item ${activeSection === 'dashboard' ? 'nav-item-active' : ''}`}
           >
-            <LayoutDashboard size={18} />
+            <MatIcon name="dashboard" size={19} />
             <span>Dashboard</span>
           </button>
 
@@ -290,7 +287,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
             onClick={() => setActiveSection('remote')}
             className={`settings-nav-item ${activeSection === 'remote' ? 'nav-item-active' : ''}`}
           >
-            <Tv size={18} />
+            <MatIcon name="smartphone" size={19} />
             <span>Remote</span>
           </button>
 
@@ -299,7 +296,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
             onClick={() => setActiveSection('metadata')}
             className={`settings-nav-item ${activeSection === 'metadata' ? 'nav-item-active' : ''}`}
           >
-            <Film size={18} />
+            <MatIcon name="movie" size={19} />
             <span>Metadata</span>
           </button>
 
@@ -308,7 +305,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
             onClick={() => setActiveSection('parental')}
             className={`settings-nav-item ${activeSection === 'parental' ? 'nav-item-active' : ''}`}
           >
-            <Shield size={18} />
+            <MatIcon name="family_restroom" size={19} />
             <span>Parental Lock</span>
           </button>
 
@@ -317,7 +314,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
             onClick={() => setActiveSection('backup')}
             className={`settings-nav-item ${activeSection === 'backup' ? 'nav-item-active' : ''}`}
           >
-            <Download size={18} />
+            <MatIcon name="backup" size={19} />
             <span>Backup</span>
           </button>
 
@@ -326,7 +323,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
             onClick={() => setActiveSection('reset')}
             className={`settings-nav-item ${activeSection === 'reset' ? 'nav-item-active' : ''}`}
           >
-            <Trash2 size={18} />
+            <MatIcon name="delete" size={19} />
             <span>Reset</span>
           </button>
 
@@ -335,7 +332,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
             onClick={() => setActiveSection('about')}
             className={`settings-nav-item ${activeSection === 'about' ? 'nav-item-active' : ''}`}
           >
-            <Info size={18} />
+            <MatIcon name="info" size={19} />
             <span>About</span>
           </button>
 

@@ -246,6 +246,41 @@
 - [x] **5. Mobile Bottom Navigation**:
   - Top-left and top-right curved borders (`border-radius: 20px 20px 0 0`) with flat bottom edges adhering to native Android & iOS ergonomics.
 
+### Step 8: IPTVnator 1:1 Filled Material Icons & DM Sans Bold Typography (COMPLETED)
+- [x] **1. Material Design Icons Font Integration**:
+  - Installed `material-design-icons-iconfont` and `@fontsource/dm-sans` offline font packages.
+  - Imported in `index.css` for zero-network font bundling on Web, Mobile (Capacitor), and Electron desktop.
+  - Created reusable, memoized `<MatIcon />` component in `src/components/common/MatIcon.tsx`.
+- [x] **2. Left Sidebar Rail Filled Icons**:
+  - Replaced outline icons with filled Google Material Design ligatures matching IPTVnator:
+    - *Home*: `dashboard` (4 solid squares)
+    - *Channels*: `playlist_play` (3 bars with play arrow)
+    - *Search*: `search`
+    - *Favorites*: `favorite` (solid filled heart)
+    - *History*: `history`
+    - *Live TV*: `live_tv` (with IPTVnator active top amber/gold border accent)
+    - *Movies*: `movie`
+    - *Series*: `tv`
+    - *Sources*: `folder` (solid filled folder)
+    - *Downloads*: `download`
+    - *Settings*: `settings`
+- [x] **3. Settings Sub-Navigation & Bold Typography**:
+  - Styled `.settings-nav-item` with bold weight (`font-weight: 600`), DM Sans font family, and rounded pill active state (`border: 1px solid rgba(59, 130, 246, 0.55); background: rgba(59, 130, 246, 0.18)`).
+  - Filled icons in Settings menu matching IPTVnator 1:1:
+    - *General*: `tune`
+    - *Playback*: `play_circle`
+    - *EPG*: `calendar_month`
+    - *Dashboard*: `dashboard`
+    - *Remote*: `smartphone`
+    - *Metadata*: `movie`
+    - *Parental*: `family_restroom`
+    - *Backup*: `backup`
+    - *Reset*: `delete`
+    - *About*: `info`
+- [x] **4. Mobile Bottom Navigation & Channel Cards**:
+  - Replaced icons in `MobileBottomNav.tsx` with filled Material Icons (`dashboard`, `playlist_play`, `movie`, `tv`, `favorite`, `settings`).
+  - Channel cards now use filled `favorite` heart icon on save.
+
 ---
 
 ## 5. Verification Standards

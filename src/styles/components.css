@@ -2598,15 +2598,16 @@ input:checked + .toggle-slider:before {
 }
 
 .rail-icon-btn {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: transparent;
-  border: none;
-  color: rgba(255, 255, 255, 0.6);
+  border: 1px solid transparent;
+  border-top: 2px solid transparent;
+  color: rgba(255, 255, 255, 0.65);
   cursor: pointer;
   position: relative;
   transition: all 0.15s ease;
@@ -2617,11 +2618,19 @@ input:checked + .toggle-slider:before {
   color: #ffffff;
 }
 
-/* Exactly matching the active rounded square pill */
+/* Exactly matching IPTVnator active state with gold/amber top accent */
 .rail-icon-active {
-  background: #3b82f6 !important;
+  background: rgba(255, 255, 255, 0.08) !important;
   color: #ffffff !important;
-  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.45);
+  border-top: 2px solid #eab308 !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+}
+
+.rail-icon-btn .material-icons {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
 }
 
 .rail-badge-dot {
@@ -4251,28 +4260,36 @@ body.tv-mode,
   align-items: start;
 }
 
-/* Left Sub-Navigation Sidebar */
+/* Left Sub-Navigation Sidebar matching IPTVnator 1:1 */
 .settings-nav-sidebar {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  padding: 10px;
-  border-radius: var(--radius-md);
-  background: rgba(13, 17, 28, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  gap: 4px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+}
+
+.settings-nav-title {
+  margin: 4px 0 16px 8px;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.01em;
 }
 
 .settings-nav-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 9px 14px;
-  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  border-radius: 8px;
   background: transparent;
-  border: none;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 0.86rem;
-  font-weight: 500;
+  border: 1px solid transparent;
+  color: #cbd5e1;
+  font-size: 0.94rem;
+  font-weight: 600; /* Bold letters as requested */
   text-align: left;
   cursor: pointer;
   transition: all var(--transition-fast);
@@ -4284,10 +4301,18 @@ body.tv-mode,
 }
 
 .settings-nav-item.nav-item-active {
-  background: rgba(56, 189, 248, 0.16);
-  color: #38bdf8;
-  font-weight: 600;
-  border-left: 3px solid #38bdf8;
+  background: rgba(59, 130, 246, 0.18) !important;
+  border: 1px solid rgba(59, 130, 246, 0.55) !important;
+  border-radius: 8px !important;
+  color: #93c5fd !important;
+  font-weight: 700 !important;
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.15) !important;
+}
+
+.settings-nav-item .material-icons {
+  font-size: 19px;
+  width: 19px;
+  height: 19px;
 }
 
 .settings-sidebar-back-btn {
@@ -4863,6 +4888,10 @@ body.tv-mode,
     gap: 12px !important;
     width: 100% !important;
     overflow: visible !important;
+  }
+
+  .settings-nav-title {
+    display: none !important;
   }
 
   .settings-nav-sidebar {
