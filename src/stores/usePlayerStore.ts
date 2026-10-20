@@ -43,6 +43,7 @@ interface PlayerState {
   zapNext: () => void;
   zapPrev: () => void;
   clearError: () => void;
+  closePlayer: () => void;
 }
 
 export const usePlayerStore = create<PlayerState>((set, get) => {
@@ -197,6 +198,11 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
 
     clearError: () => {
       set({ error: null });
+    },
+
+    closePlayer: () => {
+      playerAdapter.detachMedia();
+      set({ currentChannel: null, isPlaying: false, isBuffering: false, error: null });
     },
   };
 });

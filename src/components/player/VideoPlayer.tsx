@@ -18,6 +18,7 @@ import {
   Cast,
   RotateCcw,
   AlertTriangle,
+  X,
 } from 'lucide-react';
 
 export const VideoPlayer: React.FC = () => {
@@ -55,6 +56,7 @@ export const VideoPlayer: React.FC = () => {
   const zapNext = usePlayerStore((s) => s.zapNext);
   const zapPrev = usePlayerStore((s) => s.zapPrev);
   const playChannel = usePlayerStore((s) => s.playChannel);
+  const closePlayer = usePlayerStore((s) => s.closePlayer);
 
   const isFav = useUserStore((s) => (currentChannel ? s.favorites.has(currentChannel.id) : false));
   const toggleFavorite = useUserStore((s) => s.toggleFavorite);
@@ -193,6 +195,14 @@ export const VideoPlayer: React.FC = () => {
               title={isFav ? 'Remove favorite' : 'Add favorite'}
             >
               <Star size={20} fill={isFav ? '#eab308' : 'none'} color={isFav ? '#eab308' : '#fff'} />
+            </button>
+            <button
+              type="button"
+              onClick={closePlayer}
+              className="tokerian-btn-icon"
+              title="Close player"
+            >
+              <X size={20} />
             </button>
           </div>
         </div>
