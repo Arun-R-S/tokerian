@@ -4,6 +4,7 @@ import { Sidebar, type SidebarTab } from './components/layout/Sidebar';
 import { MobileBottomNav } from './components/layout/MobileBottomNav';
 import { CategoryPills } from './components/channel/CategoryPills';
 import { ChannelGrid } from './components/channel/ChannelGrid';
+import { ChannelExplorer } from './components/channel/ChannelExplorer';
 import { VideoPlayer } from './components/player/VideoPlayer';
 import { SettingsModal } from './components/settings/SettingsModal';
 import { AddPlaylistModal } from './components/playlist/AddPlaylistModal';
@@ -222,13 +223,8 @@ export function App() {
             />
           )}
 
-          {/* Live Channels View */}
-          {activeTab === 'channels' && (
-            <>
-              <CategoryPills />
-              <ChannelGrid activeTab="channels" />
-            </>
-          )}
+          {/* Live Channels View (IPTVnator 2-Pane Explorer) */}
+          {activeTab === 'channels' && <ChannelExplorer activeTab="channels" />}
 
           {/* Movies (VOD) View */}
           {activeTab === 'movies' && <VodCatalog type="movies" />}
@@ -236,9 +232,9 @@ export function App() {
           {/* TV Series View */}
           {activeTab === 'series' && <VodCatalog type="series" />}
 
-          {/* Favorites & History Views */}
+          {/* Favorites & History Views (IPTVnator Explorer) */}
           {(activeTab === 'favorites' || activeTab === 'history') && (
-            <ChannelGrid activeTab={activeTab} />
+            <ChannelExplorer activeTab={activeTab} />
           )}
 
           {/* Live TV Cinema Mode View */}

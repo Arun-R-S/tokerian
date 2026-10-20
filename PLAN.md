@@ -183,8 +183,8 @@
     - Source folder card with folder icon, title, channel count, and `⋮` menu.
     - `See all >` link to navigate to `/playlists`.
 
-### Step 3: Channels & Category Explorer (IPTVnator 2-Pane View)
-- [ ] Upgrade channel browsing into IPTVnator layout:
+### Step 3: Channels & Category Explorer (IPTVnator 2-Pane View) (COMPLETED)
+- [x] Upgrade channel browsing into IPTVnator layout:
   - Collapsible left category drawer (list of groups with channel count badges).
   - Top filter bar with view toggle (**Grid View** vs **Table / List View**).
   - Channel cards with hover play overlay and favorite heart toggle.
