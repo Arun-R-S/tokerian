@@ -387,7 +387,7 @@ export const VideoPlayer: React.FC = () => {
               className={`tokerian-btn-icon ${isFav ? 'fav-active' : ''}`}
               title={isFav ? 'Remove favorite' : 'Add favorite'}
             >
-              <Star size={20} fill={isFav ? '#eab308' : 'none'} color={isFav ? '#eab308' : '#fff'} />
+              <Star size={18} fill={isFav ? '#eab308' : 'none'} color={isFav ? '#eab308' : '#fff'} />
             </button>
             <button
               type="button"
@@ -395,7 +395,7 @@ export const VideoPlayer: React.FC = () => {
               className="tokerian-btn-icon"
               title="Close player"
             >
-              <X size={20} />
+              <X size={18} />
             </button>
           </div>
         </div>
@@ -409,7 +409,7 @@ export const VideoPlayer: React.FC = () => {
               className="tokerian-btn-icon"
               title="Previous channel (Arrow Left / PageDown)"
             >
-              <SkipBack size={20} />
+              <SkipBack size={18} />
             </button>
 
             <button
@@ -418,7 +418,7 @@ export const VideoPlayer: React.FC = () => {
               className="tokerian-btn tokerian-btn-primary play-pause-btn"
               title="Play / Pause (Space)"
             >
-              {isPlaying ? <Pause size={20} /> : <Play size={20} fill="currentColor" />}
+              {isPlaying ? <Pause size={18} /> : <Play size={18} fill="currentColor" />}
             </button>
 
             <button
@@ -427,7 +427,7 @@ export const VideoPlayer: React.FC = () => {
               className="tokerian-btn-icon"
               title="Next channel (Arrow Right / PageUp)"
             >
-              <SkipForward size={20} />
+              <SkipForward size={18} />
             </button>
 
             {/* Volume Control */}
@@ -438,7 +438,7 @@ export const VideoPlayer: React.FC = () => {
                 className="tokerian-btn-icon"
                 title="Mute / Unmute (M)"
               >
-                {isMuted || volume === 0 ? <VolumeX size={20} /> : <Volume2 size={20} />}
+                {isMuted || volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
               </button>
               <input
                 type="range"
@@ -466,7 +466,7 @@ export const VideoPlayer: React.FC = () => {
                   className={`tokerian-btn-icon ${showAudioMenu ? 'btn-active' : ''}`}
                   title="Multiple Audio Tracks"
                 >
-                  <Languages size={20} />
+                  <Languages size={18} />
                 </button>
 
                 {showAudioMenu && (
@@ -501,7 +501,7 @@ export const VideoPlayer: React.FC = () => {
                 className={`tokerian-btn-icon ${showSubtitleMenu || selectedSubtitleTrack !== -1 ? 'btn-active' : ''}`}
                 title={selectedSubtitleTrack !== -1 ? 'Subtitles Active' : 'Subtitles / Captions (CC)'}
               >
-                <Subtitles size={20} />
+                <Subtitles size={18} />
               </button>
 
               {showSubtitleMenu && (
@@ -594,7 +594,7 @@ export const VideoPlayer: React.FC = () => {
               className={`tokerian-btn-icon ${isCastConnecting ? 'cast-connecting' : ''}`}
               title="Cast to TV / Chromecast"
             >
-              <Cast size={20} />
+              <Cast size={18} />
             </button>
 
             {/* Picture-in-Picture */}
@@ -604,7 +604,7 @@ export const VideoPlayer: React.FC = () => {
               className="tokerian-btn-icon"
               title="Picture-in-Picture"
             >
-              <PictureInPicture size={20} />
+              <PictureInPicture size={18} />
             </button>
 
             {/* Fullscreen */}
@@ -614,7 +614,7 @@ export const VideoPlayer: React.FC = () => {
               className="tokerian-btn-icon"
               title="Toggle Fullscreen (F)"
             >
-              {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
+              {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
             </button>
           </div>
         </div>

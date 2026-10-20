@@ -77,10 +77,10 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleMobileMe
         <button
           type="button"
           onClick={() => updateSettings({ tvMode: !tvMode })}
-          className={`tokerian-btn-icon ${tvMode ? 'tv-mode-active' : ''}`}
+          className={`tokerian-btn-icon header-tv-btn ${tvMode ? 'tv-mode-active' : ''}`}
           title={tvMode ? 'Disable TV D-pad Mode' : 'Enable TV D-pad Mode'}
         >
-          <Tv size={20} />
+          <Tv size={18} />
         </button>
 
         {/* Settings Button */}

@@ -688,24 +688,77 @@
 .osd-controls-right {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+}
+
+/* Modern Sleek Player Controls */
+.video-player-container .tokerian-btn-icon {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: rgba(18, 23, 36, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.video-player-container .tokerian-btn-icon svg {
+  width: 17px;
+  height: 17px;
 }
 
 .play-pause-btn {
-  padding: 10px 20px;
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-gradient) !important;
+  border: none !important;
+}
+
+.play-pause-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.play-pause-btn:focus-visible,
+.play-pause-btn[data-tv-focused='true'] {
+  border-radius: 50% !important;
+  box-shadow: 0 0 0 3px var(--border-glow), var(--accent-glow) !important;
 }
 
 .osd-volume-group {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: rgba(255, 255, 255, 0.08);
-  padding: 4px 10px;
+  gap: 6px;
+  background: rgba(18, 23, 36, 0.7);
+  padding: 3px 8px;
   border-radius: var(--radius-full);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+}
+
+.osd-volume-group .tokerian-btn-icon {
+  background: transparent;
+  border: none;
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  backdrop-filter: none;
 }
 
 .osd-volume-slider {
-  width: 75px;
+  width: 70px;
+  height: 4px;
   accent-color: var(--accent-primary);
   cursor: pointer;
 }
@@ -1097,6 +1150,40 @@ input:checked + .toggle-slider:before {
     max-height: 52vh;
     min-height: 280px;
   }
+
+  /* Compact Video Player for Medium & Tablet screens */
+  .player-osd-overlay {
+    padding: 12px 16px;
+  }
+
+  .video-player-container .tokerian-btn-icon {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    padding: 0;
+  }
+
+  .video-player-container .tokerian-btn-icon svg {
+    width: 15px !important;
+    height: 15px !important;
+  }
+
+  .play-pause-btn {
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+  }
+
+  .play-pause-btn svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  .osd-volume-slider {
+    width: 55px;
+  }
 }
 
 /* --- MOBILE PHONES & PORTRAIT TABLETS (<= 768px) --- */
@@ -1109,27 +1196,40 @@ input:checked + .toggle-slider:before {
 
   /* Compact Native Mobile Header */
   .tokerian-header {
-    height: 56px;
-    padding: 0 12px;
+    height: 50px;
+    padding: 0 10px;
     gap: 6px;
   }
 
   .mobile-menu-btn {
     display: flex !important;
-    padding: 8px;
-  }
-
-  .header-brand {
-    gap: 8px;
-  }
-
-  .brand-icon-wrapper {
+    padding: 6px;
     width: 32px;
     height: 32px;
   }
 
+  .mobile-menu-btn svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  .header-brand {
+    gap: 6px;
+  }
+
+  .brand-icon-wrapper {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+  }
+
+  .brand-icon-wrapper svg {
+    width: 15px !important;
+    height: 15px !important;
+  }
+
   .brand-title {
-    font-size: 1.1rem;
+    font-size: 0.95rem;
   }
 
   .brand-subtitle {
@@ -1140,16 +1240,151 @@ input:checked + .toggle-slider:before {
     display: none;
   }
 
+  /* Hide TV D-Pad Mode Button on Mobile (Only needed for Android TV with remote) */
+  .header-tv-btn {
+    display: none !important;
+  }
+
+  .header-actions {
+    gap: 4px;
+  }
+
+  .header-actions .tokerian-btn-icon {
+    width: 32px;
+    height: 32px;
+    padding: 6px;
+  }
+
+  .header-actions .tokerian-btn-icon svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
   .header-search-wrapper {
     flex: 1;
     min-width: 0;
     max-width: none;
-    padding: 6px 12px;
-    margin: 0 4px;
+    padding: 5px 10px;
+    margin: 0 2px;
+  }
+
+  .header-search-wrapper .search-icon {
+    margin-right: 6px;
+    width: 14px;
+    height: 14px;
   }
 
   .header-search-input {
-    font-size: 0.8rem;
+    font-size: 0.76rem;
+  }
+
+  /* Compact Video Player Controls for Small Screens / Mobile */
+  .player-osd-overlay {
+    padding: 8px 10px;
+  }
+
+  .osd-channel-meta {
+    gap: 6px;
+    max-width: 65%;
+  }
+
+  .osd-logo {
+    height: 20px;
+    max-width: 30px;
+    padding: 1px;
+  }
+
+  .osd-title-row {
+    gap: 4px;
+  }
+
+  .osd-channel-name {
+    font-size: 0.85rem;
+    font-weight: 700;
+    max-width: 130px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .osd-channel-group {
+    font-size: 0.65rem;
+  }
+
+  .badge-resolution {
+    display: none;
+  }
+
+  .live-indicator {
+    width: 6px;
+    height: 6px;
+    margin-right: 4px;
+  }
+
+  /* Top Right Action Icons */
+  .osd-top-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .osd-top-actions .tokerian-btn-icon {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    padding: 0;
+    border-radius: var(--radius-sm);
+  }
+
+  .osd-top-actions .tokerian-btn-icon svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+
+  /* Bottom Controls & Play Button */
+  .osd-bottom-bar {
+    gap: 4px;
+  }
+
+  .osd-controls-left,
+  .osd-controls-right {
+    gap: 3px;
+  }
+
+  .video-player-container .tokerian-btn-icon {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    padding: 0;
+    border-radius: var(--radius-sm);
+  }
+
+  .video-player-container .tokerian-btn-icon svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+
+  .play-pause-btn {
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+  }
+
+  .play-pause-btn svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+
+  /* Hide 75px volume slider on mobile; device physical buttons control volume */
+  .osd-volume-slider {
+    display: none !important;
+  }
+
+  .osd-volume-group {
+    padding: 0;
+    background: transparent;
   }
 
   /* Slide-Out Mobile Drawer Sidebar */
@@ -1332,6 +1567,55 @@ input:checked + .toggle-slider:before {
 
   .tokerian-btn-icon {
     padding: 7px;
+  }
+}
+
+/* --- SMALL SCREEN SMARTPHONES (<= 480px) --- */
+@media (max-width: 480px) {
+  .player-osd-overlay {
+    padding: 6px 8px;
+  }
+
+  .osd-channel-meta {
+    max-width: 58%;
+    gap: 4px;
+  }
+
+  .osd-channel-name {
+    font-size: 0.78rem;
+    max-width: 110px;
+  }
+
+  .osd-top-actions .tokerian-btn-icon,
+  .video-player-container .tokerian-btn-icon {
+    width: 25px;
+    height: 25px;
+    min-width: 25px;
+    padding: 0;
+  }
+
+  .osd-top-actions .tokerian-btn-icon svg,
+  .video-player-container .tokerian-btn-icon svg {
+    width: 13px !important;
+    height: 13px !important;
+  }
+
+  .play-pause-btn {
+    width: 27px !important;
+    height: 27px !important;
+    min-width: 27px !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+  }
+
+  .play-pause-btn svg {
+    width: 13px !important;
+    height: 13px !important;
+  }
+
+  .osd-controls-left,
+  .osd-controls-right {
+    gap: 2px;
   }
 }
 
