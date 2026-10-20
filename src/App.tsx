@@ -6,7 +6,6 @@ import { CategoryPills } from './components/channel/CategoryPills';
 import { ChannelGrid } from './components/channel/ChannelGrid';
 import { ChannelExplorer } from './components/channel/ChannelExplorer';
 import { VideoPlayer } from './components/player/VideoPlayer';
-import { SettingsModal } from './components/settings/SettingsModal';
 import { AddPlaylistModal } from './components/playlist/AddPlaylistModal';
 import { PlaylistManagerModal } from './components/playlist/PlaylistManagerModal';
 import { EpgGridModal } from './components/epg/EpgGridModal';
@@ -33,7 +32,6 @@ import './styles/components.css';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<SidebarTab>('home');
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isAddPlaylistOpen, setIsAddPlaylistOpen] = useState(false);
   const [isPlaylistManagerOpen, setIsPlaylistManagerOpen] = useState(false);
@@ -126,14 +124,14 @@ export function App() {
           useVodStore.getState().closeDetail();
         } else if (isEpgGridOpen) {
           setIsEpgGridOpen(false);
-        } else if (isSettingsOpen) {
-          setIsSettingsOpen(false);
         } else if (isPlaylistManagerOpen) {
           setIsPlaylistManagerOpen(false);
         } else if (isAddPlaylistOpen) {
           setIsAddPlaylistOpen(false);
         } else if (isMobileSidebarOpen) {
           setIsMobileSidebarOpen(false);
+        } else if (activeTab === 'settings') {
+          setActiveTab('home');
         }
       },
     });
@@ -172,10 +170,10 @@ export function App() {
     isShortcutsOpen,
     isCommandPaletteOpen,
     isEpgGridOpen,
-    isSettingsOpen,
     isPlaylistManagerOpen,
     isAddPlaylistOpen,
     isMobileSidebarOpen,
+    activeTab,
     togglePlay,
     toggleMute,
     toggleFullscreen,
@@ -189,7 +187,6 @@ export function App() {
       <Header
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenPlaylists={() => setIsPlaylistManagerOpen(true)}
         onOpenAddPlaylist={() => setIsAddPlaylistOpen(true)}
         onOpenEpgGuide={() => setIsEpgGridOpen(true)}
@@ -204,7 +201,6 @@ export function App() {
           activeTab={activeTab}
           onTabChange={setActiveTab}
           onOpenPlaylists={() => setIsPlaylistManagerOpen(true)}
-          onOpenSettings={() => setIsSettingsOpen(true)}
           onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
           onOpenEpgGuide={() => setIsEpgGridOpen(true)}
           isMobileOpen={isMobileSidebarOpen}
@@ -284,13 +280,6 @@ export function App() {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         onOpenGenres={() => setIsMobileSidebarOpen(true)}
-        onOpenSettings={() => setIsSettingsOpen(true)}
-      />
-
-      {/* Settings Modal (changeable M3U URL, presets, CORS proxy) */}
-      <SettingsModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
       />
 
       {/* Playlists & Accounts Manager Modal */}
@@ -319,7 +308,7 @@ export function App() {
       <CommandPalette
         isOpen={isCommandPaletteOpen}
         onClose={() => setIsCommandPaletteOpen(false)}
-        onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenSettings={() => setActiveTab('settings')}
         onOpenPlaylists={() => setIsPlaylistManagerOpen(true)}
         onOpenEpgGuide={() => setIsEpgGridOpen(true)}
         onTabChange={setActiveTab}

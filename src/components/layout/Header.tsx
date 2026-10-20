@@ -22,7 +22,6 @@ import { useMultiPlaylistStore } from '../../stores/useMultiPlaylistStore';
 import type { SidebarTab } from './Sidebar';
 
 interface HeaderProps {
-  onOpenSettings: () => void;
   onOpenPlaylists?: () => void;
   onOpenAddPlaylist?: () => void;
   onOpenEpgGuide?: () => void;
@@ -34,13 +33,14 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  onOpenSettings,
   onOpenPlaylists,
   onOpenAddPlaylist,
   onOpenEpgGuide,
   onOpenCommandPalette,
   onOpenKeyboardShortcuts,
   onToggleMobileMenu,
+  activeTab,
+  onTabChange,
 }) => {
   const activePlaylistId = useMultiPlaylistStore((s) => s.activePlaylistId);
   const playlists = useMultiPlaylistStore((s) => s.playlists);
@@ -312,8 +312,8 @@ export const Header: React.FC<HeaderProps> = ({
         {/* 5. Settings */}
         <button
           type="button"
-          onClick={onOpenSettings}
-          className="header-action-icon-btn"
+          onClick={() => onTabChange?.('settings')}
+          className={`header-action-icon-btn ${activeTab === 'settings' ? 'action-icon-active' : ''}`}
           title="App Settings & Preferences"
         >
           <Sliders size={18} />

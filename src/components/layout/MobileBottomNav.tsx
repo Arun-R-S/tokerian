@@ -7,13 +7,12 @@ interface MobileBottomNavProps {
   activeTab: SidebarTab;
   onTabChange: (tab: SidebarTab) => void;
   onOpenGenres?: () => void;
-  onOpenSettings: () => void;
+  onOpenSettings?: () => void;
 }
 
 export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   activeTab,
   onTabChange,
-  onOpenSettings,
 }) => {
   const favoritesCount = useUserStore((s) => s.favorites.size);
 
@@ -74,8 +73,8 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 
       <button
         type="button"
-        onClick={onOpenSettings}
-        className="bottom-nav-item"
+        onClick={() => onTabChange('settings')}
+        className={`bottom-nav-item ${activeTab === 'settings' ? 'bottom-item-active' : ''}`}
         title="Settings"
       >
         <Sliders size={19} />

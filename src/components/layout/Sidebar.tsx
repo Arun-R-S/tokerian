@@ -34,7 +34,6 @@ interface SidebarProps {
   activeTab: SidebarTab;
   onTabChange: (tab: SidebarTab) => void;
   onOpenPlaylists?: () => void;
-  onOpenSettings?: () => void;
   onOpenCommandPalette?: () => void;
   onOpenEpgGuide?: () => void;
   isMobileOpen?: boolean;
@@ -45,7 +44,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   onTabChange,
   onOpenPlaylists,
-  onOpenSettings,
   onOpenCommandPalette,
   isMobileOpen = false,
   onCloseMobile,
@@ -212,7 +210,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             type="button"
             onClick={() => {
               onTabChange('settings');
-              onOpenSettings?.();
               onCloseMobile?.();
             }}
             className={`rail-icon-btn ${activeTab === 'settings' ? 'rail-icon-active' : ''}`}
