@@ -11,6 +11,7 @@ import { PlaylistManagerModal } from './components/playlist/PlaylistManagerModal
 import { EpgGridModal } from './components/epg/EpgGridModal';
 import { VodCatalog } from './components/vod/VodCatalog';
 import { VodDetailModal } from './components/vod/VodDetailModal';
+import { CommandPalette } from './components/command/CommandPalette';
 
 import { useChannelStore } from './stores/useChannelStore';
 import { useSettingsStore } from './stores/useSettingsStore';
@@ -31,6 +32,7 @@ export function App() {
   const [isAddPlaylistOpen, setIsAddPlaylistOpen] = useState(false);
   const [isPlaylistManagerOpen, setIsPlaylistManagerOpen] = useState(false);
   const [isEpgGridOpen, setIsEpgGridOpen] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
   const m3uUrl = useSettingsStore((s) => s.m3uUrl);
   const loadInitialSettings = useSettingsStore((s) => s.loadInitialSettings);
@@ -109,7 +111,9 @@ export function App() {
       onChannelNext: () => zapNext(),
       onChannelPrev: () => zapPrev(),
       onBack: () => {
-        if (useVodStore.getState().activeItem) {
+        if (isCommandPaletteOpen) {
+          setIsCommandPaletteOpen(false);
+        } else if (useVodStore.getState().activeItem) {
           useVodStore.getState().closeDetail();
         } else if (isEpgGridOpen) {
           setIsEpgGridOpen(false);
@@ -126,6 +130,13 @@ export function App() {
     });
 
     const handleGlobalShortcuts = (e: KeyboardEvent) => {
+      // Global Ctrl+K / Cmd+K Command Palette trigger
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+        return;
+      }
+
       const target = e.target as HTMLElement | null;
       if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA') return;
 
@@ -147,6 +158,7 @@ export function App() {
     };
   }, [
     currentChannel,
+    isCommandPaletteOpen,
     isEpgGridOpen,
     isSettingsOpen,
     isPlaylistManagerOpen,
@@ -168,6 +180,7 @@ export function App() {
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenPlaylists={() => setIsPlaylistManagerOpen(true)}
         onOpenEpgGuide={() => setIsEpgGridOpen(true)}
+        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
         onToggleMobileMenu={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
       />
 
@@ -243,6 +256,16 @@ export function App() {
 
       {/* VOD & TV Series Detail Modal */}
       <VodDetailModal />
+
+      {/* Global Command Palette (Ctrl+K / Cmd+K) */}
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenPlaylists={() => setIsPlaylistManagerOpen(true)}
+        onOpenEpgGuide={() => setIsEpgGridOpen(true)}
+        onTabChange={setActiveTab}
+      />
     </div>
   );
 }

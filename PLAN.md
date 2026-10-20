@@ -128,11 +128,11 @@ f:\Projects\IP-TV\
 - [x] Implement `VodCatalog.tsx` with category filters, poster cards, and sorting (name, rating, date).
 - [x] Build `VodDetailModal.tsx` with synopsis, episode selector, and "Resume Watching" timestamp tracking.
 
-### Phase 5: Extended Settings, Parental Lock & Command Palette (`Ctrl+K`)
-- [ ] Port Parental Lock PIN verification and category hiding (`parentalLock.ts`).
-- [ ] Implement Country Prefix Cleaner toggle (`channelSanitizer.ts`).
-- [ ] Upgrade Settings modal into a tabbed preferences center (General, Playback, External Players, EPG, Parental Lock).
-- [ ] Implement `CommandPalette.tsx` accessible via `Ctrl+K` for global search and navigation.
+### Phase 5: Extended Settings, Parental Lock & Command Palette (`Ctrl+K`) (COMPLETED)
+- [x] Port Parental Lock PIN verification and category hiding (`parentalLock.ts`).
+- [x] Implement Country Prefix Cleaner toggle (`channelSanitizer.ts`).
+- [x] Upgrade Settings modal into a tabbed preferences center (General, Playback, External Players, Title Cleaner, Parental Lock).
+- [x] Implement `CommandPalette.tsx` accessible via `Ctrl+K` for global search and navigation.
 
 ---
 

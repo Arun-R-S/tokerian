@@ -1,7 +1,7 @@
 import React from 'react';
 import { useChannelStore } from '../../stores/useChannelStore';
 import { useSettingsStore } from '../../stores/useSettingsStore';
-import { Search, Sliders, Tv, Radio, X, Menu, FolderPlus, Calendar } from 'lucide-react';
+import { Search, Sliders, Tv, Radio, X, Menu, FolderPlus, Calendar, Command } from 'lucide-react';
 import { useMultiPlaylistStore } from '../../stores/useMultiPlaylistStore';
 
 import type { SidebarTab } from './Sidebar';
@@ -10,6 +10,7 @@ interface HeaderProps {
   onOpenSettings: () => void;
   onOpenPlaylists?: () => void;
   onOpenEpgGuide?: () => void;
+  onOpenCommandPalette?: () => void;
   onToggleMobileMenu?: () => void;
   activeTab?: SidebarTab;
   onTabChange?: (tab: SidebarTab) => void;
@@ -19,6 +20,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenSettings,
   onOpenPlaylists,
   onOpenEpgGuide,
+  onOpenCommandPalette,
   onToggleMobileMenu,
   activeTab = 'channels',
   onTabChange,
@@ -108,7 +110,7 @@ export const Header: React.FC<HeaderProps> = ({
           placeholder="Search 30,000+ channels, countries, languages..."
           className="header-search-input"
         />
-        {searchQuery && (
+        {searchQuery ? (
           <button
             type="button"
             onClick={() => setSearchQuery('')}
@@ -116,7 +118,26 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <X size={16} />
           </button>
-        )}
+        ) : onOpenCommandPalette ? (
+          <button
+            type="button"
+            onClick={onOpenCommandPalette}
+            className="search-kbd-hint"
+            title="Open Command Palette (Ctrl+K)"
+            style={{
+              background: 'rgba(255, 255, 255, 0.08)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              borderRadius: '4px',
+              padding: '2px 6px',
+              fontSize: '0.68rem',
+              color: 'var(--text-muted)',
+              cursor: 'pointer',
+              fontWeight: 600,
+            }}
+          >
+            ⌘K
+          </button>
+        ) : null}
       </div>
 
       {/* Actions */}
@@ -143,6 +164,18 @@ export const Header: React.FC<HeaderProps> = ({
             <span>{channels.length.toLocaleString()} Channels</span>
           )}
         </div>
+
+        {/* Command Palette Trigger */}
+        {onOpenCommandPalette && (
+          <button
+            type="button"
+            onClick={onOpenCommandPalette}
+            className="tokerian-btn-icon"
+            title="Command Palette (Ctrl+K / ⌘K)"
+          >
+            <Command size={18} />
+          </button>
+        )}
 
         {/* TV Guide (EPG Matrix) Button */}
         {onOpenEpgGuide && (

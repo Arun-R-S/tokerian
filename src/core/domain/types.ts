@@ -68,4 +68,8 @@ export interface Settings {
   defaultExternalPlayer?: 'vlc' | 'mpv';
   customVlcPath?: string;
   customMpvPath?: string;
+  cleanChannelTitles?: boolean;
+  parentalLockEnabled?: boolean;
+  parentalLockPinHash?: string | null;
+  lockedKeywords?: string[];
 }
