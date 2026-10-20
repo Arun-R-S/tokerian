@@ -80,6 +80,7 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({ activeTab = 'c
   const orderedFavoriteIds = useUserStore((s) => s.orderedFavoriteIds);
 
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const channelsPaneRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const handleDragStart = (e: React.DragEvent, id: string) => {
@@ -238,7 +239,7 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({ activeTab = 'c
           setVisibleCount((prev) => Math.min(prev + pageSize, displayedChannels.length));
         }
       },
-      { rootMargin: '300px' }
+      { root: channelsPaneRef.current || null, rootMargin: '300px' }
     );
 
     observer.observe(sentinel);
@@ -391,7 +392,7 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({ activeTab = 'c
       {/* =========================================================================
           RIGHT PANE: Channels Control Toolbar & Main Display Matrix
           ========================================================================= */}
-      <div className="explorer-channels-pane">
+      <div className="explorer-channels-pane" ref={channelsPaneRef}>
         {/* Explorer Control Toolbar */}
         <div className="explorer-toolbar">
           <div className="toolbar-left-col">

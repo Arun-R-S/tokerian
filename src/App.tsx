@@ -206,7 +206,13 @@ export function App() {
         />
 
         {/* Center Main Browsing Area */}
-        <main className={`tokerian-main ${activeTab === 'settings' ? 'tokerian-main-settings' : ''}`}>
+        <main
+          className={`tokerian-main ${activeTab === 'settings' ? 'tokerian-main-settings' : ''} ${
+            activeTab === 'channels' || activeTab === 'favorites' || activeTab === 'history'
+              ? 'tokerian-main-explorer'
+              : ''
+          }`}
+        >
           {/* Top Video Player (if a channel is currently loaded) */}
           {currentChannel && <VideoPlayer onOpenEpgGuide={() => setIsEpgGridOpen(true)} />}
 
