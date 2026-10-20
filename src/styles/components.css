@@ -4391,86 +4391,94 @@ body.tv-mode,
 }
 
 /* =========================================================================
-   DEDICATED SETTINGS PAGE (1:1 SYSTEM)
+   DEDICATED SETTINGS PAGE (1:1 FIXED SIDEBAR & SCROLLABLE CENTER)
    ========================================================================= */
+/* Lock outer browsing viewport so only the center settings content scrolls */
+.tokerian-main.tokerian-main-settings,
+.tokerian-main:has(.settings-page-container) {
+  overflow: hidden !important;
+  padding: 16px 24px 16px 24px !important;
+}
+
 .settings-page-container {
+  position: relative;
   display: flex;
   flex-direction: column;
   width: 100%;
   max-width: 1200px;
+  height: 100%;
+  max-height: 100%;
   margin: 0 auto;
-  padding: 0 0 60px 0;
   box-sizing: border-box;
-  overflow: visible;
+  overflow: hidden;
+  padding: 0;
 }
 
-.settings-page-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 24px;
-}
-
-.settings-header-title-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.settings-header-icon-box {
-  width: 42px;
-  height: 42px;
-  border-radius: var(--radius-sm);
-  background: rgba(56, 189, 248, 0.15);
-  border: 1px solid rgba(56, 189, 248, 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #38bdf8;
-}
-
-.settings-page-title {
-  font-size: 1.6rem;
-  font-weight: 800;
-  color: #ffffff;
-  letter-spacing: -0.02em;
-}
-
-.settings-page-subtitle {
-  font-size: 0.84rem;
-  color: var(--text-muted);
-  margin-top: 2px;
-}
-
-.settings-toast-badge {
+.settings-floating-toast {
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  z-index: 50;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 14px;
+  padding: 7px 16px;
   border-radius: var(--radius-full);
-  background: rgba(16, 185, 129, 0.15);
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.45);
   color: #10b981;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 600;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  animation: fadeInToast 0.2s ease-out;
+}
+
+@keyframes fadeInToast {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .settings-page-layout {
   display: grid;
   grid-template-columns: 220px 1fr;
   gap: 24px;
-  align-items: start;
+  align-items: stretch;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
 }
 
-/* Left Sub-Navigation Sidebar matching IPTVnator 1:1 */
+/* Left Sub-Navigation Sidebar matching IPTVnator 1:1 - FIXED in place, NEVER scrolls down */
 .settings-nav-sidebar {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 0;
+  padding: 0 6px 16px 0;
   border-radius: 0;
   background: transparent;
   border: none;
+  height: 100%;
+  max-height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex-shrink: 0;
+}
+
+.settings-nav-sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+.settings-nav-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
 }
 
 .settings-nav-title {
@@ -4539,14 +4547,32 @@ body.tv-mode,
   border-color: rgba(255, 255, 255, 0.16);
 }
 
-/* Right Content Area */
+/* Right Content Area - ONLY THIS SCROLLS */
 .settings-section-card {
-  padding: 26px 30px;
+  padding: 26px 30px 40px 30px;
   border-radius: var(--radius-md);
   background: rgba(13, 17, 28, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-sizing: border-box;
+  overflow-y: auto;
   overflow-x: hidden;
+  height: 100%;
+  max-height: 100%;
+}
+
+.settings-section-card::-webkit-scrollbar {
+  width: 6px;
+}
+.settings-section-card::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 6px;
+}
+.settings-section-card::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+}
+.settings-section-card::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
 }
 
 .settings-form-group {
@@ -5089,7 +5115,9 @@ body.tv-mode,
     flex-direction: column !important;
     gap: 12px !important;
     width: 100% !important;
-    overflow: visible !important;
+    flex: 1 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
   }
 
   .settings-nav-title {

@@ -11,7 +11,6 @@ import { IPTV_PRESETS } from '../../core/presets/iptvPresets';
 import { storageAdapter } from '../../adapters/storage/IndexedDbAdapter';
 import { ExternalPlayerService } from '../../services/player/ExternalPlayerService';
 import {
-  Globe,
   Tv,
   Download,
   Trash2,
@@ -227,29 +226,17 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
 
   return (
     <div className="settings-page-container">
-      {/* Settings Header */}
-      <div className="settings-page-header">
-        <div className="settings-header-title-row">
-          <div className="settings-header-icon-box">
-            <Globe size={22} />
-          </div>
-          <div>
-            <h1 className="settings-page-title">Settings</h1>
-            <p className="settings-page-subtitle">Change the configuration of the application</p>
-          </div>
+      {/* Toast Alert Badge */}
+      {toastMessage && (
+        <div className="settings-floating-toast">
+          <Check size={14} color="#10b981" />
+          <span>{toastMessage}</span>
         </div>
+      )}
 
-        {toastMessage && (
-          <div className="settings-toast-badge">
-            <Check size={14} color="#10b981" />
-            <span>{toastMessage}</span>
-          </div>
-        )}
-      </div>
-
-      {/* 2-Column Settings Layout (Sidebar Navigation + Content Area) */}
+      {/* 2-Column Settings Layout (Fixed Left Sidebar Navigation + Scrollable Center Content) */}
       <div className="settings-page-layout">
-        {/* Left Sub-Navigation (Exact Menu List) */}
+        {/* Left Sub-Navigation (Fixed, never scrolls away) */}
         <nav className="settings-nav-sidebar">
           <h2 className="settings-nav-title">Settings</h2>
 
