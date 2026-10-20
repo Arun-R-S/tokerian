@@ -1,0 +1,87 @@
+import React from 'react';
+import { useChannelStore } from '../../stores/useChannelStore';
+import { useSettingsStore } from '../../stores/useSettingsStore';
+import { Search, Sliders, Tv, Radio, X } from 'lucide-react';
+
+interface HeaderProps {
+  onOpenSettings: () => void;
+}
+
+export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
+  const searchQuery = useChannelStore((s) => s.searchQuery);
+  const setSearchQuery = useChannelStore((s) => s.setSearchQuery);
+  const channels = useChannelStore((s) => s.channels);
+  const isLoading = useChannelStore((s) => s.isLoading);
+  const loadingProgress = useChannelStore((s) => s.loadingProgress);
+
+  const tvMode = useSettingsStore((s) => s.tvMode);
+  const updateSettings = useSettingsStore((s) => s.updateSettings);
+
+  return (
+    <header className="tokerian-header glass-panel">
+      {/* Brand Logo */}
+      <div className="header-brand">
+        <div className="brand-icon-wrapper">
+          <Radio size={22} className="brand-icon" />
+        </div>
+        <div className="brand-text-col">
+          <h1 className="brand-title">Tokerian</h1>
+          <span className="brand-subtitle">Live Stream Hub</span>
+        </div>
+      </div>
+
+      {/* Instant Search Bar */}
+      <div className="header-search-wrapper">
+        <Search size={18} className="search-icon" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search 30,000+ channels, countries, languages..."
+          className="header-search-input"
+        />
+        {searchQuery && (
+          <button
+            type="button"
+            onClick={() => setSearchQuery('')}
+            className="search-clear-btn"
+          >
+            <X size={16} />
+          </button>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="header-actions">
+        {/* Total Channels Pill */}
+        <div className="channels-count-pill" title="Total active channels loaded">
+          {isLoading ? (
+            <span className="count-loading">Syncing {loadingProgress}%</span>
+          ) : (
+            <span>{channels.length.toLocaleString()} Channels</span>
+          )}
+        </div>
+
+        {/* TV Mode Toggle */}
+        <button
+          type="button"
+          onClick={() => updateSettings({ tvMode: !tvMode })}
+          className={`tokerian-btn-icon ${tvMode ? 'tv-mode-active' : ''}`}
+          title={tvMode ? 'Disable TV D-pad Mode' : 'Enable TV D-pad Mode'}
+        >
+          <Tv size={20} />
+        </button>
+
+        {/* Settings Button */}
+        <button
+          type="button"
+          onClick={onOpenSettings}
+          className="tokerian-btn-icon"
+          title="Playlist & CORS Settings"
+        >
+          <Sliders size={20} />
+        </button>
+      </div>
+    </header>
+  );
+};
