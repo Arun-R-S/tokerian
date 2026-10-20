@@ -15,6 +15,7 @@ import {
   Play,
   Pause,
   X,
+  FolderPlus,
 } from 'lucide-react';
 
 export type SidebarTab = 'channels' | 'favorites' | 'history';
@@ -22,6 +23,7 @@ export type SidebarTab = 'channels' | 'favorites' | 'history';
 interface SidebarProps {
   activeTab: SidebarTab;
   onTabChange: (tab: SidebarTab) => void;
+  onOpenPlaylists?: () => void;
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
 }
@@ -29,6 +31,7 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   onTabChange,
+  onOpenPlaylists,
   isMobileOpen = false,
   onCloseMobile,
 }) => {
@@ -116,6 +119,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <span>Recently Watched</span>
             {historyCount > 0 && <span className="nav-badge">{historyCount}</span>}
           </button>
+
+          {onOpenPlaylists && (
+            <button
+              type="button"
+              tabIndex={0}
+              onClick={() => {
+                onOpenPlaylists();
+                onCloseMobile?.();
+              }}
+              className="sidebar-nav-item"
+            >
+              <FolderPlus size={18} />
+              <span>Playlists & Sources</span>
+            </button>
+          )}
         </div>
 
       {/* Quick Category Filter Presets */}

@@ -6,11 +6,14 @@ import { CategoryPills } from './components/channel/CategoryPills';
 import { ChannelGrid } from './components/channel/ChannelGrid';
 import { VideoPlayer } from './components/player/VideoPlayer';
 import { SettingsModal } from './components/settings/SettingsModal';
+import { AddPlaylistModal } from './components/playlist/AddPlaylistModal';
+import { PlaylistManagerModal } from './components/playlist/PlaylistManagerModal';
 
 import { useChannelStore } from './stores/useChannelStore';
 import { useSettingsStore } from './stores/useSettingsStore';
 import { useUserStore } from './stores/useUserStore';
 import { usePlayerStore } from './stores/usePlayerStore';
+import { useMultiPlaylistStore } from './stores/useMultiPlaylistStore';
 import { dpadNavigation } from './adapters/input/DpadNavigationAdapter';
 
 import './styles/index.css';
@@ -20,6 +23,8 @@ export function App() {
   const [activeTab, setActiveTab] = useState<SidebarTab>('channels');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isAddPlaylistOpen, setIsAddPlaylistOpen] = useState(false);
+  const [isPlaylistManagerOpen, setIsPlaylistManagerOpen] = useState(false);
 
   const m3uUrl = useSettingsStore((s) => s.m3uUrl);
   const loadInitialSettings = useSettingsStore((s) => s.loadInitialSettings);
@@ -27,6 +32,7 @@ export function App() {
 
   const loadUserData = useUserStore((s) => s.loadUserData);
   const loadPlaylist = useChannelStore((s) => s.loadPlaylist);
+  const initPlaylists = useMultiPlaylistStore((s) => s.initPlaylists);
   const currentChannel = usePlayerStore((s) => s.currentChannel);
   const togglePlay = usePlayerStore((s) => s.togglePlay);
   const toggleMute = usePlayerStore((s) => s.toggleMute);
@@ -34,16 +40,21 @@ export function App() {
   const zapNext = usePlayerStore((s) => s.zapNext);
   const zapPrev = usePlayerStore((s) => s.zapPrev);
 
-  // Initialize settings, user data (favorites/history), and default playlist
+  // Initialize settings, user data (favorites/history), and multi-playlist system
   useEffect(() => {
     async function init() {
       await loadInitialSettings();
       await loadUserData();
-      // Load current playlist
-      loadPlaylist(m3uUrl, false);
+      await initPlaylists();
+
+      // Only load default catalog if still on built-in
+      const currentActive = useMultiPlaylistStore.getState().activePlaylistId;
+      if (currentActive === 'built-in') {
+        loadPlaylist(m3uUrl, false);
+      }
     }
     init();
-  }, [loadInitialSettings, loadUserData, loadPlaylist, m3uUrl]);
+  }, [loadInitialSettings, loadUserData, initPlaylists, loadPlaylist, m3uUrl]);
 
   // Setup Global Keyboard & TV Remote Navigation
   useEffect(() => {
@@ -89,6 +100,7 @@ export function App() {
       {/* Top Application Header */}
       <Header
         onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenPlaylists={() => setIsPlaylistManagerOpen(true)}
         onToggleMobileMenu={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
       />
 
@@ -97,6 +109,7 @@ export function App() {
         <Sidebar
           activeTab={activeTab}
           onTabChange={setActiveTab}
+          onOpenPlaylists={() => setIsPlaylistManagerOpen(true)}
           isMobileOpen={isMobileSidebarOpen}
           onCloseMobile={() => setIsMobileSidebarOpen(false)}
         />
@@ -126,6 +139,19 @@ export function App() {
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
+      />
+
+      {/* Playlists & Accounts Manager Modal */}
+      <PlaylistManagerModal
+        isOpen={isPlaylistManagerOpen}
+        onClose={() => setIsPlaylistManagerOpen(false)}
+        onOpenAddModal={() => setIsAddPlaylistOpen(true)}
+      />
+
+      {/* Add Playlist Modal (M3U File/URL & Xtream Codes) */}
+      <AddPlaylistModal
+        isOpen={isAddPlaylistOpen}
+        onClose={() => setIsAddPlaylistOpen(false)}
       />
     </div>
   );

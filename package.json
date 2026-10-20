@@ -39,8 +39,10 @@
   "dependencies": {
     "@capacitor/core": "^8.5.3",
     "@tanstack/react-virtual": "^3.14.21",
+    "epg-parser": "^0.5.0",
     "hls.js": "^1.7.3",
     "idb-keyval": "^6.3.0",
+    "iptv-playlist-parser": "^0.15.2",
     "lucide-react": "^1.60.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",

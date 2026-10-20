@@ -1,14 +1,19 @@
 import React from 'react';
 import { useChannelStore } from '../../stores/useChannelStore';
 import { useSettingsStore } from '../../stores/useSettingsStore';
-import { Search, Sliders, Tv, Radio, X, Menu } from 'lucide-react';
+import { Search, Sliders, Tv, Radio, X, Menu, FolderPlus } from 'lucide-react';
+import { useMultiPlaylistStore } from '../../stores/useMultiPlaylistStore';
 
 interface HeaderProps {
   onOpenSettings: () => void;
+  onOpenPlaylists?: () => void;
   onToggleMobileMenu?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleMobileMenu }) => {
+export const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenPlaylists, onToggleMobileMenu }) => {
+  const activePlaylistId = useMultiPlaylistStore((s) => s.activePlaylistId);
+  const playlists = useMultiPlaylistStore((s) => s.playlists);
+  const activePlaylist = playlists.find((p) => p.id === activePlaylistId);
   const searchQuery = useChannelStore((s) => s.searchQuery);
   const setSearchQuery = useChannelStore((s) => s.setSearchQuery);
   const channels = useChannelStore((s) => s.channels);
@@ -64,6 +69,20 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleMobileMe
 
       {/* Actions */}
       <div className="header-actions">
+        {/* Playlists & Accounts Trigger */}
+        <button
+          type="button"
+          onClick={onOpenPlaylists}
+          className="tokerian-btn"
+          style={{ padding: '6px 12px', fontSize: '0.8rem', gap: '6px' }}
+          title={`Active Playlist: ${activePlaylist?.title || 'Default'} - Click to manage or add sources`}
+        >
+          <FolderPlus size={16} color="var(--accent-primary)" />
+          <span style={{ maxWidth: '120px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {activePlaylist?.title || 'Playlists'}
+          </span>
+        </button>
+
         {/* Total Channels Pill */}
         <div className="channels-count-pill" title="Total active channels loaded">
           {isLoading ? (
