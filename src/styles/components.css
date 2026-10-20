@@ -2646,6 +2646,7 @@ input:checked + .toggle-slider:before {
 
 /* --- TOP HEADER BAR --- */
 .tokerian-iptvnator-header {
+  -webkit-app-region: drag;
   height: 56px;
   min-height: 56px;
   background: #0b0f19;
@@ -2656,6 +2657,28 @@ input:checked + .toggle-slider:before {
   padding: 0 16px;
   z-index: 40;
   user-select: none;
+}
+
+.tokerian-iptvnator-header.is-electron {
+  padding-right: 0;
+}
+
+/* Ensure interactive elements in header are non-draggable */
+.header-left-col > *,
+.header-center-col > *,
+.header-right-col > button,
+.header-window-controls,
+.header-window-controls > button,
+.playlist-pill-container,
+.playlist-selector-pill,
+.playlist-pill-action-btn,
+.playlist-dropdown-popover,
+.iptvnator-search-pill,
+.search-pill-input,
+.search-pill-clear,
+.search-pill-shortcut,
+.header-action-icon-btn {
+  -webkit-app-region: no-drag;
 }
 
 .header-left-col {
@@ -2679,6 +2702,54 @@ input:checked + .toggle-slider:before {
   justify-content: flex-end;
   gap: 6px;
   flex: 1;
+}
+
+/* Custom Desktop Window Controls (IPTVnator 1:1 match) */
+.header-window-controls {
+  display: flex;
+  align-items: center;
+  height: 56px;
+  margin-left: 8px;
+  -webkit-app-region: no-drag;
+}
+
+.window-control-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 100%;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 0;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  outline: none;
+  -webkit-app-region: no-drag;
+}
+
+.window-control-btn svg {
+  display: block;
+}
+
+.window-control-btn:hover {
+  background: rgba(255, 255, 255, 0.09);
+  color: #ffffff;
+}
+
+.window-control-btn:active {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.window-control-btn.close-btn:hover {
+  background: #e81123 !important;
+  color: #ffffff !important;
+}
+
+.window-control-btn.close-btn:active {
+  background: #bf0f1d !important;
+  color: #ffffff !important;
 }
 
 /* Playlist Dropdown Pill */

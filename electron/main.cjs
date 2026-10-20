@@ -17,6 +17,8 @@ function createWindow() {
     minHeight: 560,
     backgroundColor: '#07090e',
     title: 'Tokerian',
+    frame: false,
+    titleBarStyle: 'hidden',
     show: false,
     autoHideMenuBar: true,
     webPreferences: {
@@ -54,6 +56,14 @@ function createWindow() {
     mainWindow.show();
   });
 
+  mainWindow.on('maximize', () => {
+    mainWindow?.webContents.send('window-maximize-changed', true);
+  });
+
+  mainWindow.on('unmaximize', () => {
+    mainWindow?.webContents.send('window-maximize-changed', false);
+  });
+
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
@@ -82,6 +92,10 @@ ipcMain.on('window-toggle-fullscreen', () => {
   if (mainWindow) {
     mainWindow.setFullScreen(!mainWindow.isFullScreen());
   }
+});
+
+ipcMain.handle('window-is-maximized', () => {
+  return mainWindow ? mainWindow.isMaximized() : false;
 });
 
 // External Players Engine (VLC & MPV Spawner ported)

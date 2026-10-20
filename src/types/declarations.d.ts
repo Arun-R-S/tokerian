@@ -22,6 +22,8 @@ export interface TokerianDesktopBridge {
   maximize: () => void;
   close: () => void;
   toggleFullscreen: () => void;
+  isMaximized: () => Promise<boolean>;
+  onMaximizedChange: (callback: (isMax: boolean) => void) => () => void;
   checkExternalPlayers: (customPaths?: { vlc?: string; mpv?: string }) => Promise<ExternalPlayerCheckResult>;
   openExternalPlayer: (options: ExternalPlayerOptions) => Promise<{ success: boolean; error?: string; pid?: number }>;
   openVlc: (url: string, title?: string, customPath?: string) => Promise<{ success: boolean; error?: string }>;
@@ -31,5 +33,7 @@ export interface TokerianDesktopBridge {
 declare global {
   interface Window {
     tokerianDesktop?: TokerianDesktopBridge;
+    electronAPI?: TokerianDesktopBridge;
   }
 }
+

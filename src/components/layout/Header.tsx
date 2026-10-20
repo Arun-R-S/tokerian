@@ -7,8 +7,6 @@ import {
   Plus,
   Check,
   FolderPlus,
-  Minus,
-  Square,
 } from 'lucide-react';
 import { MatIcon } from '../common/MatIcon';
 import { useChannelStore } from '../../stores/useChannelStore';
@@ -48,7 +46,44 @@ export const Header: React.FC<HeaderProps> = ({
 
   const [isPlaylistDropdownOpen, setIsPlaylistDropdownOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const isElectron =
+    typeof window !== 'undefined' &&
+    Boolean(window.tokerianDesktop?.isElectron || window.electronAPI?.isElectron);
+
+  useEffect(() => {
+    const desktop = window.tokerianDesktop || window.electronAPI;
+    if (!desktop) return;
+
+    desktop.isMaximized?.().then((max) => {
+      setIsMaximized(Boolean(max));
+    }).catch(() => {});
+
+    const unsubscribe = desktop.onMaximizedChange?.((max) => {
+      setIsMaximized(Boolean(max));
+    });
+
+    return () => {
+      unsubscribe?.();
+    };
+  }, []);
+
+  const handleMinimize = () => {
+    const desktop = window.tokerianDesktop || window.electronAPI;
+    desktop?.minimize?.();
+  };
+
+  const handleMaximize = () => {
+    const desktop = window.tokerianDesktop || window.electronAPI;
+    desktop?.maximize?.();
+  };
+
+  const handleClose = () => {
+    const desktop = window.tokerianDesktop || window.electronAPI;
+    desktop?.close?.();
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -84,7 +119,7 @@ export const Header: React.FC<HeaderProps> = ({
     : `${channels.length.toLocaleString()} channels`;
 
   return (
-    <header className="tokerian-iptvnator-header">
+    <header className={`tokerian-iptvnator-header ${isElectron ? 'is-electron' : ''}`}>
       {/* LEFT SECTION: Mobile Hamburger + Playlist Selector Dropdown Pill */}
       <div className="header-left-col">
         {/* Mobile Hamburger Toggle Button */}
@@ -300,32 +335,48 @@ export const Header: React.FC<HeaderProps> = ({
           <MatIcon name="tv" size={18} />
         </button>
 
-        {/* 6. Subtle Desktop Window Controls (Visible ONLY in Desktop Electron App) */}
-        {typeof window !== 'undefined' && (window as any).electronAPI && (
+        {/* 5. Custom Windows Desktop Controls (Minimize, Maximize/Restore, Close) */}
+        {isElectron && (
           <div className="header-window-controls">
             <button
               type="button"
-              onClick={() => (window as any).electronAPI?.minimize?.()}
+              onClick={handleMinimize}
               className="window-control-btn"
               title="Minimize"
+              aria-label="Minimize"
             >
-              <Minus size={13} />
+              <svg width="10" height="10" viewBox="0 0 10 10">
+                <path d="M0 5h10" stroke="currentColor" strokeWidth="1" fill="none" />
+              </svg>
             </button>
             <button
               type="button"
-              onClick={() => (window as any).electronAPI?.maximize?.()}
+              onClick={handleMaximize}
               className="window-control-btn"
-              title="Maximize"
+              title={isMaximized ? 'Restore' : 'Maximize'}
+              aria-label={isMaximized ? 'Restore' : 'Maximize'}
             >
-              <Square size={11} />
+              {isMaximized ? (
+                <svg width="10" height="10" viewBox="0 0 10 10">
+                  <path d="M0.5 2.5h7v7h-7z" fill="none" stroke="currentColor" strokeWidth="1" />
+                  <path d="M2.5 2.5v-2h7v7h-2" fill="none" stroke="currentColor" strokeWidth="1" />
+                </svg>
+              ) : (
+                <svg width="10" height="10" viewBox="0 0 10 10">
+                  <path d="M0.5 0.5h9v9h-9z" fill="none" stroke="currentColor" strokeWidth="1" />
+                </svg>
+              )}
             </button>
             <button
               type="button"
-              onClick={() => (window as any).electronAPI?.close?.()}
+              onClick={handleClose}
               className="window-control-btn close-btn"
               title="Close"
+              aria-label="Close"
             >
-              <X size={13} />
+              <svg width="10" height="10" viewBox="0 0 10 10">
+                <path d="M0.5 0.5l9 9m0 -9l-9 9" stroke="currentColor" strokeWidth="1.1" fill="none" />
+              </svg>
             </button>
           </div>
         )}
