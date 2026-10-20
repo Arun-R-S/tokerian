@@ -224,7 +224,7 @@ export const Header: React.FC<HeaderProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search in this playlist..."
+            placeholder="Search..."
             className="search-pill-input"
           />
 

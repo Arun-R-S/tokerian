@@ -4,6 +4,7 @@
 import React, { useState } from 'react';
 import { X, Plus, Trash2, Check, Radio, Edit2, Server, FileText, Globe } from 'lucide-react';
 import { useMultiPlaylistStore, type PlaylistRecord } from '../../stores/useMultiPlaylistStore';
+import { useChannelStore } from '../../stores/useChannelStore';
 
 interface PlaylistManagerModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ export const PlaylistManagerModal: React.FC<PlaylistManagerModalProps> = ({
   onClose,
   onOpenAddModal,
 }) => {
+  const currentChannels = useChannelStore((s) => s.channels);
   const playlists = useMultiPlaylistStore((s) => s.playlists);
   const activePlaylistId = useMultiPlaylistStore((s) => s.activePlaylistId);
   const isSwitching = useMultiPlaylistStore((s) => s.isSwitching);
@@ -199,7 +201,12 @@ export const PlaylistManagerModal: React.FC<PlaylistManagerModalProps> = ({
                         </div>
 
                         <div style={{ display: 'flex', gap: '10px', marginTop: '4px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                          <span>{playlist.count.toLocaleString()} Channels</span>
+                          <span>
+                            {(() => {
+                              const exactCount = isActive && currentChannels.length > 0 ? currentChannels.length : playlist.count;
+                              return `${exactCount.toLocaleString()} Channels`;
+                            })()}
+                          </span>
                           {playlist.vodCount !== undefined && playlist.vodCount > 0 && (
                             <span>• {playlist.vodCount.toLocaleString()} Movies</span>
                           )}

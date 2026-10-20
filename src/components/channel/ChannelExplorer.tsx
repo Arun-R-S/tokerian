@@ -458,6 +458,37 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({ activeTab = 'c
           </div>
         </div>
 
+        {/* Mobile Horizontal Category Filter Bar (Visible on mobile/tablet when on Channels tab) */}
+        {activeTab === 'channels' && (
+          <div className="mobile-categories-strip">
+            <button
+              type="button"
+              onClick={() => setActiveCategory('All')}
+              className={`mobile-category-pill ${activeCategory === 'All' ? 'mobile-category-pill-active' : ''}`}
+            >
+              <span>All</span>
+              <span className="mobile-pill-badge">{(categoryCounts.get('All') || 0).toLocaleString()}</span>
+            </button>
+
+            {filteredCategories.map((group) => {
+              if (group === 'All') return null;
+              const isActive = activeCategory === group;
+              const count = categoryCounts.get(group) || 0;
+              return (
+                <button
+                  key={group}
+                  type="button"
+                  onClick={() => setActiveCategory(group)}
+                  className={`mobile-category-pill ${isActive ? 'mobile-category-pill-active' : ''}`}
+                >
+                  <span>{group}</span>
+                  <span className="mobile-pill-badge">{count.toLocaleString()}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {/* Channels Content: Empty States or Channels Grid / Table */}
         {displayedChannels.length === 0 ? (
           <div className="grid-empty-state" style={{ marginTop: '30px' }}>
@@ -490,12 +521,12 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({ activeTab = 'c
             <table className="iptvnator-channel-table">
               <thead>
                 <tr>
-                  <th style={{ width: '48px', textAlign: 'center' }}>#</th>
-                  <th style={{ width: '56px' }}>Logo</th>
+                  <th style={{ width: '40px', textAlign: 'center' }}>#</th>
+                  <th style={{ width: '48px' }}>Logo</th>
                   <th>Channel Name</th>
-                  <th>Group</th>
-                  <th style={{ width: '90px' }}>Quality</th>
-                  <th style={{ width: '120px', textAlign: 'right' }}>Actions</th>
+                  <th className="table-col-group">Group</th>
+                  <th className="table-col-quality" style={{ width: '80px' }}>Quality</th>
+                  <th style={{ width: '100px', textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -563,13 +594,13 @@ export const ChannelExplorer: React.FC<ChannelExplorerProps> = ({ activeTab = 'c
                         </div>
                       </td>
 
-                      <td>
+                      <td className="table-col-group">
                         <span className="table-group-badge">
                           {channel.group || 'General'}
                         </span>
                       </td>
 
-                      <td>
+                      <td className="table-col-quality">
                         {channel.resolution ? (
                           <span className="channel-badge badge-resolution">
                             {channel.resolution}

@@ -92,6 +92,11 @@
 
 .mobile-bottom-nav {
   display: none;
+  border-top-left-radius: 20px !important;
+  border-top-right-radius: 20px !important;
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  border-bottom: none !important;
 }
 
 .header-search-wrapper {
@@ -1842,15 +1847,23 @@ input:checked + .toggle-slider:before {
     bottom: 0;
     left: 0;
     right: 0;
-    height: 60px;
-    background: rgba(13, 16, 26, 0.95);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    border-top: 1px solid var(--border-subtle);
+    height: 62px;
+    background: rgba(13, 16, 26, 0.96);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    border-left: none !important;
+    border-right: none !important;
+    border-bottom: none !important;
+    border-top-left-radius: 20px !important;
+    border-top-right-radius: 20px !important;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
     align-items: center;
     justify-content: space-around;
     z-index: 50;
     padding: 0 4px;
+    box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.6);
   }
 
   .bottom-nav-item {
@@ -2041,48 +2054,315 @@ input:checked + .toggle-slider:before {
   animation: fadeIn 0.15s ease-out;
 }
 
-/* --- COMMAND PALETTE (CTRL+K) --- */
+/* --- MODAL FALLBACK & VIEWPORT OVERLAYS --- */
+.tokerian-modal-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 10000 !important;
+  padding: 16px;
+  box-sizing: border-box;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.tokerian-modal {
+  background: rgba(13, 17, 28, 0.96);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85);
+  overflow: hidden;
+  animation: scaleIn 0.15s ease-out;
+}
+
+.tokerian-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.tokerian-modal-body {
+  padding: 18px 24px;
+  overflow-y: auto;
+}
+
+/* --- KEYBOARD SHORTCUTS MODAL --- */
+.shortcuts-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 20px;
+  z-index: 10000 !important;
+  box-sizing: border-box;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.shortcuts-dialog {
+  width: 620px;
+  max-width: 95vw;
+  max-height: 85vh;
+  background: rgba(13, 17, 28, 0.97);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 18px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.9), 0 0 1px 1px rgba(99, 102, 241, 0.3);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: scaleIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.shortcuts-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.shortcuts-header-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.shortcuts-icon-pill {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-primary);
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+}
+
+.shortcuts-title-text {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0;
+  color: #fff;
+  letter-spacing: -0.01em;
+}
+
+.shortcuts-subtitle-text {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.shortcuts-close-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.shortcuts-close-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+  transform: rotate(90deg);
+}
+
+.shortcuts-body {
+  padding: 18px 24px;
+  overflow-y: auto;
+  max-height: 58vh;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.shortcuts-category-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shortcuts-category-header {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-primary);
+  margin-bottom: 2px;
+}
+
+.shortcuts-row-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.shortcut-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.12s ease;
+  gap: 14px;
+}
+
+.shortcut-item-row:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(99, 102, 241, 0.25);
+  transform: translateX(2px);
+}
+
+.shortcut-desc {
+  font-size: 0.86rem;
+  color: #e2e8f0;
+  font-weight: 500;
+}
+
+.shortcut-key-badge {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(99, 102, 241, 0.14);
+  border: 1px solid rgba(99, 102, 241, 0.32);
+  color: #a5b4fc;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.shortcuts-footer {
+  padding: 14px 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.32);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* --- COMMAND PALETTE (CTRL+K) & FIND UI --- */
 .palette-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  padding-top: 11vh !important;
+  padding-left: 16px;
+  padding-right: 16px;
+  padding-bottom: 24px;
+  z-index: 10000 !important;
+  box-sizing: border-box;
   animation: fadeIn 0.15s ease-out;
 }
 
 .tokerian-command-palette {
-  width: 640px;
-  max-width: 92vw;
-  max-height: 80vh;
-  border-radius: var(--radius-lg);
-  background: rgba(13, 17, 28, 0.96);
-  backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), 0 0 1px 1px rgba(255, 255, 255, 0.1);
+  width: 660px;
+  max-width: 95vw;
+  max-height: 75vh;
+  border-radius: 18px;
+  background: rgba(13, 17, 28, 0.97);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.9), 0 0 1px 1px rgba(99, 102, 241, 0.25);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  animation: scaleIn 0.15s ease-out;
+  animation: scaleIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .palette-input-wrapper {
   display: flex;
   align-items: center;
   padding: 16px 20px;
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   gap: 12px;
   background: rgba(255, 255, 255, 0.02);
+  transition: all 0.2s ease;
+}
+
+.palette-input-wrapper:focus-within {
+  background: rgba(99, 102, 241, 0.05);
+  border-bottom-color: rgba(99, 102, 241, 0.4);
 }
 
 .palette-search-icon {
   color: var(--text-muted);
   flex-shrink: 0;
+  transition: color 0.2s ease;
+}
+
+.palette-input-wrapper:focus-within .palette-search-icon {
+  color: var(--accent-primary);
 }
 
 .palette-search-input {
   flex: 1;
   background: transparent;
-  border: none;
-  outline: none;
-  font-size: 1.05rem;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  font-size: 1.02rem;
   color: #fff;
   font-family: inherit;
+  font-weight: 500;
+}
+
+.palette-search-input:focus,
+.palette-search-input:focus-visible {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 .palette-search-input::placeholder {
@@ -3721,6 +4001,137 @@ input:checked + .toggle-slider:before {
 }
 
 /* =========================================================================
+   VOD MOVIES & TV SERIES CATALOG STYLES
+   ========================================================================= */
+.vod-catalog-container {
+  padding: 16px 20px 60px;
+  max-width: 1600px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.vod-top-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.vod-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.vod-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.vod-title-text {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.01em;
+}
+
+.vod-count-badge {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+}
+
+.vod-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.vod-search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 6px 12px;
+  transition: all 0.2s ease;
+}
+
+.vod-search-box:focus-within {
+  border-color: rgba(99, 102, 241, 0.4);
+  background: rgba(99, 102, 241, 0.05);
+}
+
+.vod-search-input {
+  background: transparent;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  color: #fff;
+  font-size: 0.85rem;
+  width: 180px;
+  font-family: inherit;
+}
+
+.vod-sort-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vod-category-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 6px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.vod-category-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.vod-posters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 18px;
+  width: 100%;
+}
+
+.tokerian-vod-card {
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.tokerian-vod-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(99, 102, 241, 0.5);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6);
+}
+
+.mobile-categories-strip {
+  display: none;
+}
+
+/* =========================================================================
    ANDROID TV (10-FOOT INTERFACE) & D-PAD REMOTE FOCUS RINGS
    ========================================================================= */
 body.tv-mode,
@@ -3774,11 +4185,12 @@ body.tv-mode,
 .settings-page-container {
   display: flex;
   flex-direction: column;
-  height: 100%;
   width: 100%;
-  padding: 24px 32px 60px 32px;
-  overflow-y: auto;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 0 60px 0;
   box-sizing: border-box;
+  overflow: visible;
 }
 
 .settings-page-header {
@@ -3904,9 +4316,10 @@ body.tv-mode,
 .settings-section-card {
   padding: 26px 30px;
   border-radius: var(--radius-md);
-  min-height: 520px;
   background: rgba(13, 17, 28, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.08);
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .settings-form-group {
@@ -3915,8 +4328,12 @@ body.tv-mode,
   gap: 16px;
 }
 
-.section-title-wrap {
-  margin-bottom: 8px;
+.settings-section-card .section-title-wrap {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 4px !important;
+  margin-bottom: 16px;
   padding-bottom: 14px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -4079,11 +4496,12 @@ body.tv-mode,
 .downloads-page-container {
   display: flex;
   flex-direction: column;
-  height: 100%;
   width: 100%;
-  padding: 24px 32px 60px 32px;
-  overflow-y: auto;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 0 60px 0;
   box-sizing: border-box;
+  overflow: visible;
 }
 
 .downloads-page-header {
@@ -4414,51 +4832,81 @@ body.tv-mode,
 
   /* 2. Responsive Dedicated Settings Page on Mobile */
   .settings-page-container {
-    padding: 12px 12px 90px 12px;
+    padding: 0 0 100px 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   .settings-page-header {
     margin-bottom: 14px;
+    padding: 0 2px;
+  }
+
+  .settings-header-icon-box {
+    width: 36px;
+    height: 36px;
   }
 
   .settings-page-title {
     font-size: 1.3rem;
   }
 
+  .settings-page-subtitle {
+    font-size: 0.78rem;
+  }
+
   .settings-page-layout {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    width: 100% !important;
+    overflow: visible !important;
   }
 
   .settings-nav-sidebar {
-    display: flex;
-    flex-direction: row;
-    overflow-x: auto;
-    white-space: nowrap;
-    padding: 6px;
-    gap: 6px;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-    border-radius: var(--radius-sm);
+    display: flex !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap !important;
+    padding: 4px 2px 10px 2px !important;
+    gap: 8px !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    border-radius: 12px !important;
+    width: 100% !important;
+    background: transparent !important;
+    border: none !important;
+    box-sizing: border-box !important;
   }
 
   .settings-nav-sidebar::-webkit-scrollbar {
-    display: none;
+    display: none !important;
   }
 
   .settings-nav-item {
-    padding: 7px 12px;
-    font-size: 0.78rem;
-    flex-shrink: 0;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    padding: 8px 14px !important;
+    font-size: 0.8rem !important;
+    font-weight: 600 !important;
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
     border-left: none !important;
-    border-radius: var(--radius-full);
-    background: rgba(255, 255, 255, 0.04);
+    border-radius: var(--radius-full) !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: var(--text-muted) !important;
   }
 
   .settings-nav-item.nav-item-active {
-    background: rgba(56, 189, 248, 0.2);
-    border: 1px solid #38bdf8;
+    background: rgba(56, 189, 248, 0.22) !important;
+    border-color: #38bdf8 !important;
+    color: #38bdf8 !important;
+    box-shadow: 0 0 14px rgba(56, 189, 248, 0.3) !important;
   }
 
   .settings-sidebar-back-btn {
@@ -4466,38 +4914,89 @@ body.tv-mode,
   }
 
   .settings-section-card {
-    padding: 16px 14px;
+    padding: 16px 14px !important;
+    min-height: unset !important;
+    border-radius: 14px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+
+  .settings-section-card .section-title-wrap {
+    margin-bottom: 12px !important;
+    padding-bottom: 10px !important;
+  }
+
+  .section-main-title {
+    font-size: 1.2rem !important;
+  }
+
+  .section-main-subtitle {
+    font-size: 0.76rem !important;
   }
 
   .setting-field-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+    padding: 12px 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .field-meta {
+    width: 100% !important;
+  }
+
+  .field-title {
+    font-size: 0.92rem !important;
+  }
+
+  .field-desc {
+    font-size: 0.76rem !important;
+    line-height: 1.45 !important;
   }
 
   .field-control {
-    width: 100%;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin-top: 2px !important;
   }
 
   .tokerian-select {
-    width: 100%;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    font-size: 0.88rem !important;
+  }
+
+  .tokerian-input {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    font-size: 0.88rem !important;
   }
 
   .segmented-btn-group {
-    width: 100%;
-    justify-content: space-between;
+    width: 100% !important;
+    display: flex !important;
+    box-sizing: border-box !important;
+    justify-content: space-between !important;
   }
 
   .segmented-btn {
-    flex: 1;
-    justify-content: center;
-    padding: 7px 8px;
-    font-size: 0.76rem;
+    flex: 1 !important;
+    justify-content: center !important;
+    padding: 8px 10px !important;
+    font-size: 0.76rem !important;
+    white-space: nowrap !important;
   }
 
   /* 3. Responsive Downloads Page on Mobile */
   .downloads-page-container {
-    padding: 12px 12px 90px 12px;
+    padding: 0 0 100px 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   .downloads-title {
@@ -4532,6 +5031,65 @@ body.tv-mode,
   .downloads-empty-actions .tokerian-btn {
     width: 100%;
     justify-content: center;
+  }
+
+  /* 4. Responsive Find / Command Palette & Keyboard Shortcuts on Mobile */
+  .palette-backdrop {
+    padding-top: 5vh !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+    padding-bottom: 16px !important;
+  }
+
+  .tokerian-command-palette {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 84vh !important;
+    border-radius: 14px !important;
+  }
+
+  .palette-input-wrapper {
+    padding: 12px 14px;
+    gap: 10px;
+  }
+
+  .palette-search-input {
+    font-size: 0.92rem;
+  }
+
+  .palette-footer-shortcuts {
+    gap: 10px;
+  }
+
+  .palette-footer-hint {
+    font-size: 0.7rem;
+  }
+
+  .palette-footer-brand {
+    display: none !important;
+  }
+
+  .shortcuts-overlay {
+    padding: 10px !important;
+  }
+
+  .shortcuts-dialog {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 88vh !important;
+    border-radius: 14px !important;
+  }
+
+  .shortcuts-header {
+    padding: 14px 16px;
+  }
+
+  .shortcuts-body {
+    padding: 14px 16px;
+  }
+
+  .shortcuts-footer {
+    padding: 12px 16px;
   }
 }
 

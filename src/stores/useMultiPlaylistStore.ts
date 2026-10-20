@@ -29,9 +29,9 @@ const STORAGE_PREFIX_DATA = 'tokerian_playlist_channels_';
 
 const BUILT_IN_PLAYLIST: PlaylistRecord = {
   id: 'built-in',
-  title: 'Tokerian Global Catalog (30,000+)',
+  title: 'Global Catalog',
   type: 'built-in',
-  count: 30000,
+  count: 0,
   createdAt: 0,
   url: 'https://iptv-org.github.io/iptv/index.m3u',
 };
@@ -45,6 +45,7 @@ interface MultiPlaylistState {
   // Actions
   initPlaylists: () => Promise<void>;
   selectPlaylist: (id: string) => Promise<void>;
+  updatePlaylistCount: (id: string, count: number) => void;
   addM3uUrlPlaylist: (title: string, url: string, channels: Channel[], epgUrls?: string[]) => Promise<void>;
   addM3uFilePlaylist: (title: string, filename: string, channels: Channel[], epgUrls?: string[]) => Promise<void>;
   addXtreamPlaylist: (
@@ -81,6 +82,12 @@ export const useMultiPlaylistStore = create<MultiPlaylistState>((setStore, getSt
       console.warn('Failed to initialize playlists storage:', err);
       setStore({ initialized: true });
     }
+  },
+
+  updatePlaylistCount: (id: string, count: number) => {
+    setStore((state) => ({
+      playlists: state.playlists.map((p) => (p.id === id ? { ...p, count } : p)),
+    }));
   },
 
   selectPlaylist: async (id: string) => {
@@ -250,3 +257,15 @@ export const useMultiPlaylistStore = create<MultiPlaylistState>((setStore, getSt
     setStore({ playlists: [BUILT_IN_PLAYLIST, ...currentCustom] });
   },
 }));
+
+// Automatically synchronize active playlist channel count with loaded channels in useChannelStore
+useChannelStore.subscribe((channelState) => {
+  const currentChannelsCount = channelState.channels.length;
+  if (currentChannelsCount > 0) {
+    const { activePlaylistId, playlists } = useMultiPlaylistStore.getState();
+    const active = playlists.find((p) => p.id === activePlaylistId);
+    if (active && active.count !== currentChannelsCount) {
+      useMultiPlaylistStore.getState().updatePlaylistCount(activePlaylistId, currentChannelsCount);
+    }
+  }
+});
