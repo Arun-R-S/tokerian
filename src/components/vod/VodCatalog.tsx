@@ -195,6 +195,7 @@ export const VodCatalog: React.FC<VodCatalogProps> = ({ type }) => {
               <div
                 key={item.id}
                 onClick={() => handleResumeClick(item)}
+                className="vod-continue-card"
                 style={{
                   minWidth: '220px',
                   width: '220px',
@@ -207,7 +208,7 @@ export const VodCatalog: React.FC<VodCatalogProps> = ({ type }) => {
                   flexShrink: 0,
                 }}
               >
-                <div style={{ position: 'relative', width: '100%', height: '120px', borderRadius: 'var(--radius-sm)', overflow: 'hidden', background: '#0a0d14' }}>
+                <div className="vod-continue-thumb" style={{ position: 'relative', width: '100%', height: '120px', borderRadius: 'var(--radius-sm)', overflow: 'hidden', background: '#0a0d14' }}>
                   {item.poster ? (
                     <img
                       src={item.poster}
@@ -413,8 +414,9 @@ export const VodCatalog: React.FC<VodCatalogProps> = ({ type }) => {
                 </div>
 
                 {/* Card Title & Category */}
-                <div style={{ padding: '10px 12px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <div className="vod-card-info" style={{ padding: '10px 12px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <h4
+                    className="vod-card-title"
                     style={{
                       margin: 0,
                       fontSize: '0.85rem',
@@ -431,6 +433,7 @@ export const VodCatalog: React.FC<VodCatalogProps> = ({ type }) => {
                     {item.name}
                   </h4>
                   <span
+                    className="vod-card-category"
                     style={{
                       marginTop: '4px',
                       fontSize: '0.72rem',

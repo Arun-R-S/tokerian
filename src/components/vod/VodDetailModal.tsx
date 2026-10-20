@@ -122,7 +122,7 @@ export const VodDetailModal: React.FC = () => {
   return (
     <div className="modal-backdrop" onClick={closeDetail}>
       <div
-        className="modal-content glass-panel"
+        className="modal-content glass-panel vod-detail-modal-content"
         style={{
           maxWidth: '850px',
           width: '92vw',
@@ -136,6 +136,7 @@ export const VodDetailModal: React.FC = () => {
       >
         {/* Top Header / Backdrop Banner */}
         <div
+          className="vod-detail-banner"
           style={{
             position: 'relative',
             minHeight: '260px',
@@ -158,12 +159,13 @@ export const VodDetailModal: React.FC = () => {
             <X size={20} />
           </button>
 
-          <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-end', width: '100%' }}>
+          <div className="vod-detail-banner-inner" style={{ display: 'flex', gap: '20px', alignItems: 'flex-end', width: '100%' }}>
             {/* Poster Thumbnail */}
             {poster && (
               <img
                 src={poster}
                 alt={activeItem.name}
+                className="vod-detail-poster"
                 style={{
                   width: '130px',
                   height: '190px',
@@ -178,7 +180,7 @@ export const VodDetailModal: React.FC = () => {
             )}
 
             {/* Meta Info */}
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="vod-detail-meta" style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
                 <span
                   style={{
@@ -220,7 +222,7 @@ export const VodDetailModal: React.FC = () => {
                 )}
               </div>
 
-              <h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>
+              <h2 className="vod-detail-title" style={{ margin: 0, fontSize: '1.6rem', fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>
                 {activeItem.name}
               </h2>
 
@@ -232,7 +234,7 @@ export const VodDetailModal: React.FC = () => {
 
               {/* Action Buttons for Movies */}
               {!isSeries && (
-                <div style={{ display: 'flex', gap: '10px', marginTop: '16px', flexWrap: 'wrap' }}>
+                <div className="vod-detail-actions" style={{ display: 'flex', gap: '10px', marginTop: '16px', flexWrap: 'wrap' }}>
                   <button
                     type="button"
                     onClick={handlePlayMovie}
@@ -289,7 +291,7 @@ export const VodDetailModal: React.FC = () => {
         </div>
 
         {/* Modal Scrollable Body */}
-        <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1 }}>
+        <div className="vod-detail-body" style={{ padding: '20px 24px', overflowY: 'auto', flex: 1 }}>
           {/* Plot Overview */}
           {plot && (
             <div style={{ marginBottom: '20px' }}>
